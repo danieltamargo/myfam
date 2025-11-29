@@ -1,0 +1,11 @@
+{
+	"servers": {
+		"svelte": {
+			"url": "https://mcp.svelte.dev/mcp"
+		},
+		"supabase": {
+			"type": "http",
+			"url": "https://mcp.supabase.com/mcp"
+		}
+	}
+}
