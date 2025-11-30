@@ -1,4 +1,95 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from es!"
+	"hello_world": "Hola, {name} desde es!",
+	"hero": {
+		"title": "MyFamKit",
+		"subtitle": "El Centro de Control de tu Familia",
+		"description": {
+			"text": "Todo lo que tu familia necesita en un solo lugar.",
+			"qualities": {
+				"0": "Conecta a todos no importa dónde estén.",
+				"1": "Fácil de Usar.",
+				"2": "Modular, usa solo lo que necesites.",
+				"3": "Seguro y Privado."
+			}
+		},
+		"cta_primary": "Comenzar",
+		"cta_secondary": "Ver Funcionalidades"
+	},
+	"services": {
+		"title": "Todo lo que Necesitas",
+		"description": "MyFamKit reúne todas las herramientas que tu familia necesita para mantenerse organizada, conectada y sin estrés. Activa solo los módulos que necesites.",
+		"benefits": {
+			"modular": {
+				"title": "Diseño Modular",
+				"description": "Activa solo lo que necesites"
+			},
+			"easy": {
+				"title": "Fácil de Usar",
+				"description": "Interfaz intuitiva para todas las edades"
+			},
+			"synced": {
+				"title": "Siempre Sincronizado",
+				"description": "Actualizaciones en tiempo real en todos los dispositivos"
+			}
+		},
+		"modules": {
+			"calendar": {
+				"title": "Calendario",
+				"description": "Calendario compartido para eventos y citas"
+			},
+			"finances": {
+				"title": "Finanzas",
+				"description": "Gestiona gastos y presupuesto familiar"
+			},
+			"tasks": {
+				"title": "Tareas",
+				"description": "Organiza tareas del hogar y responsabilidades"
+			},
+			"meals": {
+				"title": "Planificación de Comidas",
+				"description": "Planifica menús semanales y comparte recetas"
+			},
+			"goals": {
+				"title": "Objetivos",
+				"description": "Establece y sigue objetivos familiares"
+			},
+			"documents": {
+				"title": "Documentos",
+				"description": "Almacenamiento seguro de documentos importantes"
+			}
+		}
+	},
+	"features": {
+		"title": "Diseñado para Familias",
+		"subtitle": "Pensado para familias reales. Simple, potente y seguro.",
+		"items": {
+			"multi_family": {
+				"title": "Soporte Multi-Familia",
+				"description": "Gestiona múltiples grupos familiares desde una cuenta. Perfecto para familias extendidas o hogares compartidos."
+			},
+			"real_time": {
+				"title": "Colaboración en Tiempo Real",
+				"description": "Todos permanecen sincronizados. Los cambios aparecen instantáneamente para todos los miembros."
+			},
+			"privacy": {
+				"title": "Privacidad Primero",
+				"description": "Los datos de tu familia están encriptados y seguros. Tú controlas quién ve qué."
+			}
+		}
+	},
+	"cta": {
+		"title": "¿Listo para Organizarte?",
+		"description": "Únete a las familias que han simplificado sus vidas con MyFamKit. Comienza tu prueba gratuita hoy.",
+		"button_primary": "Iniciar Prueba Gratuita",
+		"button_secondary": "Contáctanos"
+	},
+	"footer": {
+		"tagline": "El centro de control de tu familia desde 2024",
+		"links": {
+			"features": "Funcionalidades",
+			"contact": "Contacto",
+			"login": "Iniciar Sesión"
+		}
+	}
 }
