@@ -18,6 +18,7 @@
   const base3 = { x: 0.30, y: 0.20 };
 
   let rafId: number;
+  let blobTextEl: HTMLElement;
 
   const serviceIcons = ['📅', '💰', '📋', '🍽️', '🎯', '📚'];
 
@@ -75,6 +76,22 @@
     targetX = event.clientX - rect.left;
     targetY = event.clientY - rect.top;
     isHovering = true;
+  }
+
+  function handleTextMouseMove(event: MouseEvent) {
+    if (!blobTextEl) return;
+    const rect = blobTextEl.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    blobTextEl.style.setProperty('--x', `${x}px`);
+    blobTextEl.style.setProperty('--y', `${y}px`);
+  }
+
+  function resetTextBlob() {
+    if (!blobTextEl) return;
+    blobTextEl.style.setProperty('--x', `-500px`);
+    blobTextEl.style.setProperty('--y', `-500px`);
   }
 
   function resetBlobs() {
@@ -142,17 +159,20 @@
   >
     <div class="hero-content text-center z-10 w-full max-w-7xl px-4">
       <div class="w-full">
-        <!-- <div class="mb-6 inline-block">
-          <div class="text-7xl md:text-8xl animate-float">🏠</div>
-        </div> -->
-
         <div class="mb-8">
           <h1 class="text-5xl md:text-7xl lg:text-8xl font-black leading-tight">
             <span class="relative">
-              <span class="gradient-text bg-clip-text text-transparent bg-linear-to-r from-primary via-secondary to-accent animate-gradient">
+              <span
+                bind:this={blobTextEl}
+                class="interactive-blob-text inline-block"
+                role="img"
+                aria-label={m['hero.title']()}
+                on:mousemove={handleTextMouseMove}
+                on:mouseenter={handleTextMouseMove}
+                on:mouseleave={resetTextBlob}
+              >
                 {m['hero.title']()}
               </span>
-              <span class="absolute inset-0 gradient-text bg-clip-text text-transparent bg-linear-to-r from-primary via-secondary to-accent blur-lg opacity-50 animate-gradient"></span>
             </span>
           </h1>
         </div>
@@ -336,33 +356,48 @@
 
 <style>
   :global(html) { scroll-behavior: smooth; }
+  .interactive-blob-text {
+    --x: -500px;
+    --y: -500px;
 
-  @keyframes gradient {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    --base-color: #3b82f6; 
+    --hover-color: #e879f9;
+
+    background-image: radial-gradient(
+      circle 500px at var(--x) var(--y),
+      var(--hover-color),
+      var(--base-color) 70%
+    );
+
+    background-clip: text;
+    -webkit-background-clip: text;
+
+    color: transparent;
+    transition: background-image 0.05s linear;
+    pointer-events: auto;
   }
 
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
+  .interactive-blob-text::before {
+    content: "";
+    position: absolute;
+    top: -400px;       
+    bottom: -400px;   
+    left: -400px; 
+    right: -400px;
+    pointer-events: auto; 
   }
-
-  .gradient-text { background-size: 200% 200%; }
-  .animate-gradient { animation: gradient 8s ease infinite; }
-  .animate-float { animation: float 3s ease-in-out infinite; }
 
   .blob { transition: transform 0.4s ease-out; }
-
-  @keyframes carousel-mobile {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(calc(-33.333%)); }
-  }
-
   .animate-carousel-mobile {
     animation: carousel-mobile 15s linear infinite;
   }
 
   .animate-carousel-mobile:hover {
     animation-play-state: paused;
+  }
+
+  @keyframes carousel-mobile {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(calc(-33.333%)); }
   }
 </style>
