@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Prettier doesn't work with Svelte 5 yet, so ignore Svelte files for now
+*.svelte
