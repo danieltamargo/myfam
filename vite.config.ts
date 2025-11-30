@@ -1,4 +1,5 @@
 import devtoolsJson from 'vite-plugin-devtools-json';
+import { svelteInspector } from '@sveltejs/vite-plugin-svelte-inspector';
 import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
@@ -11,6 +12,11 @@ export default defineConfig({
 		paraglideVitePlugin({
 			project: './project.inlang',
 			outdir: './src/lib/paraglide'
+		}),
+		svelteInspector({
+			toggleKeyCombo: 'control-shift',
+			// showToggleButton: 'always',
+			// toggleButtonPos: 'bottom-right'
 		}),
 		devtoolsJson()
 	]

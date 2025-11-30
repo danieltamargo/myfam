@@ -51,6 +51,7 @@
     "typescript-eslint": "^8.47.0",
     "vite": "^7.2.2",
     "vite-plugin-devtools-json": "^1.0.0",
+    "vite-plugin-svelte-inspector": "^0.2.1",
     "vitest": "^4.0.14"
   },
   "dependencies": {
