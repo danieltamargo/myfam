@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as m from '$paraglide/messages';
-  import Particles from '$components/magic/Particles.svelte';
-  import WordRotate from '$components/magic/WordRotate.svelte';
+  import Particles from '$lib/components/magic/Particles.svelte';
+  import WordRotate from '$lib/components/magic/WordRotate.svelte';
 
   let scrollY = 0;
   let isHovering = false;
