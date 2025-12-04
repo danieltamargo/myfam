@@ -15,8 +15,8 @@ export default defineConfig({
 		}),
 		svelteInspector({
 			toggleKeyCombo: 'control-shift',
-			// showToggleButton: 'always',
-			// toggleButtonPos: 'bottom-right'
+			showToggleButton: 'always',
+			toggleButtonPos: 'bottom-left'
 		}),
 		devtoolsJson()
 	]

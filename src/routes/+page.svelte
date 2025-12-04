@@ -150,21 +150,21 @@
 
   <section
     bind:this={heroElement}
-    class="hero min-h-screen relative overflow-hidden"
+    class="hero min-h-screen relative overflow-hidden z-0"
     aria-label="Hero Section"
     role="banner"
     on:mousemove={handleMouseMove}
     on:mouseenter={handleMouseMove}
     on:mouseleave={resetBlobs}
   >
-    <div class="hero-content text-center z-10 w-full max-w-7xl px-4">
+    <div class="hero-content text-center w-full max-w-7xl px-4 relative z-20">
       <div class="w-full">
         <div class="mb-8">
           <h1 class="text-5xl md:text-7xl lg:text-8xl font-black leading-tight">
-            <span class="relative">
+            <span class="relative z-10">
               <span
                 bind:this={blobTextEl}
-                class="interactive-blob-text inline-block"
+                class="interactive-blob-text inline-block relative z-10"
                 role="img"
                 aria-label={m['hero.title']()}
                 on:mousemove={handleTextMouseMove}
@@ -176,43 +176,49 @@
             </span>
           </h1>
         </div>
-
-        <p class="text-xl md:text-3xl lg:text-4xl mb-6 font-semibold text-base-content/90 max-w-4xl mx-auto">
+        
+        <p class="text-xl md:text-3xl lg:text-4xl mb-6 font-semibold text-base-content/90 max-w-4xl mx-auto relative z-20 pointer-events-none">
           {m['hero.subtitle']()}
         </p>
 
-        <p class="text-base md:text-lg lg:text-xl mb-2 max-w-2xl mx-auto text-base-content/60 leading-relaxed">
+        <p class="text-base md:text-lg lg:text-xl mb-2 max-w-2xl mx-auto text-base-content/60 leading-relaxed relative z-20 pointer-events-none">
           {@html m['hero.description.text']()}
         </p>
 
-        <div class="overflow-hidden">
+        <div class="overflow-hidden relative z-20 pointer-events-none">
           <WordRotate class="text-4xl font-bold mb-12 text-primary/80" words={qualities} />
         </div>
 
-        <div class="flex gap-4 justify-center flex-wrap">
-          <a href="/login" class="btn btn-primary btn-lg text-lg px-8 shadow-lg hover:shadow-xl transition-all hover:scale-105">
+        <div class="flex gap-4 justify-center flex-wrap relative z-20">
+          <a
+            href="/login"
+            class="btn btn-primary btn-lg text-lg px-8 shadow-lg hover:shadow-xl transition-all hover:scale-105 relative z-20"
+          >
             {m['hero.cta_primary']()}
           </a>
-          <a href="/features" class="btn btn-outline btn-lg text-lg px-8 hover:scale-105 transition-all">
+          <a
+            href="/features"
+            class="btn btn-outline btn-lg text-lg px-8 hover:scale-105 transition-all relative z-20"
+          >
             {m['hero.cta_secondary']()}
           </a>
         </div>
 
-        <div class="flex gap-4 justify-center flex-wrap mt-16 opacity-70">
-          <div class="relative badge badge-lg badge-ghost gap-2">Multi-family</div>
+        <div class="flex gap-4 justify-center flex-wrap mt-16 opacity-70 relative z-20">
+          <div class="badge badge-lg badge-ghost gap-2">Multi-family</div>
           <div class="badge badge-lg badge-ghost gap-2">Real-time sync</div>
           <div class="badge badge-lg badge-ghost gap-2">Secure & private</div>
         </div>
       </div>
     </div>
 
-    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+    <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
       <div class="blob blob-1 absolute w-96 h-96 bg-primary rounded-full blur-3xl opacity-30"></div>
       <div class="blob blob-2 absolute w-[500px] h-[500px] bg-secondary rounded-full blur-3xl opacity-25"></div>
       <div class="blob blob-3 absolute w-[600px] h-[600px] bg-accent rounded-full blur-3xl opacity-20"></div>
     </div>
 
-    <Particles className="absolute inset-0" refresh={true} />
+    <Particles className="absolute inset-0 pointer-events-none z-0" refresh={true} />
   </section>
 
   <section class="py-32 relative bg-base-300">
@@ -321,19 +327,21 @@
     </div>
   </section>
 
-  <section class="py-32 relative">
-    <div class="container mx-auto px-4 text-center relative z-10">
-      <h2 class="text-5xl font-bold mb-6">{m['cta.title']()}</h2>
-      <p class="text-xl text-base-content/70 mb-12 max-w-2xl mx-auto">{m['cta.description']()}</p>
-      <div class="flex gap-4 justify-center flex-wrap">
-        <a href="/login" class="btn btn-primary btn-lg">{m['cta.button_primary']()}</a>
-        <a href="/contact" class="btn btn-outline btn-lg">{m['cta.button_secondary']()}</a>
+  <section class="py-32 overflow-x-clip">
+    <div class="max-w-5xl relative mx-auto">
+      <div class="container mx-auto px-4 text-center relative z-10 max-w-4xl">
+        <h2 class="text-5xl font-bold mb-6">{m['cta.title']()}</h2>
+        <p class="text-xl text-base-content/70 mb-12 max-w-2xl mx-auto">{m['cta.description']()}</p>
+        <div class="flex gap-4 justify-center flex-wrap">
+          <a href="/login" class="btn btn-primary btn-lg">{m['cta.button_primary']()}</a>
+          <a href="/contact" class="btn btn-outline btn-lg">{m['cta.button_secondary']()}</a>
+        </div>
       </div>
-    </div>
-
-    <div class="absolute inset-0 opacity-10">
-      <div class="absolute -top-20 -right-20 w-96 h-96 bg-primary rounded-full blur-3xl"></div>
-      <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+  
+      <div class="absolute inset-0 opacity-10">
+        <div class="absolute -top-48 -right-20 w-96 h-96 bg-primary rounded-full blur-3xl"></div>
+        <div class="absolute -bottom-48 -left-20 w-96 h-96 bg-secondary rounded-full blur-3xl"></div>
+      </div>
     </div>
   </section>
 
@@ -374,16 +382,16 @@
 
     color: transparent;
     transition: background-image 0.05s linear;
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   .interactive-blob-text::before {
     content: "";
     position: absolute;
-    top: -400px;       
-    bottom: -400px;   
-    left: -400px; 
-    right: -400px;
+    top: -200px;       
+    bottom: -200px;   
+    left: -200px; 
+    right: -200px;
     pointer-events: auto; 
   }
 
