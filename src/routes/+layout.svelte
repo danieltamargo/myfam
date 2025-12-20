@@ -1,12 +1,12 @@
 <script lang="ts">
-	import './layout.css';
-	import favicon from '$lib/assets/favicon.svg';
-	import ThemeToggle from '$lib/components/util/ThemeToggler.svelte';
-	import ToastManager from '$lib/components/util/ToastManager.svelte';
+  import './layout.css';
+  import favicon from '$lib/assets/favicon.svg';
+  import ThemeToggle from '$lib/components/util/ThemeToggler.svelte';
+  import ToastManager from '$lib/components/util/ToastManager.svelte';
   import { invalidate } from '$app/navigation';
   import { onMount } from 'svelte';
   import { createClient } from '$lib/supabase';
-	
+  
   interface Props {
     data: {
       session: any;
@@ -20,10 +20,10 @@
   const supabase = createClient();
 
   onMount(() => {
-    // Listen for auth changes
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (session?.expires_at !== data.session?.expires_at) {
+      async (event, _session) => {
+        // Only invalidate on actual auth events, don't use session data
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
           invalidate('supabase:auth');
         }
       }
@@ -36,7 +36,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+  <link rel="icon" href={favicon} />
 </svelte:head>
 
 {@render children()}

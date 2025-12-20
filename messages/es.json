@@ -8,8 +8,8 @@
 			"text": "Todo lo que tu familia necesita en un solo lugar.",
 			"qualities": {
 				"0": "Conecta a todos no importa dónde estén.",
-				"1": "Fácil de Usar.",
-				"2": "Modular, usa solo lo que necesites.",
+				"1": "Fácil de usar.",
+				"2": "Modular, solo lo que necesites.",
 				"3": "Seguro y Privado."
 			}
 		},
@@ -25,7 +25,7 @@
 				"description": "Activa solo lo que necesites"
 			},
 			"easy": {
-				"title": "Fácil de Usar",
+				"title": "Fácil de usar",
 				"description": "Interfaz intuitiva para todas las edades"
 			},
 			"synced": {

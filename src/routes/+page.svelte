@@ -257,16 +257,19 @@
         <div class="hidden lg:flex relative h-[700px] items-center justify-end overflow-hidden">
           <div class="relative w-[800px] h-[800px] translate-x-1/2">
             {#each services as service, i}
-              {@const angle = (i * 60) + (rotation * 2.5)}
+              {@const angle = (i * (360 / services.length)) + (rotation * 2.5)}
               {@const radius = 280}
               {@const x = Math.cos((angle * Math.PI) / 180) * radius}
               {@const y = Math.sin((angle * Math.PI) / 180) * radius}
               <div class="absolute top-1/2 left-1/2 transition-all duration-500 ease-out"
                 style="transform: translate(calc(-50% + {x}px), calc(-50% + {y}px));">
-                <div class="card bg-base-100 shadow-xl w-48 hover:scale-110 transition-transform cursor-pointer">
+                <div class="card bg-base-100 shadow-xl w-48 hover:scale-110 transition-transform cursor-pointer group">
                   <div class="card-body items-center text-center p-6">
                     <div class="text-5xl mb-3">{service.icon}</div>
                     <h3 class="card-title text-base">{service.title}</h3>
+                    <p class="opacity-0 max-h-0 overflow-hidden transition-all duration-500 ease-out group-hover:opacity-100 group-hover:max-h-40 group-hover:mt-2">
+                      {service.description}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -281,7 +284,14 @@
         </div>
 
         <div class="lg:hidden overflow-hidden relative">
-          <div class="flex gap-4 animate-carousel-mobile">
+          <div 
+          class="flex gap-4 animate-carousel-mobile"
+          style="
+            --item-width: 16rem;       /* w-64 */
+            --item-gap: 1rem;          /* gap-4 = 1rem */
+            --section-items: 6;        /* elementos reales */
+            --shift: calc((var(--item-width) + var(--item-gap)) * var(--section-items));
+          ">
             {#each [...services, ...services, ...services] as service}
               <div class="shrink-0 w-64">
                 <div class="card bg-base-100 shadow-xl h-full">
@@ -294,8 +304,9 @@
               </div>
             {/each}
           </div>
-
-          <div class="absolute inset-y-0 left-0 w-32 bg-linear-to-r from-base-300 via-base-300/80 to-transparent pointer-events-none z-10"></div>
+          <!-- <div class="absolute inset-y-0 top-0 h-8 w-full bg-linear-to-b from-base-300 to-transparent pointer-events-none"></div>
+          <div class="absolute inset-y-0 top-full -translate-y-full h-8 w-full bg-linear-to-t from-base-300 to-transparent pointer-events-none"></div> -->
+          <div class="absolute inset-y-0 left-0 w-32 bg-linear-to-r from-base-300 to-transparent pointer-events-none"></div>
           <div class="absolute inset-y-0 right-0 w-32 bg-linear-to-l from-base-300 via-base-300/80 to-transparent pointer-events-none z-10"></div>
         </div>
 
@@ -397,7 +408,7 @@
 
   .blob { transition: transform 0.4s ease-out; }
   .animate-carousel-mobile {
-    animation: carousel-mobile 15s linear infinite;
+    animation: carousel-mobile 20s linear infinite;
   }
 
   .animate-carousel-mobile:hover {
@@ -406,6 +417,6 @@
 
   @keyframes carousel-mobile {
     0% { transform: translateX(0); }
-    100% { transform: translateX(calc(-33.333%)); }
+    100% { transform: translateX(calc(var(--shift) * -1)); }
   }
 </style>

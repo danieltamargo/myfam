@@ -211,3 +211,40 @@ export async function toggleModule(
 		return { data, error };
 	}
 }
+
+export async function canDeleteAccount(supabase: SupabaseClient<Database>, userId: string) {
+	// Get families where user is the only owner
+	const { data: memberships } = await supabase
+		.from('family_members')
+		.select('family_id, role')
+		.eq('user_id', userId)
+		.eq('role', 'owner');
+
+	if (!memberships || memberships.length === 0) {
+		return { canDelete: true };
+	}
+
+	// Check each family
+	const problematicFamilies = [];
+
+	for (const membership of memberships) {
+		const { data: owners } = await supabase
+			.from('family_members')
+			.select('id')
+			.eq('family_id', membership.family_id)
+			.eq('role', 'owner');
+
+		if (owners && owners.length === 1) {
+			problematicFamilies.push(membership.family_id);
+		}
+	}
+
+	if (problematicFamilies.length > 0) {
+		return {
+			canDelete: false,
+			reason: 'You are the only owner of one or more families. Transfer ownership first.'
+		};
+	}
+
+	return { canDelete: true };
+}

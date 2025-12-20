@@ -27,6 +27,9 @@ const handleSupabase: Handle = async ({ event, resolve }) => {
 						event.cookies.set(name, value, { ...options, path: '/' });
 					});
 				}
+			},
+			auth: {
+				flowType: 'pkce'
 			}
 		}
 	);
