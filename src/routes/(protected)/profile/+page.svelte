@@ -59,11 +59,6 @@
     }
   }
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    goto('/login');
-  }
-
   function handleDeleteAccount() {
     if (deleteConfirmText !== 'DELETE') {
       error = 'Please type DELETE to confirm';
@@ -286,12 +281,5 @@
         </div>
       {/if}
     </div>
-  </div>
-
-  <!-- Sign Out -->
-  <div class="mt-6">
-    <button type="button" onclick={signOut} class="btn btn-outline w-full">
-      Sign Out
-    </button>
   </div>
 </div>
