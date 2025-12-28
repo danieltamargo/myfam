@@ -228,6 +228,8 @@ export async function canDeleteAccount(supabase: SupabaseClient<Database>, userI
 	const problematicFamilies = [];
 
 	for (const membership of memberships) {
+		if (!membership.family_id) continue;
+
 		const { data: owners } = await supabase
 			.from('family_members')
 			.select('id')

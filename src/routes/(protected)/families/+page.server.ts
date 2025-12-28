@@ -37,21 +37,23 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
 	const countMap = (memberCounts || []).reduce(
 		(acc, member) => {
-			acc[member.family_id] = (acc[member.family_id] || 0) + 1;
+			if (member.family_id) {
+				acc[member.family_id] = (acc[member.family_id] || 0) + 1;
+			}
 			return acc;
 		},
 		{} as Record<string, number>
 	);
 
 	const families = familyMembers
-		.filter((fm) => fm.family)
+		.filter((fm) => fm.family && fm.family_id)
 		.map((fm) => {
 			const family = fm.family as any;
 			return {
 				id: family.id,
 				name: family.name,
 				role: fm.role,
-				memberCount: countMap[fm.family_id] || 0,
+				memberCount: countMap[fm.family_id!] || 0,
 				joinedAt: fm.joined_at,
 				createdAt: family.created_at,
 				isOwner: fm.role === 'owner'

@@ -366,7 +366,7 @@
 						type="button"
 						class="tooltip tooltip-bottom"
 						data-tip={member.profiles?.display_name || 'Usuario'}
-						onclick={() => (selectedMemberId = member.user_id)}
+						onclick={() => (selectedMemberId = member.user_id!)}
 					>
 						<div
 							class="avatar placeholder rounded-full {isSelected ? 'ring ring-primary ring-offset-2' : 'opacity-60 hover:opacity-100'} transition-all cursor-pointer"
@@ -452,8 +452,8 @@
 						<h2 class="card-title text-lg">
 							{item.name}
 							{#if item.priority !== 0}
-								<span class="badge {getPriorityColor(item.priority)} badge-sm">
-									{getPriorityLabel(item.priority)}
+								<span class="badge {getPriorityColor(item.priority!)} badge-sm">
+									{getPriorityLabel(item.priority!)}
 								</span>
 							{/if}
 						</h2>
@@ -567,8 +567,8 @@
 							<td>{item.profiles?.display_name || 'Usuario'}</td>
 							<td class="font-semibold text-primary">{formatPrice(item.price)}</td>
 							<td>
-								<span class="badge {getPriorityColor(item.priority)}">
-									{getPriorityLabel(item.priority)}
+								<span class="badge {getPriorityColor(item.priority!)}">
+									{getPriorityLabel(item.priority!)}
 								</span>
 							</td>
 							<td>

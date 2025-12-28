@@ -54,6 +54,8 @@ Permitir a familias o grupos organizarse mediante módulos personalizables:
 src/
 ├── lib/
 │   ├── components/
+│   │   ├── auth/
+│   │   │   └── TwoFactorSetup.svelte  # Gestión completa de 2FA ✅ NUEVO
 │   │   ├── layout/
 │   │   │   └── Header.svelte          # Navbar con selector de familia + menú avatar
 │   │   ├── magic/                     # Componentes visuales (Particles, WordRotate)
@@ -83,8 +85,14 @@ src/
 │   │       └── members/               # Módulo de miembros ✅
 │   │           ├── +page.server.ts    # Actions: inviteMember, updateRole, removeMember
 │   │           └── +page.svelte       # Lista miembros + invitaciones
-│   ├── login/                         # Página de login
-│   ├── auth/callback/                 # OAuth callback
+│   ├── login/                         # Página de login (email/password + OAuth)
+│   ├── register/                      # Página de registro
+│   ├── forgot-password/               # Solicitar reset de contraseña
+│   ├── reset-password/                # Cambiar contraseña con token
+│   ├── verify-2fa/                    # Verificación 2FA post-login ✅ NUEVO
+│   ├── auth/
+│   │   ├── callback/                  # OAuth y email confirmation callback
+│   │   └── error/                     # Página de error de autenticación
 │   └── +page.svelte                   # Landing page (redirige a /dashboard si autenticado)
 │
 ├── hooks.server.ts                    # Middleware: Paraglide + Supabase session
@@ -199,10 +207,26 @@ has_family_role(family_uuid UUID, user_uuid UUID, required_roles TEXT[]) RETURNS
 ## ✅ Estado Actual - Lo que está IMPLEMENTADO
 
 ### Autenticación ✅
-- Login con Google OAuth
-- Login con GitHub OAuth
-- Session management con Supabase
-- Protected routes con layout `(protected)/`
+- **Email/Password Auth:**
+  - Login con Email/Password ✅
+  - Registro con Email/Password ✅
+  - Confirmación de email (configurable) ✅
+  - Recuperación de contraseña ("Forgot password") ✅
+  - Reset de contraseña con link de email ✅
+- **OAuth Providers:**
+  - Login con Google OAuth ✅
+  - Login con GitHub OAuth ✅
+- **Two-Factor Authentication (2FA):** ✅ NUEVO
+  - TOTP (Time-based One-Time Password) ✅
+  - Enrollment con QR code ✅
+  - Verificación en login ✅
+  - UI para habilitar/deshabilitar en perfil ✅
+  - Compatible con Google Authenticator, Authy, etc. ✅
+- **Seguridad y UX:**
+  - Session management con Supabase ✅
+  - Protected routes con layout `(protected)/` ✅
+  - Página de error de autenticación ✅
+  - Email templates personalizables ✅
 
 ### Sistema de Familias ✅
 - Crear familias (usa `supabaseAdmin` para bypass RLS inicial)
@@ -357,6 +381,24 @@ SUPABASE_PROJECT_URL=https://wismzxvqrypwqwqpgnfi.supabase.co
 PUBLIC_SUPABASE_URL=https://wismzxvqrypwqwqpgnfi.supabase.co
 ```
 
+### Configuración de Supabase Auth ✅ NUEVO
+
+Para habilitar completamente la autenticación con email/password, debes configurar lo siguiente en el **Supabase Dashboard**:
+
+1. **Authentication > Providers > Email**:
+   - ✅ Enable Email provider (debe estar habilitado)
+   - Desarrollo: Desactiva "Confirm email" para pruebas rápidas
+   - Producción: Activa "Confirm email" por seguridad
+
+2. **Authentication > URL Configuration**:
+   - Site URL: `http://localhost:5173` (desarrollo) / tu dominio (producción)
+   - Redirect URLs: Añade `http://localhost:5173/auth/callback`
+
+3. **Authentication > Email Templates** (opcional):
+   - Personaliza los emails de confirmación y recuperación de contraseña
+
+**Nota**: El trigger `handle_new_user()` ya está configurado en la migración 001 y creará automáticamente el perfil cuando un usuario se registre.
+
 ### Scripts NPM
 ```bash
 npm run dev          # Desarrollo
@@ -412,11 +454,13 @@ USING (EXISTS (SELECT 1 FROM family_members WHERE ...))
 
 ### Database Migrations
 - **`001-complete-schema.sql`**: Esquema inicial completo (perfiles, familias, miembros, módulos, etc.)
+  - Incluye trigger `handle_new_user()` que crea perfil automáticamente al registrarse
 - **`002-wishlist-module.sql`**: Módulo de wishlist completo con RLS y anti-spoiler
 - **`003-wishlist-improvements.sql`**: Mejoras al wishlist (múltiples links, sin quantity)
 - **`004-remove-aniversario.sql`**: Elimina evento "Aniversario"
 - **`005-enable-realtime.sql`**: Habilita Supabase Realtime para wishlist ✅
 - **`006-gift-reservations.sql`**: Sistema de reservas "Yo lo miro" con RLS y Realtime ✅
+- **`007-enable-email-auth.sql`**: Documentación para email/password auth ✅ NUEVO
 - Para aplicar: Ejecutar en SQL Editor de Supabase Dashboard en orden secuencial
 
 ### TypeScript
@@ -435,14 +479,18 @@ USING (EXISTS (SELECT 1 FROM family_members WHERE ...))
 
 Si empiezas una nueva sesión, lee esto primero:
 
-1. **El proyecto funciona** ✅ - Autenticación, familias y miembros están implementados
+1. **El proyecto funciona** ✅ - Autenticación completa (email/password + OAuth), familias, miembros y wishlist
 2. **Seguridad validada** ✅ - No hay privilege escalation ni broken access control
 3. **RLS configurado** ✅ - Todas las tablas con políticas usando funciones helper
-4. **Próximo paso sugerido**: Implementar módulo de Eventos o Gastos
-5. **Stack**: SvelteKit 2 + Svelte 5 (runes) + Supabase + TailwindCSS + DaisyUI
+4. **Tipos de TypeScript actualizados** ✅ - Ejecutar `npx supabase gen types typescript --project-id wismzxvqrypwqwqpgnfi > src/lib/types/database.ts` cuando cambies el esquema
+5. **Próximo paso sugerido**: Implementar módulo de Eventos o Gastos
+6. **Stack**: SvelteKit 2 + Svelte 5 (runes) + Supabase + TailwindCSS + DaisyUI
 
 ### Comandos útiles
 ```bash
+# Regenerar tipos de TypeScript
+npx supabase gen types typescript --project-id wismzxvqrypwqwqpgnfi > src/lib/types/database.ts
+
 # Ver logs del servidor de desarrollo (si está corriendo)
 # Buscar en consola "Creating family for user:" para debug
 

@@ -1,0 +1,275 @@
+
+> myfamily@0.0.1 check
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: c:\Users\tamsk\Desktop\personal\myfamily
+Getting Svelte diagnostics...
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\lib\components\layout\Header.svelte[39m:67:9
+[33mWarn[39m: noninteractive element cannot have nonnegative tabIndex value
+https://svelte.dev/e/a11y_no_noninteractive_tabindex (svelte)
+[36m        </div>
+        [35m<ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-64 mt-2 z-[1]">
+          <li class="menu-title">
+            <span>Switch Family</span>
+          </li>
+          {#each families as family}
+            <li>
+              <button
+                onclick={() => selectFamily(family.id)}
+                class="flex justify-between {family.id === $activeFamily?.id ? 'active' : ''}"
+              >
+                <span>{family.name}</span>
+                <span class="badge badge-sm">{family.role}</span>
+              </button>
+            </li>
+          {/each}
+          <div class="divider my-1"></div>
+          <li>
+            <a href="/families" class="text-primary gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+              Manage Families
+            </a>
+          </li>
+        </ul>[36m
+      </div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\lib\components\magic\Particles.svelte[39m:9:14
+[33mWarn[39m: Component has unused export property 'refresh'. If it is for external reference only, please consider using `export const refresh`
+https://svelte.dev/e/export_let_unused (svelte)
+[36m  export let size: number = 0.4;
+  export let [35mrefresh: boolean[36m = true;
+  export let color: string = "#ffffff";[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\families\+page.svelte[39m:106:9
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m      {#each data.families as family}
+        [35m<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all cursor-pointer" onclick={() => openFamily(family)}>
+          <div class="card-body">
+            <div class="flex justify-between items-start mb-2">
+              <h2 class="card-title text-2xl">{family.name}</h2>
+              {#if family.isOwner}
+                <div class="badge badge-primary">Owner</div>
+              {:else}
+                <div class="badge badge-secondary">{family.role}</div>
+              {/if}
+            </div>
+
+            <div class="flex flex-col gap-2 mt-4">
+              <div class="flex items-center gap-2 text-sm">
+                <span class="text-lg">👥</span>
+                <span>{family.memberCount} {family.memberCount === 1 ? 'member' : 'members'}</span>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-base-content/70">
+                <span class="text-lg">📅</span>
+                <span>Joined {new Date(family.joinedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+              <button class="btn btn-primary btn-sm gap-2">
+                Open Family
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>[36m
+      {/each}[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\families\+page.svelte[39m:106:9
+[33mWarn[39m: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m      {#each data.families as family}
+        [35m<div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-all cursor-pointer" onclick={() => openFamily(family)}>
+          <div class="card-body">
+            <div class="flex justify-between items-start mb-2">
+              <h2 class="card-title text-2xl">{family.name}</h2>
+              {#if family.isOwner}
+                <div class="badge badge-primary">Owner</div>
+              {:else}
+                <div class="badge badge-secondary">{family.role}</div>
+              {/if}
+            </div>
+
+            <div class="flex flex-col gap-2 mt-4">
+              <div class="flex items-center gap-2 text-sm">
+                <span class="text-lg">👥</span>
+                <span>{family.memberCount} {family.memberCount === 1 ? 'member' : 'members'}</span>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-base-content/70">
+                <span class="text-lg">📅</span>
+                <span>Joined {new Date(family.joinedAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+              <button class="btn btn-primary btn-sm gap-2">
+                Open Family
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>[36m
+      {/each}[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\families\+page.svelte[39m:186:5
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m    </div>
+    [35m<div class="modal-backdrop" onclick={resetForm}></div>[36m
+  </div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\families\+page.svelte[39m:186:5
+[33mWarn[39m: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m    </div>
+    [35m<div class="modal-backdrop" onclick={resetForm}></div>[36m
+  </div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\+layout.svelte[39m:20:68
+[33mWarn[39m: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m  const modules = [
+    { id: 'members', name: 'Members', icon: '👥', href: `/family/${[35mdata[36m.family.id}/members`, required: true },
+    { id: 'wishlist', name: 'Wishlist', icon: '🎁', href: `/family/${data.family.id}/wishlist` },[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\+layout.svelte[39m:21:70
+[33mWarn[39m: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m    { id: 'members', name: 'Members', icon: '👥', href: `/family/${data.family.id}/members`, required: true },
+    { id: 'wishlist', name: 'Wishlist', icon: '🎁', href: `/family/${[35mdata[36m.family.id}/wishlist` },
+    { id: 'events', name: 'Events', icon: '📅', href: `/family/${data.family.id}/events`, disabled: true },[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\+layout.svelte[39m:22:66
+[33mWarn[39m: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m    { id: 'wishlist', name: 'Wishlist', icon: '🎁', href: `/family/${data.family.id}/wishlist` },
+    { id: 'events', name: 'Events', icon: '📅', href: `/family/${[35mdata[36m.family.id}/events`, disabled: true },
+    { id: 'expenses', name: 'Expenses', icon: '💰', href: `/family/${data.family.id}/expenses`, disabled: true }[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\+layout.svelte[39m:23:70
+[33mWarn[39m: This reference only captures the initial value of `data`. Did you mean to reference it inside a closure instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m    { id: 'events', name: 'Events', icon: '📅', href: `/family/${data.family.id}/events`, disabled: true },
+    { id: 'expenses', name: 'Expenses', icon: '💰', href: `/family/${[35mdata[36m.family.id}/expenses`, disabled: true }
+  ];[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\members\+page.svelte[39m:245:5
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m    </div>
+    [35m<div class="modal-backdrop" onclick={resetInviteForm}></div>[36m
+  </div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\members\+page.svelte[39m:245:5
+[33mWarn[39m: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m    </div>
+    [35m<div class="modal-backdrop" onclick={resetInviteForm}></div>[36m
+  </div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:773:3
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m		</div>
+		[35m<div class="modal-backdrop" onclick={closeModals}></div>[36m
+	</div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:773:3
+[33mWarn[39m: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m		</div>
+		[35m<div class="modal-backdrop" onclick={closeModals}></div>[36m
+	</div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:877:7
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m					<div class="bg-base-200 rounded-lg p-4">
+						[35m<label class="block text-sm font-medium mb-3">Eventos</label>[36m
+						<div class="flex flex-wrap gap-2">[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:925:10
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m								<div class="flex items-center justify-between">
+									[35m<label class="block text-sm font-medium">Imágenes</label>[36m
+									<button[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:995:10
+[33mWarn[39m: A form label must be associated with a control
+https://svelte.dev/e/a11y_label_has_associated_control (svelte)
+[36m								<div class="flex items-center justify-between">
+									[35m<label class="block text-sm font-medium">Enlaces</label>[36m
+									<button[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:1049:8
+[33mWarn[39m: `<form>` cannot be a descendant of `<form>`. When rendering this component on the server, the resulting HTML will be modified by the browser (by moving, removing, or inserting elements), likely resulting in a `hydration_mismatch` warning
+https://svelte.dev/e/node_invalid_placement_ssr (svelte)
+[36m						{#if selectedItem}
+							[35m<form
+								method="POST"
+								action="?/deleteItem"
+								use:enhance={() => {
+									isSubmitting = true;
+									return async ({ result }) => {
+										isSubmitting = false;
+										if (result.type === 'success') {
+											closeModals();
+											await invalidateAll();
+										}
+									};
+								}}
+							>
+								<input type="hidden" name="item_id" value={selectedItem.id} />
+								<button type="submit" class="btn btn-error btn-outline gap-2" disabled={isSubmitting}>
+									<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<polyline points="3 6 5 6 21 6"></polyline>
+										<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+										<line x1="10" y1="11" x2="10" y2="17"></line>
+										<line x1="14" y1="11" x2="14" y2="17"></line>
+									</svg>
+									Eliminar
+								</button>
+							</form>[36m
+						{/if}[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:1094:3
+[33mWarn[39m: Visible, non-interactive elements with a click event must be accompanied by a keyboard event handler. Consider whether an interactive element such as `<button type="button">` or `<a>` might be more appropriate
+https://svelte.dev/e/a11y_click_events_have_key_events (svelte)
+[36m		</div>
+		[35m<div class="modal-backdrop" onclick={closeModals}></div>[36m
+	</div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\family\[familyId]\wishlist\+page.svelte[39m:1094:3
+[33mWarn[39m: `<div>` with a click handler must have an ARIA role
+https://svelte.dev/e/a11y_no_static_element_interactions (svelte)
+[36m		</div>
+		[35m<div class="modal-backdrop" onclick={closeModals}></div>[36m
+	</div>[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\profile\+page.svelte[39m:24:28
+[33mWarn[39m: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m  
+  let displayName = $state([35mdata[36m.profile?.display_name || '');
+  let avatarUrl = $state(data.profile?.avatar_url || '');[39m
+
+c:\Users\tamsk\Desktop\personal\myfamily\[32msrc\routes\(protected)\profile\+page.svelte[39m:25:26
+[33mWarn[39m: This reference only captures the initial value of `data`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m  let displayName = $state(data.profile?.display_name || '');
+  let avatarUrl = $state([35mdata[36m.profile?.avatar_url || '');
+  let linking = $state(false);[39m
+
+====================================
+[33msvelte-check found 0 errors and 22 warnings in 7 files
+[39m

@@ -9,6 +9,56 @@
   let success = $state('');
   let email = $state('');
   let password = $state('');
+  let confirmPassword = $state('');
+  let displayName = $state('');
+
+  async function signUp(e: Event) {
+    e.preventDefault();
+    loading = true;
+    error = '';
+    success = '';
+
+    // Validar contraseñas
+    if (password !== confirmPassword) {
+      error = 'Passwords do not match';
+      loading = false;
+      return;
+    }
+
+    if (password.length < 6) {
+      error = 'Password must be at least 6 characters';
+      loading = false;
+      return;
+    }
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          display_name: displayName || email.split('@')[0]
+        },
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+
+    loading = false;
+
+    if (signUpError) {
+      error = signUpError.message;
+      return;
+    }
+
+    if (data?.user) {
+      // Si la confirmación de email está deshabilitada, redirige directamente
+      if (data.session) {
+        goto('/dashboard');
+      } else {
+        // Si necesita confirmación de email
+        success = 'Check your email to confirm your account!';
+      }
+    }
+  }
 
   async function signInWithProvider(provider: 'google' | 'github') {
     loading = true;
@@ -27,46 +77,13 @@
       loading = false;
     }
   }
-
-  async function signInWithEmail(e: Event) {
-    e.preventDefault();
-    loading = true;
-    error = '';
-    success = '';
-
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    loading = false;
-
-    if (signInError) {
-      error = signInError.message;
-      return;
-    }
-
-    if (data?.user) {
-      // Verificar si el usuario tiene 2FA habilitado
-      const { data: factors } = await supabase.auth.mfa.listFactors();
-      const hasMFA = factors?.totp?.some(f => f.status === 'verified');
-
-      if (hasMFA) {
-        // Redirigir a verificación 2FA
-        goto('/verify-2fa');
-      } else {
-        // Continuar al dashboard
-        goto('/dashboard');
-      }
-    }
-  }
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-base-200">
   <div class="card w-96 bg-base-100 shadow-xl">
     <div class="card-body">
-      <h2 class="card-title text-2xl font-bold">Welcome to MyFamily</h2>
-      <p class="text-sm text-base-content/70">Sign in to manage your family</p>
+      <h2 class="card-title text-2xl font-bold">Create Account</h2>
+      <p class="text-sm text-base-content/70">Join MyFamily to get started</p>
 
       {#if error}
         <div class="alert alert-error mt-4">
@@ -80,7 +97,21 @@
         </div>
       {/if}
 
-      <form onsubmit={signInWithEmail} class="flex flex-col gap-4 mt-4">
+      <form onsubmit={signUp} class="flex flex-col gap-4 mt-4">
+        <div class="form-control">
+          <label class="label" for="displayName">
+            <span class="label-text">Display Name</span>
+          </label>
+          <input
+            type="text"
+            id="displayName"
+            bind:value={displayName}
+            placeholder="Your name"
+            class="input input-bordered"
+            disabled={loading}
+          />
+        </div>
+
         <div class="form-control">
           <label class="label" for="email">
             <span class="label-text">Email</span>
@@ -110,23 +141,36 @@
             disabled={loading}
           />
           <label class="label">
-            <a href="/forgot-password" class="label-text-alt link link-hover link-primary">
-              Forgot password?
-            </a>
+            <span class="label-text-alt">At least 6 characters</span>
           </label>
+        </div>
+
+        <div class="form-control">
+          <label class="label" for="confirmPassword">
+            <span class="label-text">Confirm Password</span>
+          </label>
+          <input
+            type="password"
+            id="confirmPassword"
+            bind:value={confirmPassword}
+            placeholder="••••••••"
+            class="input input-bordered"
+            required
+            disabled={loading}
+          />
         </div>
 
         <button type="submit" class="btn btn-primary" disabled={loading}>
           {#if loading}
             <span class="loading loading-spinner"></span>
           {/if}
-          Sign In
+          Sign Up
         </button>
       </form>
 
       <div class="text-center text-sm mt-2">
-        <span class="text-base-content/70">Don't have an account?</span>
-        <a href="/register" class="link link-primary ml-1">Sign up</a>
+        <span class="text-base-content/70">Already have an account?</span>
+        <a href="/login" class="link link-primary ml-1">Sign in</a>
       </div>
 
       <div class="divider">Or continue with</div>

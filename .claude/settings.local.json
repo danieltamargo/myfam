@@ -3,7 +3,12 @@
     "allow": [
       "Bash(timeout 5 tail:*)",
       "Bash(npm run check:*)",
-      "Bash(npx supabase gen types:*)"
+      "Bash(npx supabase gen types:*)",
+      "Bash(Select-String -Pattern \"Error\" -Context 2,2)",
+      "Bash(tee:*)",
+      "Bash(ls -la \"C:\\Users\\tamsk\\Desktop\\personal\\myfamily\\src\\routes\\(protected)\\profile\"\" | grep \"page.svelte \")",
+      "Bash(ls:*)",
+      "Bash(head:*)"
     ]
   }
 }
