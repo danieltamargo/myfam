@@ -26,35 +26,35 @@
         </h2>
         <p class="text-base-content/70">Manage your family groups and members</p>
         <div class="card-actions justify-end mt-4">
-          <button class="btn btn-primary btn-sm">View Families</button>
+          <a href="/families" class="btn btn-primary btn-sm">View Families</a>
         </div>
       </div>
     </div>
 
-    <!-- Events Card -->
+    <!-- Wishlist Card -->
     <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
       <div class="card-body">
         <h2 class="card-title">
-          <span class="text-3xl">📅</span>
-          Events
+          <span class="text-3xl">🎁</span>
+          Wishlist
         </h2>
-        <p class="text-base-content/70">Upcoming family events and gatherings</p>
+        <p class="text-base-content/70">Gift registry and shopping lists</p>
         <div class="card-actions justify-end mt-4">
-          <button class="btn btn-primary btn-sm">View Events</button>
+          <a href="/families" class="btn btn-primary btn-sm">Go to Families</a>
         </div>
       </div>
     </div>
 
-    <!-- Photos Card -->
+    <!-- Profile Card -->
     <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
       <div class="card-body">
         <h2 class="card-title">
-          <span class="text-3xl">📸</span>
-          Photos
+          <span class="text-3xl">⚙️</span>
+          Profile
         </h2>
-        <p class="text-base-content/70">Shared family photos and memories</p>
+        <p class="text-base-content/70">Manage your account settings</p>
         <div class="card-actions justify-end mt-4">
-          <button class="btn btn-primary btn-sm">View Photos</button>
+          <a href="/profile" class="btn btn-primary btn-sm">View Profile</a>
         </div>
       </div>
     </div>

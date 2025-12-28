@@ -40,7 +40,10 @@
       <p class="text-base-content/70 mt-2">Manage your family groups</p>
     </div>
     <button onclick={() => showCreateModal = true} class="btn btn-primary gap-2">
-      <span class="text-xl">➕</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <line x1="5" y1="12" x2="19" y2="12"></line>
+      </svg>
       Create Family
     </button>
   </div>
@@ -57,7 +60,30 @@
     </div>
   {/if}
 
-  {#if data.families.length === 0}
+  <!-- Loading skeletons while data loads -->
+  {#if !data.families}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {#each Array(3) as _}
+        <div class="card bg-base-100 shadow-xl">
+          <div class="card-body">
+            <div class="flex justify-between items-start mb-2">
+              <div class="skeleton h-8 w-32"></div>
+              <div class="skeleton h-6 w-16"></div>
+            </div>
+
+            <div class="flex flex-col gap-2 mt-4">
+              <div class="skeleton h-5 w-24"></div>
+              <div class="skeleton h-5 w-32"></div>
+            </div>
+
+            <div class="card-actions justify-end mt-4">
+              <div class="skeleton h-8 w-28"></div>
+            </div>
+          </div>
+        </div>
+      {/each}
+    </div>
+  {:else if data.families.length === 0}
     <div class="card bg-base-100 shadow-xl">
       <div class="card-body items-center text-center py-16">
         <div class="text-6xl mb-4">👨‍👩‍👧‍👦</div>
@@ -66,7 +92,10 @@
           Create your first family to start organizing events, expenses, and more!
         </p>
         <button onclick={() => showCreateModal = true} class="btn btn-primary gap-2">
-          <span class="text-xl">➕</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
           Create Your First Family
         </button>
       </div>

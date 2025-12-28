@@ -101,6 +101,33 @@ export const actions: Actions = {
 			return fail(500, { message: 'Failed to add you as owner' });
 		}
 
+		// Create default event categories for the family
+		const defaultEvents = [
+			{ name: 'Navidad', icon: '🎄', color: '#dc2626' },
+			{ name: 'Cumpleaños', icon: '🎂', color: '#f59e0b' },
+			{ name: 'Reyes', icon: '👑', color: '#8b5cf6' },
+			{ name: 'San Valentín', icon: '❤️', color: '#ec4899' },
+			{ name: 'Todos', icon: '🎁', color: '#10b981' }
+		];
+
+		const eventInserts = defaultEvents.map(event => ({
+			family_id: family.id,
+			name: event.name,
+			icon: event.icon,
+			color: event.color,
+			is_system: true,
+			created_by: user.id
+		}));
+
+		const { error: eventsError } = await supabaseAdmin
+			.from('gift_event_categories')
+			.insert(eventInserts);
+
+		if (eventsError) {
+			console.error('Warning: Failed to create default event categories:', eventsError);
+			// Not critical - continue
+		}
+
 		return { success: true, familyId: family.id };
 	}
 };

@@ -18,6 +18,7 @@
 
   const modules = [
     { id: 'members', name: 'Members', icon: '👥', href: `/family/${data.family.id}/members`, required: true },
+    { id: 'wishlist', name: 'Wishlist', icon: '🎁', href: `/family/${data.family.id}/wishlist` },
     { id: 'events', name: 'Events', icon: '📅', href: `/family/${data.family.id}/events`, disabled: true },
     { id: 'expenses', name: 'Expenses', icon: '💰', href: `/family/${data.family.id}/expenses`, disabled: true }
   ];

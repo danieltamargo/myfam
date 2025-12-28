@@ -56,15 +56,15 @@
 
   <div class="navbar-center">
     {#if $activeFamily}
-      <div class="dropdown dropdown-hover">
-        <div tabindex="-1" role="button" class="btn btn-ghost gap-2">
+      <div class="dropdown">
+        <div tabindex="0" role="button" class="btn btn-ghost gap-2">
           <span class="text-lg">👨‍👩‍👧‍👦</span>
           <span class="font-semibold">{$activeFamily.name}</span>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
           </svg>
         </div>
-        <ul tabindex="-1" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-64 mt-2 z-[1]">
+        <ul tabindex="0" class="dropdown-content menu p-2 shadow bg-base-200 rounded-box w-64 mt-2 z-[1]">
           <li class="menu-title">
             <span>Switch Family</span>
           </li>
@@ -81,8 +81,11 @@
           {/each}
           <div class="divider my-1"></div>
           <li>
-            <a href="/families" class="text-primary">
-              <span>➕</span>
+            <a href="/families" class="text-primary gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
               Manage Families
             </a>
           </li>

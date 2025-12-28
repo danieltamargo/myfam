@@ -153,34 +153,31 @@ export type Database = {
       }
       family_invitations: {
         Row: {
-          accepted_at: string | null
           created_at: string | null
-          email: string
-          expires_at: string
           family_id: string | null
           id: string
           invited_by: string | null
-          token: string
+          invited_user_id: string | null
+          status: string
+          updated_at: string | null
         }
         Insert: {
-          accepted_at?: string | null
           created_at?: string | null
-          email: string
-          expires_at?: string
           family_id?: string | null
           id?: string
           invited_by?: string | null
-          token?: string
+          invited_user_id?: string | null
+          status?: string
+          updated_at?: string | null
         }
         Update: {
-          accepted_at?: string | null
           created_at?: string | null
-          email?: string
-          expires_at?: string
           family_id?: string | null
           id?: string
           invited_by?: string | null
-          token?: string
+          invited_user_id?: string | null
+          status?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -193,6 +190,13 @@ export type Database = {
           {
             foreignKeyName: "family_invitations_invited_by_fkey"
             columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -339,6 +343,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string | null
           display_name: string | null
+          email: string | null
           id: string
           updated_at: string | null
         }
@@ -346,6 +351,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
+          email?: string | null
           id: string
           updated_at?: string | null
         }
@@ -353,6 +359,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string | null
           display_name?: string | null
+          email?: string | null
           id?: string
           updated_at?: string | null
         }
@@ -363,7 +370,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_family_role: {
+        Args: {
+          family_uuid: string
+          required_roles: string[]
+          user_uuid: string
+        }
+        Returns: boolean
+      }
+      is_family_member: {
+        Args: { family_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
