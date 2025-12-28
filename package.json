@@ -13,7 +13,9 @@
     "format": "prettier --write .",
     "lint": "prettier --check . && eslint .",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "db:reset": "npx supabase db reset",
+    "db:push": "npx supabase db push"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^4.1.3",

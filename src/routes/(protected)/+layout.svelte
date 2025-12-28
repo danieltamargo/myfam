@@ -5,6 +5,11 @@
     data: {
       user: any;
       session: any;
+      families: Array<{
+        id: string;
+        name: string;
+        role: string;
+      }>;
     };
     children: any;
   }
@@ -13,7 +18,7 @@
 </script>
 
 <div class="min-h-screen flex flex-col">
-  <Header user={data.user} />
+  <Header user={data.user} families={data.families} />
 
   <main class="flex-1">
     {@render children()}
