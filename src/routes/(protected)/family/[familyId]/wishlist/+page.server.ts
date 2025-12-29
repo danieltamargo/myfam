@@ -111,6 +111,18 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		console.error('Error loading all reservations:', allReservationsError);
 	}
 
+	// Load ALL purchases for items NOT owned by current user (anti-spoiler protection)
+	const itemsNotOwnedByUser = items?.filter(i => i.owner_id !== user.id).map(i => i.id) || [];
+
+	const { data: allPurchases, error: allPurchasesError } = await supabase
+		.from('gift_purchases')
+		.select('item_id, purchased_by, quantity_purchased')
+		.in('item_id', itemsNotOwnedByUser);
+
+	if (allPurchasesError) {
+		console.error('Error loading all purchases:', allPurchasesError);
+	}
+
 	// Load comments for all items
 	const { data: comments, error: commentsError } = await supabase
 		.from('gift_item_comments')
@@ -136,6 +148,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		myPurchases: myPurchases || [],
 		myReservations: myReservations || [],
 		allReservations: allReservations || [],
+		allPurchases: allPurchases || [],
 		comments: comments || [],
 		currentUserId: user.id
 	};

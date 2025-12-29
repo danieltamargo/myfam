@@ -10,20 +10,22 @@
 	type EventCategory = {
 		id: string;
 		name: string;
-		icon: string;
-		color: string;
+		icon: string | null;
+		color: string | null;
 	};
 
 	let {
 		members,
 		eventCategories,
 		selectedMemberId = $bindable(),
-		selectedEventId = $bindable()
+		selectedEventId = $bindable(),
+		selectedPurchaseStatus = $bindable()
 	}: {
 		members: Member[];
 		eventCategories: EventCategory[];
 		selectedMemberId: string | 'all';
 		selectedEventId: string | 'all';
+		selectedPurchaseStatus: 'all' | 'purchased' | 'not_purchased';
 	} = $props();
 </script>
 
@@ -102,6 +104,51 @@
 						<span>{event.name}</span>
 					</button>
 				{/each}
+			</div>
+		</div>
+
+		<!-- Purchase Status Filter -->
+		<div>
+			<div class="text-xs font-medium text-base-content/60 mb-2">Estado</div>
+			<div class="flex flex-col gap-2">
+				<button
+					type="button"
+					class="btn btn-sm {selectedPurchaseStatus === 'purchased'
+						? 'btn-success'
+						: 'btn-ghost'} w-full justify-start"
+					onclick={() => {
+						if (selectedPurchaseStatus === 'purchased') {
+							selectedPurchaseStatus = 'all';
+						} else {
+							selectedPurchaseStatus = 'purchased';
+						}
+					}}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<polyline points="20 6 9 17 4 12"></polyline>
+					</svg>
+					<span>Comprados</span>
+				</button>
+				<button
+					type="button"
+					class="btn btn-sm {selectedPurchaseStatus === 'not_purchased'
+						? 'btn-outline btn-info'
+						: 'btn-ghost'} w-full justify-start"
+					onclick={() => {
+						if (selectedPurchaseStatus === 'not_purchased') {
+							selectedPurchaseStatus = 'all';
+						} else {
+							selectedPurchaseStatus = 'not_purchased';
+						}
+					}}
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="9" cy="21" r="1"></circle>
+						<circle cx="20" cy="21" r="1"></circle>
+						<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+					</svg>
+					<span>Por comprar</span>
+				</button>
 			</div>
 		</div>
 	</div>

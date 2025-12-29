@@ -19,6 +19,7 @@
 	let viewMode = $state<'cards' | 'table'>('cards');
 	let selectedMemberId = $state<string | 'all'>('all');
 	let selectedEventId = $state<string | 'all'>('all');
+	let selectedPurchaseStatus = $state<'all' | 'purchased' | 'not_purchased'>('all');
 	let showDetailModal = $state(false);
 	let showEditModal = $state(false);
 	let selectedItem = $state<any>(null);
@@ -40,6 +41,11 @@
 	let showImagesSection = $state(false);
 	let isSubmitting = $state(false);
 
+	// Check if item has any purchases
+	function isPurchased(itemId: string): boolean {
+		return data.allPurchases?.some((p) => p.item_id === itemId) || false;
+	}
+
 	// Computed: filtered items
 	let filteredItems = $derived(() => {
 		let items = data.items;
@@ -54,6 +60,14 @@
 			items = items.filter((item) =>
 				item.gift_item_events?.some((e: any) => e.event_category_id === selectedEventId)
 			);
+		}
+
+		// Filter by purchase status
+		if (selectedPurchaseStatus !== 'all') {
+			items = items.filter((item) => {
+				const purchased = isPurchased(item.id);
+				return selectedPurchaseStatus === 'purchased' ? purchased : !purchased;
+			});
 		}
 
 		return items;
@@ -337,6 +351,7 @@
 			eventCategories={data.eventCategories}
 			bind:selectedMemberId
 			bind:selectedEventId
+			bind:selectedPurchaseStatus
 		/>
 
 		<!-- Content Area -->
@@ -346,6 +361,7 @@
 					items={filteredItems()}
 					currentUserId={data.currentUserId}
 					{isMyItem}
+					{isPurchased}
 					{isPurchasedByMe}
 					{getReservations}
 					{getPriorityLabel}
@@ -359,6 +375,7 @@
 					items={filteredItems()}
 					currentUserId={data.currentUserId}
 					{isMyItem}
+					{isPurchased}
 					{isPurchasedByMe}
 					{getPriorityLabel}
 					{getPriorityColor}

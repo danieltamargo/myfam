@@ -3,7 +3,7 @@
 	import { invalidateAll } from '$app/navigation';
 
 	type EventCategory = any;
-	type FormData = {
+	type WishlistFormData = {
 		name: string;
 		description: string;
 		price: string;
@@ -33,7 +33,7 @@
 		item: any | null;
 		eventCategories: EventCategory[];
 		todosEventId: string;
-		formData: FormData;
+		formData: WishlistFormData;
 		showLinksSection: boolean;
 		showImagesSection: boolean;
 		isSubmitting: boolean;

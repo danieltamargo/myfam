@@ -65,6 +65,9 @@ src/
 │   │   ├── layout/
 │   │   │   ├── Header.svelte                # Navbar + Notificaciones ✅
 │   │   │   └── NotificationBell.svelte      # Campana de notificaciones ✅
+│   │   ├── modals/
+│   │   │   ├── ConfirmationModal.svelte     # Modal reutilizable con 2FA ✅
+│   │   │   └── ConfirmationModal.README.md  # Documentación del modal ✅
 │   │   ├── wishlist/
 │   │   │   └── GiftComments.svelte          # Comentarios con @menciones ✅
 │   │   ├── ui/
@@ -85,9 +88,19 @@ src/
 │   │   ├── profile/                         # Perfil + 2FA ✅
 │   │   └── family/[familyId]/
 │   │       ├── members/                     # Gestión miembros ✅
+│   │       │   ├── +page.server.ts          # CRUD + transferencia ownership ✅
+│   │       │   └── +page.svelte             # UI + modales críticos ✅
 │   │       └── wishlist/                    # Wishlist completa ✅
 │   │           ├── +page.server.ts          # Actions + comentarios ✅
-│   │           └── +page.svelte             # UI + modal autoopen ✅
+│   │           ├── +page.svelte             # UI refactorizada ✅
+│   │           └── components/              # Componentes modulares ✅
+│   │               ├── WishlistHeader.svelte
+│   │               ├── WishlistFilters.svelte
+│   │               ├── WishlistCards.svelte
+│   │               ├── WishlistTable.svelte
+│   │               ├── WishlistItemModal.svelte
+│   │               └── WishlistEditModal.svelte
+│   ├── +error.svelte                        # Página de error personalizada ✅
 │   ├── login/                               # Login (email + OAuth + 2FA)
 │   ├── register/                            # Registro
 │   ├── forgot-password/                     # Recuperar contraseña ✅
@@ -261,22 +274,46 @@ has_family_role(family_uuid UUID, user_uuid UUID, required_roles TEXT[]) RETURNS
 - Redirección automática post-aceptación
 
 ### Módulo de Miembros ✅
-- Ver/invitar/gestionar miembros
-- Sistema de roles (Owner/Admin/Member)
-- Cambiar roles y eliminar miembros
-- RLS garantiza permisos correctos
+- **CRUD completo**:
+  - Ver/invitar/gestionar miembros ✅
+  - Sistema de roles (Owner/Admin/Member) ✅
+  - Cambiar roles con confirmación 2FA ✅
+  - Eliminar miembros con modal crítico ✅
+  - Salir de familia (non-owners) con 2FA ✅
+- **Transferencia de ownership**:
+  - Modal crítico con 2FA requerido ✅
+  - Intercepta cambio a owner en selector ✅
+  - Actualiza ambos usuarios (nuevo owner + demote actual) ✅
+  - Icono de transferencia personalizado ✅
+- **Seguridad**:
+  - RLS garantiza permisos correctos ✅
+  - Validación server-side ✅
+  - Owner no puede auto-eliminarse ✅
+  - Owner debe transferir antes de salir ✅
 
 ### Módulo Wishlist (Completo) ✅
-- **Sistema anti-spoiler**: Owner no ve compras
-- **Vista dual**: Tarjetas y Tabla
-- **Filtros**: Por miembro y evento
-- **CRUD completo** de items
-- **Eventos categorizables**: Navidad, Cumpleaños, Reyes, etc.
-- **Sistema de compras** (invisible al owner)
-- **Sistema de reservas** "Yo lo miro" (visible a todos)
+- **Arquitectura refactorizada**:
+  - Componentes modulares en `components/` ✅
+  - WishlistHeader, WishlistFilters, WishlistCards, WishlistTable ✅
+  - WishlistItemModal, WishlistEditModal ✅
+  - Reducido de 1167 a 410 líneas ✅
+- **Sistema anti-spoiler**: Owner no ve compras ✅
+- **Vista dual**: Tarjetas y Tabla ✅
+- **Filtros laterales (sidebar)**:
+  - Sticky positioning en tablet+ ✅
+  - Grid 3 columnas para avatares de miembros ✅
+  - Filtro por evento vertical ✅
+- **CRUD completo** de items ✅
+- **Eventos categorizables**: Navidad, Cumpleaños, Reyes, etc. ✅
+- **Sistema de compras** (invisible al owner) ✅
+- **Sistema de reservas** "Yo lo miro" (visible a todos) ✅
 - **Realtime** con Supabase ✅
-- **Comentarios con @menciones** ✅ NUEVO
+- **Comentarios con @menciones** ✅
+- **Iconos SVG** en lugar de emojis:
+  - Ojo (ver), Lápiz (editar), Carrito (comprar), Check (comprado) ✅
+  - Consistencia con Feather Icons ✅
 - **Loading states** en todos los botones ✅
+- **Resaltado visual**: Ring y fondo para items propios ✅
 
 ### Sistema de Comentarios y Menciones ✅ NUEVO
 - **Comentarios en items de wishlist**:

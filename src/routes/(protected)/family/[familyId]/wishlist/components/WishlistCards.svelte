@@ -7,6 +7,7 @@
 		items,
 		currentUserId,
 		isMyItem,
+		isPurchased,
 		isPurchasedByMe,
 		getReservations,
 		getPriorityLabel,
@@ -18,6 +19,7 @@
 		items: GiftItem[];
 		currentUserId: string;
 		isMyItem: (itemId: string) => boolean;
+		isPurchased: (itemId: string) => boolean;
 		isPurchasedByMe: (itemId: string) => boolean;
 		getReservations: (itemId: string) => any[];
 		getPriorityLabel: (priority: number) => string;
@@ -45,8 +47,9 @@
 		{#each items as item (item.id)}
 			{@const isOwner = isMyItem(item.id)}
 			{@const purchased = isPurchasedByMe(item.id)}
+			{@const itemPurchased = isPurchased(item.id)}
 
-			<div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow">
+			<div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow {isOwner ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''} {itemPurchased ? 'ring-2 ring-success ring-offset-2 bg-success/10' : ''}">
 				<!-- Image -->
 				{#if item.image_url}
 					<figure class="h-48 overflow-hidden">
@@ -98,37 +101,63 @@
 						</div>
 					{/if}
 
-					<!-- Reservation indicator -->
+					<!-- Purchase/Reservation indicator (priority: purchased > reservations) -->
 					{#if !isOwner}
-						{@const reservations = getReservations(item.id)}
-						{#if reservations.length > 0}
-							<div class="badge badge-info badge-sm gap-1">
+						{#if itemPurchased}
+							<div class="badge badge-success gap-1">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="w-3 h-3"
+									class="w-4 h-4"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
 									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
 								>
-									<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-									<circle cx="12" cy="12" r="3"></circle>
+									<polyline points="20 6 9 17 4 12"></polyline>
 								</svg>
-								{reservations.length}
-								{reservations.length === 1 ? 'persona mirando' : 'personas mirando'}
+								Ya comprado
 							</div>
+						{:else}
+							{@const reservations = getReservations(item.id)}
+							{#if reservations.length > 0}
+								<div class="badge badge-info badge-sm gap-1">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="w-3 h-3"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
+										<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+										<circle cx="12" cy="12" r="3"></circle>
+									</svg>
+									{reservations.length}
+									{reservations.length === 1 ? 'persona mirando' : 'personas mirando'}
+								</div>
+							{/if}
 						{/if}
 					{/if}
 
 					<!-- Actions -->
 					<div class="card-actions justify-end mt-2">
-						<button class="btn btn-sm btn-ghost" onclick={() => onOpenDetail(item)}>
-							👁️ Ver
+						<button class="btn btn-sm btn-ghost gap-1" onclick={() => onOpenDetail(item)}>
+							<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+								<circle cx="12" cy="12" r="3"></circle>
+							</svg>
+							Ver
 						</button>
 
 						{#if isOwner}
-							<button class="btn btn-sm btn-ghost" onclick={() => onOpenEdit(item)}>
-								✏️ Editar
+							<button class="btn btn-sm btn-ghost gap-1" onclick={() => onOpenEdit(item)}>
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+									<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+								</svg>
+								Editar
 							</button>
 						{:else}
 							<!-- Toggle purchase button -->
@@ -147,13 +176,23 @@
 								<input type="hidden" name="is_purchased" value={(!purchased).toString()} />
 								<button
 									type="submit"
-									class="btn btn-sm {purchased ? 'btn-success' : 'btn-outline btn-success'}"
+									class="btn btn-sm gap-1 {purchased ? 'btn-success' : 'btn-outline btn-success'}"
 									disabled={togglingItemId === item.id}
 								>
 									{#if togglingItemId === item.id}
 										<span class="loading loading-spinner loading-xs"></span>
+									{:else if purchased}
+										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<polyline points="20 6 9 17 4 12"></polyline>
+										</svg>
+										Comprado
 									{:else}
-										{purchased ? '✅ Comprado' : '🛒 Marcar'}
+										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<circle cx="9" cy="21" r="1"></circle>
+											<circle cx="20" cy="21" r="1"></circle>
+											<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+										</svg>
+										Marcar
 									{/if}
 								</button>
 							</form>

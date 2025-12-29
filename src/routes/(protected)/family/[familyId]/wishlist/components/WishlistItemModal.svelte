@@ -200,15 +200,25 @@
 									/>
 									<button
 										type="submit"
-										class="btn w-full whitespace-nowrap {isReservedByMe(item.id)
+										class="btn w-full whitespace-nowrap gap-2 {isReservedByMe(item.id)
 											? 'btn-info'
 											: 'btn-outline btn-info'}"
 										disabled={togglingItemId === item.id}
 									>
 										{#if togglingItemId === item.id}
 											<span class="loading loading-spinner loading-sm"></span>
+										{:else if isReservedByMe(item.id)}
+											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+												<circle cx="12" cy="12" r="3"></circle>
+											</svg>
+											Lo estoy mirando
 										{:else}
-											{isReservedByMe(item.id) ? '👁️ Lo estoy mirando' : '👀 Yo lo miro'}
+											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+												<circle cx="12" cy="12" r="3"></circle>
+											</svg>
+											Yo lo miro
 										{/if}
 									</button>
 								</form>
@@ -232,15 +242,25 @@
 									/>
 									<button
 										type="submit"
-										class="btn w-full whitespace-nowrap {isPurchasedByMe(item.id)
+										class="btn w-full whitespace-nowrap gap-2 {isPurchasedByMe(item.id)
 											? 'btn-success'
 											: 'btn-outline btn-success'}"
 										disabled={togglingItemId === item.id}
 									>
 										{#if togglingItemId === item.id}
 											<span class="loading loading-spinner loading-sm"></span>
+										{:else if isPurchasedByMe(item.id)}
+											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<polyline points="20 6 9 17 4 12"></polyline>
+											</svg>
+											Ya lo compré
 										{:else}
-											{isPurchasedByMe(item.id) ? '✅ Ya lo compré' : '🛒 Marcar como comprado'}
+											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<circle cx="9" cy="21" r="1"></circle>
+												<circle cx="20" cy="21" r="1"></circle>
+												<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+											</svg>
+											Marcar como comprado
 										{/if}
 									</button>
 								</form>

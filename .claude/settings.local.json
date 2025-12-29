@@ -8,7 +8,9 @@
       "Bash(tee:*)",
       "Bash(ls -la \"C:\\Users\\tamsk\\Desktop\\personal\\myfamily\\src\\routes\\(protected)\\profile\"\" | grep \"page.svelte \")",
       "Bash(ls:*)",
-      "Bash(head:*)"
+      "Bash(head:*)",
+      "Bash(grep:*)",
+      "Bash(npx supabase:*)"
     ]
   }
 }

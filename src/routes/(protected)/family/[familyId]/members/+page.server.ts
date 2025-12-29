@@ -167,6 +167,34 @@ export const actions: Actions = {
 			return fail(400, { message: 'Cannot change your own role' });
 		}
 
+		// If transferring ownership, update both users
+		if (newRole === 'owner') {
+			// Update new owner
+			const { error: newOwnerError } = await supabase
+				.from('family_members')
+				.update({ role: 'owner' })
+				.eq('family_id', familyId)
+				.eq('user_id', targetUserId);
+
+			if (newOwnerError) {
+				return fail(500, { message: newOwnerError.message });
+			}
+
+			// Demote current owner to admin
+			const { error: demoteError } = await supabase
+				.from('family_members')
+				.update({ role: 'admin' })
+				.eq('family_id', familyId)
+				.eq('user_id', user.id);
+
+			if (demoteError) {
+				return fail(500, { message: demoteError.message });
+			}
+
+			return { success: true, message: 'Ownership transferred successfully. You are now an admin.' };
+		}
+
+		// Normal role update
 		const { error } = await supabase
 			.from('family_members')
 			.update({ role: newRole })
@@ -217,5 +245,48 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'Member removed successfully' };
+	},
+
+	leaveFamily: async ({ params, locals: { supabase, safeGetSession }, cookies }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { message: 'Unauthorized' });
+
+		const { familyId } = params;
+
+		// Check current membership
+		const { data: membership } = await supabase
+			.from('family_members')
+			.select('role')
+			.eq('family_id', familyId)
+			.eq('user_id', user.id)
+			.single();
+
+		if (!membership) {
+			return fail(404, { message: 'You are not a member of this family' });
+		}
+
+		// Prevent owner from leaving (must transfer ownership first)
+		if (membership.role === 'owner') {
+			return fail(400, { message: 'Owners cannot leave the family. Transfer ownership first or delete the family.' });
+		}
+
+		// Remove the member
+		const { error } = await supabase
+			.from('family_members')
+			.delete()
+			.eq('family_id', familyId)
+			.eq('user_id', user.id);
+
+		if (error) {
+			return fail(500, { message: error.message });
+		}
+
+		// Clear active family if it was this one
+		const activeFamily = cookies.get('activeFamily');
+		if (activeFamily === familyId) {
+			cookies.delete('activeFamily', { path: '/' });
+		}
+
+		return { success: true, message: 'You have left the family', redirect: '/dashboard' };
 	}
 };
