@@ -124,9 +124,9 @@
         </div>
         <ul
           tabindex="-1"
-          class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-200 rounded-box w-52"
+          class="menu menu-sm dropdown-content mt-3 z-1 p-2 shadow bg-base-200 rounded-box w-52 overflow-x-hidden overflow-y-auto"
         >
-          <li class="menu-title">
+          <li class="menu-title max-w-full overflow-hidden whitespace-nowrap text-ellipsis">
             <span>{user.user_metadata?.full_name || user.email}</span>
           </li>
           <div class="divider my-1"></div>

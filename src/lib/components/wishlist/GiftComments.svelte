@@ -184,12 +184,6 @@
 				disabled={isSubmitting}
 				required
 			></textarea>
-
-			<label class="label">
-				<span class="label-text-alt text-base-content/60">
-					💡 Tip: Escribe @ para mencionar a otros miembros
-				</span>
-			</label>
 		</div>
 
 		<!-- Mention Suggestions Dropdown (outside form-control for better visibility) -->
@@ -238,7 +232,6 @@
 		{#if comments.length === 0}
 			<div class="text-center py-8 text-base-content/50">
 				<p class="text-sm">No hay comentarios todavía</p>
-				<p class="text-xs mt-1">Sé el primero en comentar</p>
 			</div>
 		{:else}
 			{#each comments as comment (comment.id)}

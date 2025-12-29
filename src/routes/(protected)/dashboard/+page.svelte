@@ -104,20 +104,6 @@
       </div>
     </div>
 
-    <!-- Wishlist Card -->
-    <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
-      <div class="card-body">
-        <h2 class="card-title">
-          <span class="text-3xl">🎁</span>
-          Wishlist
-        </h2>
-        <p class="text-base-content/70">Gift registry and shopping lists</p>
-        <div class="card-actions justify-end mt-4">
-          <a href="/families" class="btn btn-primary btn-sm">Go to Families</a>
-        </div>
-      </div>
-    </div>
-
     <!-- Profile Card -->
     <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow">
       <div class="card-body">

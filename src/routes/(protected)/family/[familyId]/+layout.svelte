@@ -28,20 +28,9 @@
   });
 </script>
 
-<div class="container mx-auto max-w-7xl p-8">
-  <!-- Family Header -->
-  <div class="mb-8">
-    <div class="flex items-center gap-3 mb-2">
-      <h1 class="text-4xl font-bold">{data.family.name}</h1>
-      <div class="badge badge-lg">{data.userRole}</div>
-    </div>
-    <p class="text-base-content/70">
-      Family workspace • Created {new Date(data.family.createdAt).toLocaleDateString()}
-    </p>
-  </div>
-
+<div class="container mx-auto max-w-7xl p-4">
   <!-- Module Navigation -->
-  <div class="tabs tabs-boxed bg-base-200 mb-8 p-2">
+  <div class="tabs tabs-boxed bg-base-200 mb-4 p-2 rounded-lg">
     {#each modules.filter(module => !module.disabled) as module}
       <a
         href={module.href}
