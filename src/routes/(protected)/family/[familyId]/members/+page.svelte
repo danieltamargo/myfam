@@ -45,10 +45,10 @@
 </script>
 
 <div>
-  <div class="flex justify-between items-center mb-6">
+  <div class="flex justify-between items-center mb-6 gap-2">
     <div>
       <h2 class="text-2xl font-bold">Family Members</h2>
-      <p class="text-base-content/70">Manage who has access to this family</p>
+      <p class="text-base-content/70">This is your crew <span class="text-base-content">👨‍👩‍👧‍👦</span></p>
     </div>
     {#if canManageMembers}
       <button onclick={() => showInviteModal = true} class="btn btn-primary gap-2">
@@ -81,7 +81,7 @@
         {#each data.invitations as invitation}
           <div class="alert alert-info">
             <span>
-              Invitation sent to user •
+              Invitation sent to <strong>{invitation.invited_user?.email || 'unknown user'}</strong> •
               {new Date(invitation.created_at).toLocaleDateString()}
             </span>
           </div>
@@ -91,11 +91,10 @@
   {/if}
 
   <!-- Members List -->
-  <div class="space-y-4">
+  <div class="space-y-4 flex gap-4 items-stretch flex-wrap">
     {#each data.members as member}
-      <div class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow">
-        <div class="card-body">
-          <div class="flex items-center justify-between">
+      <div class="card relative flex-1 min-w-75 md:w-96 max-w-full bg-base-100 mb-0 shadow-md hover:shadow-lg transition-shadow">
+        <div class="card-body mt-6">
             <div class="flex items-center gap-4">
               <!-- Avatar -->
               <div class="avatar">
@@ -116,12 +115,16 @@
               </div>
 
               <!-- Member Info -->
+              <div class="badge absolute top-2 right-2 {roleColors[member.role]} gap-2 px-4 py-3">
+                <span>{roleIcons[member.role]}</span>
+                {member.role}
+              </div>
+              {#if member.userId === data.currentUserId}
+                <span class="absolute top-2 left-2 text-sm text-base-content/70">(You)</span>
+              {/if}
               <div>
                 <h3 class="font-semibold text-lg">
                   {member.displayName}
-                  {#if member.userId === data.currentUserId}
-                    <span class="text-sm text-base-content/70">(You)</span>
-                  {/if}
                 </h3>
                 <p class="text-sm text-base-content/70">
                   Joined {new Date(member.joinedAt).toLocaleDateString()}
@@ -130,8 +133,8 @@
             </div>
 
             <!-- Role & Actions -->
-            <div class="flex items-center gap-3">
-              {#if isOwner && member.userId !== data.currentUserId}
+            {#if isOwner && member.userId !== data.currentUserId}
+              <div class="mt-2 flex justify-end items-center gap-3">
                 <!-- Role selector for owners -->
                 <form method="POST" action="?/updateRole" use:enhance>
                   <input type="hidden" name="userId" value={member.userId} />
@@ -160,15 +163,8 @@
                     ✕
                   </button>
                 </form>
-              {:else}
-                <!-- Read-only badge -->
-                <div class="badge {roleColors[member.role]} gap-2 px-4 py-3">
-                  <span>{roleIcons[member.role]}</span>
-                  {member.role}
-                </div>
-              {/if}
-            </div>
-          </div>
+              </div>
+            {/if}
         </div>
       </div>
     {/each}

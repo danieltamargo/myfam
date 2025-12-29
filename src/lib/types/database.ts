@@ -287,6 +287,42 @@ export type Database = {
           },
         ]
       }
+      gift_comment_mentions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          mentioned_user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          mentioned_user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          mentioned_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_comment_mentions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "gift_item_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_comment_mentions_mentioned_user_id_fkey"
+            columns: ["mentioned_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gift_event_categories: {
         Row: {
           color: string | null
@@ -337,6 +373,48 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_item_comments: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          item_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          item_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          item_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_item_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gift_item_comments_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "gift_items"
             referencedColumns: ["id"]
           },
         ]
@@ -483,6 +561,7 @@ export type Database = {
           notes: string | null
           reserved_at: string | null
           reserved_by: string
+          status: string
         }
         Insert: {
           id?: string
@@ -490,6 +569,7 @@ export type Database = {
           notes?: string | null
           reserved_at?: string | null
           reserved_by: string
+          status?: string
         }
         Update: {
           id?: string
@@ -497,6 +577,7 @@ export type Database = {
           notes?: string | null
           reserved_at?: string | null
           reserved_by?: string
+          status?: string
         }
         Relationships: [
           {
@@ -566,6 +647,53 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string | null
+          read: boolean
+          reference_id: string | null
+          reference_type: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          reference_id?: string | null
+          reference_type?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string | null
+          read?: boolean
+          reference_id?: string | null
+          reference_type?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -598,8 +726,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      extract_mentions_from_comment: {
+        Args: { comment_text: string }
+        Returns: string[]
+      }
       get_item_purchased_quantity: {
         Args: { item_uuid: string }
+        Returns: number
+      }
+      get_unread_notification_count: {
+        Args: { user_uuid: string }
         Returns: number
       }
       has_family_role: {

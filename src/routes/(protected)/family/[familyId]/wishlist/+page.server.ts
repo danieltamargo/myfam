@@ -111,6 +111,24 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		console.error('Error loading all reservations:', allReservationsError);
 	}
 
+	// Load comments for all items
+	const { data: comments, error: commentsError } = await supabase
+		.from('gift_item_comments')
+		.select(`
+			*,
+			profiles (
+				id,
+				display_name,
+				avatar_url
+			)
+		`)
+		.in('item_id', items?.map(i => i.id) || [])
+		.order('created_at', { ascending: true });
+
+	if (commentsError) {
+		console.error('Error loading comments:', commentsError);
+	}
+
 	return {
 		members: members || [],
 		eventCategories: eventCategories || [],
@@ -118,6 +136,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		myPurchases: myPurchases || [],
 		myReservations: myReservations || [],
 		allReservations: allReservations || [],
+		comments: comments || [],
 		currentUserId: user.id
 	};
 };
@@ -364,6 +383,88 @@ export const actions: Actions = {
 				console.error('Error unreserving:', unreserveError);
 				return fail(500, { error: 'Failed to unreserve' });
 			}
+		}
+
+		return { success: true };
+	},
+
+	// Create a comment on a gift item
+	createComment: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const itemId = formData.get('item_id') as string;
+		const content = formData.get('content') as string;
+
+		if (!itemId || !content || content.trim().length === 0) {
+			return fail(400, { error: 'Item ID and content are required' });
+		}
+
+		// Verify user is not the item owner and is a family member
+		const { data: item } = await supabase
+			.from('gift_items')
+			.select('owner_id, family_id')
+			.eq('id', itemId)
+			.single();
+
+		if (!item) {
+			return fail(404, { error: 'Item not found' });
+		}
+
+		if (item.owner_id === user.id) {
+			return fail(403, { error: 'Cannot comment on your own items' });
+		}
+
+		// Create the comment
+		const { error: commentError } = await supabase
+			.from('gift_item_comments')
+			.insert({
+				item_id: itemId,
+				author_id: user.id,
+				content: content.trim()
+			});
+
+		if (commentError) {
+			console.error('Error creating comment:', commentError);
+			console.error('Comment error details:', {
+				code: commentError.code,
+				message: commentError.message,
+				details: commentError.details,
+				hint: commentError.hint
+			});
+			return fail(500, { error: `Failed to create comment: ${commentError.message}` });
+		}
+
+		return { success: true };
+	},
+
+	// Delete a comment
+	deleteComment: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const commentId = formData.get('comment_id') as string;
+
+		if (!commentId) {
+			return fail(400, { error: 'Comment ID is required' });
+		}
+
+		// Delete the comment (RLS ensures only author can delete)
+		const { error: deleteError } = await supabase
+			.from('gift_item_comments')
+			.delete()
+			.eq('id', commentId)
+			.eq('author_id', user.id);
+
+		if (deleteError) {
+			console.error('Error deleting comment:', deleteError);
+			return fail(500, { error: 'Failed to delete comment' });
 		}
 
 		return { success: true };

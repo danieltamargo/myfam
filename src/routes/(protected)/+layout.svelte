@@ -10,6 +10,7 @@
         name: string;
         role: string;
       }>;
+      notifications: Array<any>;
     };
     children: any;
   }
@@ -18,7 +19,7 @@
 </script>
 
 <div class="min-h-screen flex flex-col">
-  <Header user={data.user} families={data.families} />
+  <Header user={data.user} families={data.families} notifications={data.notifications} />
 
   <main class="flex-1">
     {@render children()}

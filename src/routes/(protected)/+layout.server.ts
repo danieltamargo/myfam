@@ -22,9 +22,18 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			role: fm.role
 		}));
 
+	// Get all notifications (both read and unread)
+	const { data: notifications } = await supabase
+		.from('notifications')
+		.select('*')
+		.eq('user_id', user.id)
+		.order('created_at', { ascending: false })
+		.limit(50); // Limit to last 50 notifications
+
 	return {
 		user,
 		session,
-		families
+		families,
+		notifications: notifications || []
 	};
 };

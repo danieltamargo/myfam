@@ -42,7 +42,7 @@
 
   <!-- Module Navigation -->
   <div class="tabs tabs-boxed bg-base-200 mb-8 p-2">
-    {#each modules as module}
+    {#each modules.filter(module => !module.disabled) as module}
       <a
         href={module.href}
         class="tab gap-2 {isActive(module.href) ? 'tab-active' : ''} {module.disabled ? 'tab-disabled' : ''}"
@@ -50,12 +50,12 @@
       >
         <span class="text-lg">{module.icon}</span>
         {module.name}
-        {#if module.required}
+        <!-- {#if module.required}
           <span class="badge badge-xs badge-primary">Required</span>
         {/if}
         {#if module.disabled}
           <span class="badge badge-xs">Coming Soon</span>
-        {/if}
+        {/if} -->
       </a>
     {/each}
   </div>

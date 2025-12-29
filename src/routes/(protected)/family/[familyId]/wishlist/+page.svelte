@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
 	import { createClient } from '$lib/supabase';
+	import GiftComments from '$lib/components/wishlist/GiftComments.svelte';
 	import type { PageData } from './$types';
 
 	let { data }: { data: PageData } = $props();
@@ -32,6 +33,7 @@
 	let showLinksSection = $state(false);
 	let showImagesSection = $state(false);
 	let isSubmitting = $state(false);
+	let togglingItemId = $state<string | null>(null);
 
 	// Computed: filtered items
 	let filteredItems = $derived(() => {
@@ -78,11 +80,29 @@
 		return item?.owner_id === data.currentUserId;
 	}
 
+	// Get comments for an item
+	function getComments(itemId: string): any[] {
+		return data.comments.filter((c) => c.item_id === itemId);
+	}
+
 	// Open detail modal
 	function openDetailModal(item: any) {
 		selectedItem = item;
 		showDetailModal = true;
 	}
+
+	// Check URL params and open modal if item param exists
+	onMount(() => {
+		const itemId = $page.url.searchParams.get('item');
+		if (itemId) {
+			const item = data.items.find(i => i.id === itemId);
+			if (item) {
+				openDetailModal(item);
+				// Clean URL after opening modal
+				window.history.replaceState({}, '', $page.url.pathname);
+			}
+		}
+	});
 
 	// Open edit modal
 	function openEditModal(item?: any) {
@@ -511,14 +531,25 @@
 								</button>
 							{:else}
 								<!-- Toggle purchase button -->
-								<form method="POST" action="?/togglePurchase" use:enhance>
+								<form method="POST" action="?/togglePurchase" use:enhance={() => {
+									togglingItemId = item.id;
+									return async ({ result, update }) => {
+										await update();
+										togglingItemId = null;
+									};
+								}}>
 									<input type="hidden" name="item_id" value={item.id} />
 									<input type="hidden" name="is_purchased" value={(!purchased).toString()} />
 									<button
 										type="submit"
 										class="btn btn-sm {purchased ? 'btn-success' : 'btn-outline btn-success'}"
+										disabled={togglingItemId === item.id}
 									>
-										{purchased ? '✅ Comprado' : '🛒 Marcar'}
+										{#if togglingItemId === item.id}
+											<span class="loading loading-spinner loading-xs"></span>
+										{:else}
+											{purchased ? '✅ Comprado' : '🛒 Marcar'}
+										{/if}
 									</button>
 								</form>
 							{/if}
@@ -601,11 +632,21 @@
 											✏️
 										</button>
 									{:else}
-										<form method="POST" action="?/togglePurchase" use:enhance>
+										<form method="POST" action="?/togglePurchase" use:enhance={() => {
+											togglingItemId = item.id;
+											return async ({ result, update }) => {
+												await update();
+												togglingItemId = null;
+											};
+										}}>
 											<input type="hidden" name="item_id" value={item.id} />
 											<input type="hidden" name="is_purchased" value={(!purchased).toString()} />
-											<button type="submit" class="btn btn-xs {purchased ? 'btn-success' : 'btn-outline'}">
-												{purchased ? '✅' : '🛒'}
+											<button type="submit" class="btn btn-xs {purchased ? 'btn-success' : 'btn-outline'}" disabled={togglingItemId === item.id}>
+												{#if togglingItemId === item.id}
+													<span class="loading loading-spinner loading-xs"></span>
+												{:else}
+													{purchased ? '✅' : '🛒'}
+												{/if}
 											</button>
 										</form>
 									{/if}
@@ -622,150 +663,188 @@
 <!-- Detail Modal -->
 {#if showDetailModal && selectedItem}
 	<div class="modal modal-open">
-		<div class="modal-box max-w-2xl">
-			<div class="flex gap-2 justify-between items-center">
-				<h3 class="font-bold text-lg mb-4">{selectedItem.name}</h3>
-				<div
-					class="avatar placeholder rounded-full"
-				>
-					<div class="bg-primary text-primary-content rounded-full w-10">
-						{#if selectedItem.profiles?.avatar_url}
+		<div class="modal-box max-w-5xl w-[95vw] max-h-[95svh]">
+			<div class="relative flex gap-2 flex-col md:flex-row">
+				<div class="sticky top-4 flex-1 h-fit">
+					<div class="flex gap-2 justify-between items-center">
+						<h3 class="font-bold text-lg mb-4">{selectedItem.name}</h3>
+						<div
+							class="avatar placeholder rounded-full"
+						>
+							<div class="bg-primary text-primary-content rounded-full w-10">
+								{#if selectedItem.profiles?.avatar_url}
+									<img
+										src={selectedItem.profiles.avatar_url}
+										alt={selectedItem.profiles.display_name || 'Avatar'}
+										referrerpolicy="no-referrer"
+										crossorigin="anonymous"
+									/>
+								{:else}
+									<span class="text-xs">
+										{(selectedItem.profiles?.display_name || 'U').substring(0, 2).toUpperCase()}
+									</span>
+								{/if}
+							</div>
+						</div>
+					</div>
+		
+					{#if selectedItem.image_url}
+						<figure class="mb-4">
 							<img
-								src={selectedItem.profiles.avatar_url}
-								alt={selectedItem.profiles.display_name || 'Avatar'}
+								src={selectedItem.image_url}
+								alt={selectedItem.name}
+								class="w-full rounded-lg max-h-96 object-cover"
 								referrerpolicy="no-referrer"
 								crossorigin="anonymous"
 							/>
-						{:else}
-							<span class="text-xs">
-								{(selectedItem.profiles?.display_name || 'U').substring(0, 2).toUpperCase()}
-							</span>
+						</figure>
+					{/if}
+		
+					<div class="space-y-3">
+						<!-- Descripción solo si existe -->
+						{#if selectedItem.description && selectedItem.description.trim().length > 0}
+							<div>
+								<p class="text-base-content/60 mt-1">{selectedItem.description}</p>
+							</div>
 						{/if}
-					</div>
-				</div>
-			</div>
-
-			{#if selectedItem.image_url}
-				<figure class="mb-4">
-					<img
-						src={selectedItem.image_url}
-						alt={selectedItem.name}
-						class="w-full rounded-lg max-h-96 object-cover"
-						referrerpolicy="no-referrer"
-						crossorigin="anonymous"
-					/>
-				</figure>
-			{/if}
-
-			<div class="space-y-3">
-				<!-- Descripción solo si existe -->
-				{#if selectedItem.description && selectedItem.description.trim().length > 0}
-					<div>
-						<p class="text-base-content/60 mt-1">{selectedItem.description}</p>
-					</div>
-				{/if}
-
-				<div>
-					<span class="font-semibold">Precio:</span>
-					<span class="text-primary ml-2">
-						{selectedItem.price ? formatPrice(selectedItem.price) : 'Desconocido'}
-					</span>
-				</div>
-
-				<div>
-					<span class="font-semibold">Prioridad:</span>
-					<span class="badge {getPriorityColor(selectedItem.priority)} ml-2">
-						{getPriorityLabel(selectedItem.priority)}
-					</span>
-				</div>
-
-				{#if selectedItem.links && selectedItem.links.length > 0}
-					<div>
-						<span class="font-semibold">Enlaces:</span>
-						<ul class="list-disc list-inside mt-1">
-							{#each selectedItem.links as link}
-								<li>
-									<a href={link} target="_blank" rel="noopener noreferrer" class="link link-primary">
-										{link}
-									</a>
-								</li>
-							{/each}
-						</ul>
-					</div>
-				{/if}
-
-				<div>
-					<span class="font-semibold">Eventos:</span>
-					<div class="flex flex-wrap gap-1 mt-1">
-						{#each selectedItem.gift_item_events || [] as eventLink}
-							{#if eventLink.gift_event_categories}
-								<span
-									class="badge"
-									style="background-color: {eventLink.gift_event_categories.color}20; color: {eventLink
-										.gift_event_categories.color};"
-								>
-									{eventLink.gift_event_categories.icon}
-									{eventLink.gift_event_categories.name}
-								</span>
-							{/if}
-						{/each}
-					</div>
-				</div>
-
-				<div>
-					<span class="font-semibold">Deseado por:</span>
-					<span class="ml-2">{selectedItem.profiles?.display_name || 'Usuario'}</span>
-				</div>
-			</div>
-
-			<!-- Reservations info (visible to all) -->
-			{#if !isMyItem(selectedItem.id)}
-				{@const reservations = getReservations(selectedItem.id)}
-				{#if reservations.length > 0}
-					<div class="mt-4 alert alert-info">
-						<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-							<circle cx="12" cy="12" r="3"></circle>
-						</svg>
-						<div class="text-sm">
-							{#if reservations.length === 1}
-								<span class="font-semibold">{reservations[0].profiles?.display_name || 'Alguien'}</span> está mirando este regalo
-							{:else}
-								<span class="font-semibold">{reservations.length} personas</span> están mirando este regalo
-							{/if}
+		
+						<div>
+							<span class="font-semibold">Precio:</span>
+							<span class="text-primary ml-2">
+								{selectedItem.price ? formatPrice(selectedItem.price) : 'Desconocido'}
+							</span>
+						</div>
+		
+						<div>
+							<span class="font-semibold">Prioridad:</span>
+							<span class="badge {getPriorityColor(selectedItem.priority)} ml-2">
+								{getPriorityLabel(selectedItem.priority)}
+							</span>
+						</div>
+		
+						{#if selectedItem.links && selectedItem.links.length > 0}
+							<div>
+								<span class="font-semibold">Enlaces:</span>
+								<ul class="list-disc list-inside mt-1">
+									{#each selectedItem.links as link}
+										<li>
+											<a href={link} target="_blank" rel="noopener noreferrer" class="link link-primary">
+												{link}
+											</a>
+										</li>
+									{/each}
+								</ul>
+							</div>
+						{/if}
+		
+						<div>
+							<span class="font-semibold">Eventos:</span>
+							<div class="flex flex-wrap gap-1 mt-1">
+								{#each selectedItem.gift_item_events || [] as eventLink}
+									{#if eventLink.gift_event_categories}
+										<span
+											class="badge"
+											style="background-color: {eventLink.gift_event_categories.color}20; color: {eventLink
+												.gift_event_categories.color};"
+										>
+											{eventLink.gift_event_categories.icon}
+											{eventLink.gift_event_categories.name}
+										</span>
+									{/if}
+								{/each}
+							</div>
+						</div>
+		
+						<div>
+							<span class="font-semibold">Deseado por:</span>
+							<span class="ml-2">{selectedItem.profiles?.display_name || 'Usuario'}</span>
 						</div>
 					</div>
-				{/if}
-			{/if}
-
-			<!-- Actions for purchase/reservation -->
-			{#if !isMyItem(selectedItem.id)}
-				<div class="mt-6 pt-4 border-t border-base-300">
-					<div class="flex gap-2">
-						<form method="POST" action="?/toggleReservation" use:enhance class="flex-1">
-							<input type="hidden" name="item_id" value={selectedItem.id} />
-							<input type="hidden" name="is_reserved" value={(!isReservedByMe(selectedItem.id)).toString()} />
-							<button
-								type="submit"
-								class="btn w-full {isReservedByMe(selectedItem.id) ? 'btn-info' : 'btn-outline btn-info'}"
-							>
-								{isReservedByMe(selectedItem.id) ? '👁️ Lo estoy mirando' : '👀 Yo lo miro'}
-							</button>
-						</form>
-						<form method="POST" action="?/togglePurchase" use:enhance class="flex-1">
-							<input type="hidden" name="item_id" value={selectedItem.id} />
-							<input type="hidden" name="is_purchased" value={(!isPurchasedByMe(selectedItem.id)).toString()} />
-							<button
-								type="submit"
-								class="btn w-full {isPurchasedByMe(selectedItem.id) ? 'btn-success' : 'btn-outline btn-success'}"
-							>
-								{isPurchasedByMe(selectedItem.id) ? '✅ Ya lo compré' : '🛒 Marcar como comprado'}
-							</button>
-						</form>
-					</div>
+		
+					<!-- Reservations info (visible to all) -->
+					{#if !isMyItem(selectedItem.id)}
+						{@const reservations = getReservations(selectedItem.id)}
+						{#if reservations.length > 0}
+							<div class="mt-4 alert alert-info">
+								<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+									<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+									<circle cx="12" cy="12" r="3"></circle>
+								</svg>
+								<div class="text-sm">
+									{#if reservations.length === 1}
+										<span class="font-semibold">{reservations[0].profiles?.display_name || 'Alguien'}</span> está mirando este regalo
+									{:else}
+										<span class="font-semibold">{reservations.length} personas</span> están mirando este regalo
+									{/if}
+								</div>
+							</div>
+						{/if}
+					{/if}
+		
+					<!-- Actions for purchase/reservation -->
+					{#if !isMyItem(selectedItem.id)}
+						<div class="mt-6 pt-4 border-t border-base-300">
+							<div class="flex gap-2">
+								<form method="POST" action="?/toggleReservation" use:enhance={() => {
+									togglingItemId = selectedItem.id;
+									return async ({ result, update }) => {
+										await update();
+										togglingItemId = null;
+									};
+								}} class="flex-1">
+									<input type="hidden" name="item_id" value={selectedItem.id} />
+									<input type="hidden" name="is_reserved" value={(!isReservedByMe(selectedItem.id)).toString()} />
+									<button
+										type="submit"
+										class="btn w-full whitespace-nowrap {isReservedByMe(selectedItem.id) ? 'btn-info' : 'btn-outline btn-info'}"
+										disabled={togglingItemId === selectedItem.id}
+									>
+										{#if togglingItemId === selectedItem.id}
+											<span class="loading loading-spinner loading-sm"></span>
+										{:else}
+											{isReservedByMe(selectedItem.id) ? '👁️ Lo estoy mirando' : '👀 Yo lo miro'}
+										{/if}
+									</button>
+								</form>
+								<form method="POST" action="?/togglePurchase" use:enhance={() => {
+									togglingItemId = selectedItem.id;
+									return async ({ result, update }) => {
+										await update();
+										togglingItemId = null;
+									};
+								}} class="flex-1">
+									<input type="hidden" name="item_id" value={selectedItem.id} />
+									<input type="hidden" name="is_purchased" value={(!isPurchasedByMe(selectedItem.id)).toString()} />
+									<button
+										type="submit"
+										class="btn w-full whitespace-nowrap {isPurchasedByMe(selectedItem.id) ? 'btn-success' : 'btn-outline btn-success'}"
+										disabled={togglingItemId === selectedItem.id}
+									>
+										{#if togglingItemId === selectedItem.id}
+											<span class="loading loading-spinner loading-sm"></span>
+										{:else}
+											{isPurchasedByMe(selectedItem.id) ? '✅ Ya lo compré' : '🛒 Marcar como comprado'}
+										{/if}
+									</button>
+								</form>
+							</div>
+						</div>
+					{/if}
 				</div>
-			{/if}
 
+				<!-- Comments Section (only visible to non-owners) -->
+				{#if !isMyItem(selectedItem.id)}
+					<div class="mt-6 pt-6 border-t md:ml-6 md:pl-6 md:border-l md:mt-0 md:pt-0 md:border-t-0 border-base-300 max-w-125 flex-1">
+						<GiftComments
+							itemId={selectedItem.id}
+							comments={getComments(selectedItem.id)}
+							members={data.members as any[]}
+							currentUserId={data.currentUserId}
+							itemOwnerId={selectedItem.owner_id}
+						/>
+					</div>
+				{/if}
+			</div>
 			<div class="modal-action">
 				<button class="btn" onclick={closeModals}>Cerrar</button>
 			</div>

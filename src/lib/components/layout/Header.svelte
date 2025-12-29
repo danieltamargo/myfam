@@ -3,9 +3,11 @@
   import { createClient } from '$lib/supabase';
   import { goto } from '$app/navigation';
   import { activeFamily } from '$lib/stores/familyStore';
+  import NotificationBell from './NotificationBell.svelte';
 
   interface Props {
     user?: {
+      id?: string;
       email?: string;
       user_metadata?: {
         avatar_url?: string;
@@ -17,14 +19,16 @@
       name: string;
       role: string;
     }>;
+    notifications?: Array<any>;
   }
 
-  let { user, families = [] }: Props = $props();
+  let { user, families = [], notifications = [] }: Props = $props();
 
   const supabase = createClient();
 
   async function signOut() {
     await supabase.auth.signOut();
+    activeFamily.clear(); // Limpiar familia activa al cerrar sesión
     goto('/login');
   }
 
@@ -96,6 +100,11 @@
 
   <div class="navbar-end gap-2">
     {#if user}
+      <!-- Notifications Bell -->
+      {#if user.id}
+        <NotificationBell notifications={notifications} userId={user.id} />
+      {/if}
+
       <div class="dropdown dropdown-end">
         <div tabindex="-1" role="button" class="btn btn-ghost btn-circle avatar">
           <div class="w-10 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">

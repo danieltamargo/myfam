@@ -1,7 +1,9 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { activeFamily } from '$lib/stores/familyStore';
+  import { onMount } from 'svelte';
 
   interface Props {
     data: {
@@ -21,6 +23,23 @@
 
   let showCreateModal = $state(false);
   let familyName = $state('');
+  let showInvitationSuccess = $state(false);
+
+  onMount(() => {
+    // Check if redirected from accepting an invitation
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('invitation_accepted') === 'true') {
+      showInvitationSuccess = true;
+      // Remove the query parameter from URL
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+
+      // Hide the message after 5 seconds
+      setTimeout(() => {
+        showInvitationSuccess = false;
+      }, 5000);
+    }
+  });
 
   function openFamily(family: { id: string; name: string; role: string }) {
     activeFamily.set(family);
@@ -48,14 +67,29 @@
     </button>
   </div>
 
+  {#if showInvitationSuccess}
+    <div class="alert alert-success mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>Invitation accepted successfully! Welcome to the family.</span>
+    </div>
+  {/if}
+
   {#if form?.success}
     <div class="alert alert-success mb-6">
-      <span>✓ Family created successfully!</span>
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>Family created successfully!</span>
     </div>
   {/if}
 
   {#if form?.message}
     <div class="alert alert-error mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
       <span>{form.message}</span>
     </div>
   {/if}

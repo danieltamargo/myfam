@@ -1,7 +1,7 @@
 # MyFamily - Claude Session Info
 
-> **Última actualización**: 2025-12-20
-> **Versión del proyecto**: 0.0.1 (Early Development)
+> **Última actualización**: 2025-12-29
+> **Versión del proyecto**: 0.1.0 (Beta Development)
 
 ## 📋 ¿Qué es el proyecto?
 
@@ -12,6 +12,7 @@ Permitir a familias o grupos organizarse mediante módulos personalizables:
 - **Eventos**: Calendario compartido de actividades familiares
 - **Gastos**: Gestión de gastos compartidos y divisiones
 - **Miembros**: Gestión de usuarios con roles y permisos (IMPLEMENTADO ✅)
+- **Wishlist**: Listas de regalos colaborativas con sistema anti-spoiler (IMPLEMENTADO ✅)
 - **Notas, Planner, Fitness, Tasks, Lists**: Módulos planificados
 
 ### Características Clave
@@ -19,6 +20,8 @@ Permitir a familias o grupos organizarse mediante módulos personalizables:
 - Roles jerárquicos: Owner → Admin → Member
 - Módulos activables/desactivables por familia
 - Familia activa en contexto (se guarda en localStorage)
+- Autenticación completa con 2FA y recuperación de contraseña
+- Sistema de notificaciones en tiempo real
 
 ---
 
@@ -32,15 +35,17 @@ Permitir a familias o grupos organizarse mediante módulos personalizables:
 
 ### Backend
 - **Base de datos**: Supabase (PostgreSQL)
-- **Autenticación**: Supabase Auth (OAuth con Google, GitHub)
+- **Autenticación**: Supabase Auth (OAuth + Email/Password + 2FA)
 - **ORM**: Supabase JS Client
 - **RLS**: Row Level Security habilitado (con funciones helper)
+- **Realtime**: Supabase Realtime habilitado para wishlist y notificaciones
 
 ### Seguridad
 - **RLS (Row Level Security)**: Habilitado en todas las tablas
 - **Funciones helper**: `is_family_member()`, `has_family_role()` (SECURITY DEFINER)
-- **Cliente Admin**: `supabaseAdmin` solo para operaciones críticas server-side (crear familias)
+- **Cliente Admin**: `supabaseAdmin` solo para operaciones críticas server-side
 - **Validación**: Server-side en `+page.server.ts`
+- **2FA**: TOTP con QR code enrollment
 
 ### Deployment
 - Variables de entorno en `.env` (`.gitignore` configurado ✅)
@@ -55,48 +60,40 @@ src/
 ├── lib/
 │   ├── components/
 │   │   ├── auth/
-│   │   │   └── TwoFactorSetup.svelte  # Gestión completa de 2FA ✅ NUEVO
+│   │   │   ├── TwoFactorCard.svelte         # Gestión completa de 2FA ✅
+│   │   │   └── TwoFactorSetup.svelte        # Setup 2FA con QR ✅
 │   │   ├── layout/
-│   │   │   └── Header.svelte          # Navbar con selector de familia + menú avatar
-│   │   ├── magic/                     # Componentes visuales (Particles, WordRotate)
-│   │   └── util/                      # ThemeToggler, ToastManager
+│   │   │   ├── Header.svelte                # Navbar + Notificaciones ✅
+│   │   │   └── NotificationBell.svelte      # Campana de notificaciones ✅
+│   │   ├── wishlist/
+│   │   │   └── GiftComments.svelte          # Comentarios con @menciones ✅
+│   │   ├── ui/
+│   │   │   └── Avatar.svelte                # Avatar con iniciales ✅
+│   │   └── magic/                           # Componentes visuales
 │   ├── stores/
-│   │   └── familyStore.ts             # Store de familia activa (Svelte store + localStorage)
-│   ├── supabase.ts                    # Cliente Supabase normal (con RLS)
-│   ├── supabase-admin.ts              # Cliente admin (bypasses RLS) ⚠️ Solo server-side
+│   │   └── familyStore.ts                   # Store de familia activa
+│   ├── supabase.ts                          # Cliente Supabase (con RLS)
+│   ├── supabase-admin.ts                    # Cliente admin ⚠️ Server-only
 │   └── types/
-│       └── database.ts                # Tipos generados de Supabase
+│       └── database.ts                      # Tipos generados
 │
 ├── routes/
-│   ├── (protected)/                   # Layout con autenticación obligatoria
-│   │   ├── +layout.server.ts          # Verifica auth + carga familias del usuario
-│   │   ├── +layout.svelte             # Incluye Header común
-│   │   ├── dashboard/                 # Dashboard principal
-│   │   ├── families/                  # CRUD de familias
-│   │   │   ├── +page.server.ts        # Actions: createFamily (usa supabaseAdmin)
-│   │   │   └── +page.svelte           # Lista familias + modal crear
-│   │   ├── profile/                   # Configuración de perfil
-│   │   │   ├── +page.server.ts        # Actions: updateProfile, deleteAccount
-│   │   │   └── +page.svelte           # Formularios de perfil
-│   │   └── family/[familyId]/         # Workspace de familia individual
-│   │       ├── +layout.server.ts      # Verifica membresía de familia
-│   │       ├── +layout.svelte         # Tabs de módulos (Members, Events, Expenses)
-│   │       ├── +page.server.ts        # Redirect a /members
-│   │       └── members/               # Módulo de miembros ✅
-│   │           ├── +page.server.ts    # Actions: inviteMember, updateRole, removeMember
-│   │           └── +page.svelte       # Lista miembros + invitaciones
-│   ├── login/                         # Página de login (email/password + OAuth)
-│   ├── register/                      # Página de registro
-│   ├── forgot-password/               # Solicitar reset de contraseña
-│   ├── reset-password/                # Cambiar contraseña con token
-│   ├── verify-2fa/                    # Verificación 2FA post-login ✅ NUEVO
-│   ├── auth/
-│   │   ├── callback/                  # OAuth y email confirmation callback
-│   │   └── error/                     # Página de error de autenticación
-│   └── +page.svelte                   # Landing page (redirige a /dashboard si autenticado)
-│
-├── hooks.server.ts                    # Middleware: Paraglide + Supabase session
-└── app.html                           # HTML base
+│   ├── (protected)/                         # Layout con auth
+│   │   ├── +layout.server.ts                # Carga familias + notificaciones ✅
+│   │   ├── dashboard/                       # Dashboard + invitaciones ✅
+│   │   ├── families/                        # CRUD familias
+│   │   ├── profile/                         # Perfil + 2FA ✅
+│   │   └── family/[familyId]/
+│   │       ├── members/                     # Gestión miembros ✅
+│   │       └── wishlist/                    # Wishlist completa ✅
+│   │           ├── +page.server.ts          # Actions + comentarios ✅
+│   │           └── +page.svelte             # UI + modal autoopen ✅
+│   ├── login/                               # Login (email + OAuth + 2FA)
+│   ├── register/                            # Registro
+│   ├── forgot-password/                     # Recuperar contraseña ✅
+│   ├── reset-password/                      # Reset con token ✅
+│   ├── verify-2fa/                          # Verificación 2FA ✅
+│   └── auth/callback/                       # OAuth callback
 ```
 
 ---
@@ -110,7 +107,7 @@ src/
 - id (UUID, FK a auth.users)
 - display_name (TEXT)
 - avatar_url (TEXT)
-- email (TEXT, synced con auth.users) ✅
+- email (TEXT)
 - created_at, updated_at
 ```
 
@@ -137,23 +134,10 @@ src/
 - id (UUID, PK)
 - family_id (UUID, FK a families)
 - invited_by (UUID, FK a profiles)
-- invited_user_id (UUID, FK a profiles) ✅ Actualizado
+- invited_user_id (UUID, FK a profiles)
 - status (ENUM: 'pending', 'accepted', 'rejected')
 - created_at, updated_at
 - UNIQUE(family_id, invited_user_id)
-```
-
-#### `gift_event_categories` (Wishlist)
-```sql
-- id (UUID, PK)
-- family_id (UUID, FK a families)
-- name (TEXT) - "Navidad", "Cumpleaños", etc.
-- icon (TEXT) - Emoji del evento
-- color (TEXT) - Color hex para UI
-- event_date (DATE) - Opcional
-- is_system (BOOLEAN) - true para eventos predefinidos
-- created_by (UUID, FK a profiles)
-- UNIQUE(family_id, name)
 ```
 
 #### `gift_items` (Wishlist)
@@ -161,43 +145,91 @@ src/
 - id (UUID, PK)
 - family_id (UUID, FK a families)
 - owner_id (UUID, FK a profiles)
-- name (TEXT) - Nombre del regalo
+- name (TEXT)
 - description (TEXT)
-- links (TEXT[]) - Array de URLs ✅ Actualizado
+- links (TEXT[]) - Array de URLs
 - price (DECIMAL)
 - priority (INTEGER) - -1 a 2
-- image_url (TEXT) - Imagen principal
+- image_url (TEXT)
 - created_at, updated_at
 ```
 
-#### `gift_item_events` (Wishlist)
+#### `gift_purchases` (Anti-spoiler)
 ```sql
 - id (UUID, PK)
 - item_id (UUID, FK a gift_items)
-- event_category_id (UUID, FK a gift_event_categories)
-- UNIQUE(item_id, event_category_id)
-```
-
-#### `gift_purchases` (Wishlist - Anti-spoiler!)
-```sql
-- id (UUID, PK)
-- item_id (UUID, FK a gift_items)
-- purchased_by (UUID, FK a profiles) ⚠️ INVISIBLE al owner
+- purchased_by (UUID, FK a profiles) - INVISIBLE al owner
 - quantity_purchased (INTEGER)
 - purchased_at (TIMESTAMPTZ)
-- notes (TEXT) - Notas privadas del comprador
+- notes (TEXT)
 - UNIQUE(item_id, purchased_by)
 ```
 
-#### Otras tablas
-- `family_modules`: Configuración de módulos por familia
-- `notes`: Notas polimórficas
-- `external_connections`: OAuth de Google Calendar, etc.
-- `audit_logs`: Logs de auditoría
+#### `gift_reservations` (Coordinación)
+```sql
+- id (UUID, PK)
+- item_id (UUID, FK a gift_items)
+- reserved_by (UUID, FK a profiles)
+- reserved_at (TIMESTAMPTZ)
+- status (ENUM: 'considering', 'reserved')
+- notes (TEXT)
+- UNIQUE(item_id, reserved_by)
+```
+
+#### `gift_item_comments` (Sistema de comentarios) ✅ NUEVO
+```sql
+- id (UUID, PK)
+- item_id (UUID, FK a gift_items)
+- author_id (UUID, FK a profiles)
+- content (TEXT) - Puede contener @menciones
+- created_at, updated_at
+- CONSTRAINT: content no vacío
+```
+
+#### `gift_comment_mentions` (Menciones) ✅ NUEVO
+```sql
+- id (UUID, PK)
+- comment_id (UUID, FK a gift_item_comments)
+- mentioned_user_id (UUID, FK a profiles)
+- created_at
+- UNIQUE(comment_id, mentioned_user_id)
+```
+
+#### `notifications` (Sistema de notificaciones) ✅ NUEVO
+```sql
+- id (UUID, PK)
+- user_id (UUID, FK a profiles)
+- type (ENUM: 'mention', 'comment', 'invitation', 'gift_status', 'family_join')
+- title (TEXT)
+- message (TEXT)
+- link (TEXT) - URL para navegar al hacer click
+- read (BOOLEAN) - default false
+- created_at
+- reference_type (TEXT) - 'gift_item', 'family', 'comment'
+- reference_id (UUID)
+```
+
+### Funciones PostgreSQL ✅ NUEVO
+
+#### `extract_mentions_from_comment(TEXT) RETURNS UUID[]`
+```sql
+-- Extrae UUIDs de menciones en formato @{{user_id:display_name}}
+-- Permite menciones con nombres que tienen espacios
+-- Retorna array de UUIDs de usuarios mencionados
+```
+
+#### `handle_comment_mentions() TRIGGER`
+```sql
+-- Se ejecuta después de INSERT en gift_item_comments
+-- Extrae menciones del contenido
+-- Valida que sean miembros de la familia
+-- Crea registros en gift_comment_mentions
+-- Crea notificaciones con link directo al item
+-- Link incluye ?item={item_id} para abrir modal automáticamente
+```
 
 ### Funciones Helper (SECURITY DEFINER)
 ```sql
--- Evitan recursión infinita en RLS
 is_family_member(family_uuid UUID, user_uuid UUID) RETURNS BOOLEAN
 has_family_role(family_uuid UUID, user_uuid UUID, required_roles TEXT[]) RETURNS BOOLEAN
 ```
@@ -208,221 +240,165 @@ has_family_role(family_uuid UUID, user_uuid UUID, required_roles TEXT[]) RETURNS
 
 ### Autenticación ✅
 - **Email/Password Auth:**
-  - Login con Email/Password ✅
-  - Registro con Email/Password ✅
-  - Confirmación de email (configurable) ✅
-  - Recuperación de contraseña ("Forgot password") ✅
-  - Reset de contraseña con link de email ✅
+  - Login/Registro con Email/Password ✅
+  - Confirmación de email ✅
+  - Recuperación de contraseña completa ✅
+  - Reset de contraseña con token ✅
 - **OAuth Providers:**
-  - Login con Google OAuth ✅
-  - Login con GitHub OAuth ✅
-- **Two-Factor Authentication (2FA):** ✅ NUEVO
-  - TOTP (Time-based One-Time Password) ✅
-  - Enrollment con QR code ✅
+  - Google OAuth ✅
+  - GitHub OAuth ✅
+- **Two-Factor Authentication (2FA):**
+  - TOTP con QR code enrollment ✅
   - Verificación en login ✅
-  - UI para habilitar/deshabilitar en perfil ✅
+  - UI para gestionar 2FA en perfil ✅
   - Compatible con Google Authenticator, Authy, etc. ✅
-- **Seguridad y UX:**
-  - Session management con Supabase ✅
-  - Protected routes con layout `(protected)/` ✅
-  - Página de error de autenticación ✅
-  - Email templates personalizables ✅
 
 ### Sistema de Familias ✅
-- Crear familias (usa `supabaseAdmin` para bypass RLS inicial)
-- Listar familias del usuario
+- Crear/listar/navegar familias
 - Selector de familia activa en Header
-- Navegación a workspace de familia
+- Sistema de invitaciones completo
+- Aceptar invitaciones desde dashboard
+- Redirección automática post-aceptación
 
 ### Módulo de Miembros ✅
-- Ver todos los miembros de una familia
-- Invitar nuevos miembros por email
-- Cambiar roles (solo owners)
-- Eliminar miembros (owners y admins)
-- Visualización de roles con badges
-- Sistema de permisos funcional
+- Ver/invitar/gestionar miembros
+- Sistema de roles (Owner/Admin/Member)
+- Cambiar roles y eliminar miembros
+- RLS garantiza permisos correctos
 
-### Módulo Wishlist (Listas de Regalos) ✅
-- **Sistema anti-spoiler**: El owner NO ve quién compró sus regalos
-- **Vista dual**: Tarjetas (grid) y Tabla
-- **Filtros**: Por miembro y por evento
-- **Gestión de items**:
-  - Crear/editar/eliminar regalos
-  - Campos: nombre, descripción, precio, prioridad
-  - Enlaces múltiples (colapsable)
-  - Imágenes múltiples (colapsable, primera imagen es la principal)
-- **Sistema de eventos**: Navidad, Cumpleaños, Reyes, San Valentín, Todos
-  - Chips seleccionables con colores
-  - Lógica automática: al seleccionar evento específico, "Todos" se desmarca
-  - Siempre mínimo uno seleccionado
-- **Compras**:
-  - Botón toggle "Marcar como comprado"
-  - Solo el comprador ve su propia compra
-  - El owner NUNCA ve las compras (RLS garantizado)
-- **Reservas "Yo lo miro"** ✅:
-  - Sistema de coordinación para compras
-  - Los miembros pueden reservar items que están mirando
-  - Visible a TODOS los miembros (a diferencia de compras)
-  - Ayuda a evitar compras duplicadas
-  - Indicador visual en tarjetas y detalles
-  - RLS garantiza que solo se puedan reservar items de otros
-- **Realtime** ✅:
-  - Supabase Realtime habilitado en todas las tablas del wishlist
-  - Actualizaciones en vivo cuando cualquier usuario crea/edita/elimina items
-  - Actualizaciones en vivo cuando se marcan compras o reservas
-  - Suscripción vía PostgreSQL Change Data Capture (CDC)
-- **UX moderna**:
-  - Formulario con secciones colapsables
-  - Loading states en botones
-  - Iconos SVG personalizados (Feather Icons) en TODOS los botones de añadir
-  - Precio sin steps (input text con inputmode decimal)
-  - Modal de detalles mejorado: descripción solo si existe (grisácea), precio muestra "Desconocido" si no hay
-  - Diseño responsive y profesional
+### Módulo Wishlist (Completo) ✅
+- **Sistema anti-spoiler**: Owner no ve compras
+- **Vista dual**: Tarjetas y Tabla
+- **Filtros**: Por miembro y evento
+- **CRUD completo** de items
+- **Eventos categorizables**: Navidad, Cumpleaños, Reyes, etc.
+- **Sistema de compras** (invisible al owner)
+- **Sistema de reservas** "Yo lo miro" (visible a todos)
+- **Realtime** con Supabase ✅
+- **Comentarios con @menciones** ✅ NUEVO
+- **Loading states** en todos los botones ✅
+
+### Sistema de Comentarios y Menciones ✅ NUEVO
+- **Comentarios en items de wishlist**:
+  - Solo miembros (no el owner) pueden comentar
+  - Sistema de @menciones con autocompletado
+  - Formato especial: `@{{user_id:display_name}}`
+  - Soporta nombres con espacios
+  - Dropdown con avatares al escribir @
+  - Render con @menciones resaltadas
+  - Eliminar propios comentarios
+
+- **Sistema de menciones**:
+  - Detección automática de @menciones en comentarios
+  - Validación: solo miembros, no al owner, no a ti mismo
+  - Extracción de UUIDs desde formato especial
+  - Trigger PostgreSQL automático
+
+- **Notificaciones en tiempo real**:
+  - Campana en header con badge rojo
+  - Contador de notificaciones sin leer
+  - Toggle: "Sin leer" / "Todas"
+  - Click en notificación:
+    - Marca como leída ✅
+    - Navega a la página ✅
+    - Abre modal del item automáticamente ✅
+  - Historial de últimas 50 notificaciones
+  - Supabase Realtime actualiza en vivo
+  - Botones para marcar todas como leídas / eliminar
 
 ### UI/UX ✅
 - Header con:
   - Logo "MyFamily"
-  - Selector de familia activa (centro) - **ARREGLADO**: Ahora usa click en vez de hover
-  - Avatar con dropdown menú (derecha)
-  - Todos los links en el menú del avatar
-  - Iconos SVG en todos los botones de añadir/crear
-- Dashboard:
-  - Enlaces funcionales a Families, Wishlist y Profile
-  - Cards modernos con hover effects
-- Página de familias:
-  - Loading skeletons mientras cargan los datos ✅
-  - Mejor UX durante la carga asíncrona
-- Tema claro/oscuro (ThemeToggler)
-- Diseño responsive con DaisyUI
-- Avatares con CORS fix (`referrerpolicy="no-referrer"`)
-
-### Seguridad ✅
-- RLS habilitado en todas las tablas
-- Validación server-side
-- Service key protegida
-- No hay privilege escalation
-- No hay broken access control
+  - Selector de familia activa
+  - **Campana de notificaciones** con badge ✅ NUEVO
+  - Avatar con dropdown menú
+- Dashboard con invitaciones pendientes
+- Loading skeletons
+- Avatares con componente Avatar.svelte
+- Tema claro/oscuro
+- Diseño responsive
 
 ---
 
 ## 🚧 Pendiente / TODO
 
 ### Corto Plazo
-- [ ] **Wishlist**: Sistema de subida de imágenes (Supabase Storage)
-- [ ] **Wishlist**: Notificaciones cuando se añaden regalos
-- [ ] Módulo de Eventos (calendario compartido)
-- [ ] Módulo de Gastos (división de gastos)
-- [ ] Sistema de notificaciones (invitaciones pendientes)
-- [ ] Aceptar/rechazar invitaciones
+- [ ] **Wishlist**: Subida de imágenes (Supabase Storage)
+- [ ] **Wishlist**: Expandir status a enum (purchased, reserved, considering)
+- [ ] Módulo de Eventos (calendario)
+- [ ] Módulo de Gastos
 - [ ] Transferir ownership de familia
 
 ### Medio Plazo
-- [ ] Configuración de módulos (activar/desactivar por familia)
-- [ ] Dashboard con widgets personalizables
-- [ ] Búsqueda de usuarios para invitar
-- [ ] Avatares subidos (no solo URLs)
+- [ ] Configuración de módulos por familia
+- [ ] Dashboard con widgets
+- [ ] Búsqueda de usuarios
+- [ ] Avatares subidos
 
 ### Largo Plazo
-- [ ] Módulos adicionales (Notes, Planner, Fitness, Tasks, Lists)
-- [ ] Integraciones externas (Google Calendar)
-- [ ] App móvil (React Native / Capacitor)
-- [ ] Rate limiting
-- [ ] Audit logs UI
+- [ ] Módulos adicionales (Notes, Planner, etc.)
+- [ ] Integraciones externas
+- [ ] App móvil
 
 ---
 
-## 🐛 Problemas Resueltos (Historia)
+## 🗃️ Database Migrations
 
-### 1. Recursión Infinita en RLS ✅ RESUELTO
-**Problema**: Políticas RLS causaban `infinite recursion detected in policy for relation "family_members"`
-
-**Causa**: Las políticas referenciaban `family_members` dentro de sí mismas con `EXISTS`
-
-**Solución**: Funciones `SECURITY DEFINER` que bypasean RLS:
-```sql
-CREATE FUNCTION is_family_member(...) SECURITY DEFINER STABLE
-CREATE FUNCTION has_family_role(...) SECURITY DEFINER STABLE
-```
-
-### 2. "new row violates row-level security policy for table families" ✅ RESUELTO
-**Problema**: No se podían crear familias incluso con políticas RLS correctas
-
-**Causa**: El cliente de Supabase server-side no pasaba correctamente el JWT del usuario autenticado
-
-**Solución**: Usar `supabaseAdmin` (service role key) solo para crear familia + añadir owner inicial
-```typescript
-// src/routes/(protected)/families/+page.server.ts
-const { data: family } = await supabaseAdmin.from('families').insert(...)
-```
-
-### 3. Avatares no cargaban (CORS) ✅ RESUELTO
-**Problema**: Imágenes de Google (`lh3.googleusercontent.com`) no cargaban
-
-**Solución**: Añadir atributos CORS al `<img>`:
-```svelte
-<img
-  src={avatarUrl}
-  referrerpolicy="no-referrer"
-  crossorigin="anonymous"
-/>
-```
+- **`001-complete-schema.sql`**: Esquema inicial (profiles, familias, miembros)
+- **`002-wishlist-module.sql`**: Módulo wishlist con anti-spoiler
+- **`003-wishlist-improvements.sql`**: Múltiples links
+- **`004-remove-aniversario.sql`**: Elimina evento
+- **`005-enable-realtime.sql`**: Habilita Realtime
+- **`006-gift-reservations.sql`**: Sistema "Yo lo miro"
+- **`007-enable-email-auth.sql`**: Docs email/password
+- **`008-allow-invited-users-view-families.sql`**: RLS invitados
+- **`009-fix-invitation-duplicates.sql`**: Fix duplicados
+- **`010-gift-comments-and-status-system.sql`**: Sistema comentarios ✅ NUEVO
+- **`011-fix-family-rls-policies.sql`**: Fix políticas familia
+- **`012-fix-extract-mentions-function.sql`**: Fix función menciones
+- **`013-update-mentions-extraction.sql`**: Menciones con UUIDs
+- **`014-fix-ambiguous-column.sql`**: Fix columnas ambiguas
+- **`015-improve-notification-links.sql`**: Links con ?item=id ✅ NUEVO
 
 ---
 
-## 🔧 Configuración y Variables de Entorno
+## 🎯 Características Destacadas del Sistema de Notificaciones
 
-### `.env` (⚠️ NUNCA COMMITEAR)
-```bash
-VITE_SUPABASE_URL=https://wismzxvqrypwqwqpgnfi.supabase.co
-VITE_SUPABASE_ANON_KEY=sb_publishable_zqyc7a9hTTb0Mvpl8iXnkw_tCnWMGTQ
-SUPABASE_SECRET_KEY=sb_secret_4rt6Xf6e28dd3XKz3RmwKA_bHayhXlD
-SUPABASE_PROJECT_ID=wismzxvqrypwqwqpgnfi
-SUPABASE_PROJECT_URL=https://wismzxvqrypwqwqpgnfi.supabase.co
-PUBLIC_SUPABASE_URL=https://wismzxvqrypwqwqpgnfi.supabase.co
-```
+### Flujo Completo de Mención
+1. Usuario A comenta en item de Usuario B
+2. Usuario A escribe `@` → aparece dropdown con miembros
+3. Usuario A selecciona "Usuario C" del dropdown
+4. Se inserta `@{{uuid-c:Usuario C}}` en el textarea
+5. Al enviar, el trigger PostgreSQL:
+   - Detecta la mención
+   - Valida que Usuario C sea miembro y no sea el owner
+   - Crea registro en `gift_comment_mentions`
+   - Crea notificación para Usuario C
+   - El link incluye `?item={item_id}`
+6. Usuario C ve badge rojo en campana
+7. Usuario C hace click en la notificación:
+   - Se marca como leída
+   - Navega a `/family/{id}/wishlist?item={item_id}`
+   - El `onMount()` detecta el parámetro
+   - Se abre automáticamente el modal del item
+   - Se limpia la URL
 
-### Configuración de Supabase Auth ✅ NUEVO
-
-Para habilitar completamente la autenticación con email/password, debes configurar lo siguiente en el **Supabase Dashboard**:
-
-1. **Authentication > Providers > Email**:
-   - ✅ Enable Email provider (debe estar habilitado)
-   - Desarrollo: Desactiva "Confirm email" para pruebas rápidas
-   - Producción: Activa "Confirm email" por seguridad
-
-2. **Authentication > URL Configuration**:
-   - Site URL: `http://localhost:5173` (desarrollo) / tu dominio (producción)
-   - Redirect URLs: Añade `http://localhost:5173/auth/callback`
-
-3. **Authentication > Email Templates** (opcional):
-   - Personaliza los emails de confirmación y recuperación de contraseña
-
-**Nota**: El trigger `handle_new_user()` ya está configurado en la migración 001 y creará automáticamente el perfil cuando un usuario se registre.
-
-### Scripts NPM
-```bash
-npm run dev          # Desarrollo
-npm run build        # Build producción
-npm run check        # TypeScript check
-npm run format       # Prettier
-npm run lint         # ESLint
-```
+### Ventajas del Sistema
+- ✅ Tiempo real con Supabase Realtime
+- ✅ Historial completo de notificaciones
+- ✅ Navegación directa al contexto
+- ✅ No se pierden notificaciones
+- ✅ UX fluida sin recargas
+- ✅ Soporta nombres con espacios
+- ✅ Validación server-side completa
 
 ---
 
-## 📝 Notas Importantes para Futuras Sesiones
+## 📝 Notas Importantes
 
 ### Svelte 5 (Runes)
-Este proyecto usa **Svelte 5** con runes. NO uses la sintaxis antigua:
 ```svelte
-<!-- ❌ ANTIGUO (Svelte 4) -->
-<script>
-  export let data;
-  let count = 0;
-  $: doubled = count * 2;
-</script>
-
-<!-- ✅ NUEVO (Svelte 5) -->
+<!-- ✅ CORRECTO -->
 <script>
   let { data } = $props();
   let count = $state(0);
@@ -430,89 +406,64 @@ Este proyecto usa **Svelte 5** con runes. NO uses la sintaxis antigua:
 </script>
 ```
 
-### Supabase Client Usage
-```typescript
-// ✅ CORRECTO: Cliente normal (con RLS)
-import { supabase } from '$lib/supabase';
-await supabase.from('families').select('*'); // RLS aplicado
-
-// ⚠️ CUIDADO: Cliente admin (bypasses RLS)
-import { supabaseAdmin } from '$lib/supabase-admin';
-// Solo usar en server-side para operaciones críticas
-await supabaseAdmin.from('families').insert(...);
+### Formato de Menciones
+```
+Formato interno: @{{user_id:display_name}}
+Ejemplo: @{{123e4567-e89b-12d3-a456-426614174000:Daniel Tamargo}}
+Render visual: @Daniel Tamargo (resaltado en color primary)
 ```
 
 ### RLS Helper Functions
-Al escribir políticas RLS, **SIEMPRE** usa las funciones helper:
 ```sql
 -- ✅ CORRECTO
 USING (is_family_member(family_id, auth.uid()))
 
--- ❌ INCORRECTO (causa recursión)
+-- ❌ INCORRECTO (recursión)
 USING (EXISTS (SELECT 1 FROM family_members WHERE ...))
 ```
-
-### Database Migrations
-- **`001-complete-schema.sql`**: Esquema inicial completo (perfiles, familias, miembros, módulos, etc.)
-  - Incluye trigger `handle_new_user()` que crea perfil automáticamente al registrarse
-- **`002-wishlist-module.sql`**: Módulo de wishlist completo con RLS y anti-spoiler
-- **`003-wishlist-improvements.sql`**: Mejoras al wishlist (múltiples links, sin quantity)
-- **`004-remove-aniversario.sql`**: Elimina evento "Aniversario"
-- **`005-enable-realtime.sql`**: Habilita Supabase Realtime para wishlist ✅
-- **`006-gift-reservations.sql`**: Sistema de reservas "Yo lo miro" con RLS y Realtime ✅
-- **`007-enable-email-auth.sql`**: Documentación para email/password auth ✅ NUEVO
-- Para aplicar: Ejecutar en SQL Editor de Supabase Dashboard en orden secuencial
-
-### TypeScript
-- El usuario prefiere NO ejecutar `npm run check` durante desarrollo
-- Solo verificar TypeScript al final antes de build
-- Confiar en que el código esté correcto
-
-### Testing
-- El usuario probará las funcionalidades manualmente
-- NO ejecutar `npm run dev` automáticamente
-- NO ejecutar `npm run build` hasta que lo pida
 
 ---
 
 ## 🎯 Próxima Sesión - Contexto Rápido
 
-Si empiezas una nueva sesión, lee esto primero:
+**El proyecto está COMPLETO en estas áreas**:
+1. ✅ Autenticación (email/password + OAuth + 2FA)
+2. ✅ Sistema de familias e invitaciones
+3. ✅ Módulo de miembros
+4. ✅ Módulo de wishlist con anti-spoiler
+5. ✅ Sistema de comentarios con @menciones
+6. ✅ Sistema de notificaciones en tiempo real
+7. ✅ UI/UX moderna y responsive
 
-1. **El proyecto funciona** ✅ - Autenticación completa (email/password + OAuth), familias, miembros y wishlist
-2. **Seguridad validada** ✅ - No hay privilege escalation ni broken access control
-3. **RLS configurado** ✅ - Todas las tablas con políticas usando funciones helper
-4. **Tipos de TypeScript actualizados** ✅ - Ejecutar `npx supabase gen types typescript --project-id wismzxvqrypwqwqpgnfi > src/lib/types/database.ts` cuando cambies el esquema
-5. **Próximo paso sugerido**: Implementar módulo de Eventos o Gastos
-6. **Stack**: SvelteKit 2 + Svelte 5 (runes) + Supabase + TailwindCSS + DaisyUI
+**Próximos pasos sugeridos**:
+- Implementar subida de imágenes (Supabase Storage)
+- Expandir gift status a enum completo
+- Módulo de Eventos o Gastos
+
+**Stack**: SvelteKit 2 + Svelte 5 + Supabase + TailwindCSS + DaisyUI
 
 ### Comandos útiles
 ```bash
-# Regenerar tipos de TypeScript
+# Regenerar tipos
 npx supabase gen types typescript --project-id wismzxvqrypwqwqpgnfi > src/lib/types/database.ts
-
-# Ver logs del servidor de desarrollo (si está corriendo)
-# Buscar en consola "Creating family for user:" para debug
 
 # Ver migraciones
 ls supabase/migrations/
 
-# Ver políticas RLS actuales (en Supabase SQL Editor)
-SELECT schemaname, tablename, policyname FROM pg_policies
-WHERE tablename IN ('families', 'family_members');
+# Ejecutar migración (en Supabase SQL Editor)
+# Copiar contenido del archivo .sql y ejecutar
 ```
 
 ---
 
-## 📞 Contacto con Usuario
+## 📞 Preferencias del Usuario
 
-**Preferencias del usuario**:
-- ✅ Explicaciones de seguridad detalladas
-- ✅ Análisis de arquitectura
-- ✅ Soluciones robustas aunque sean más complejas
-- ❌ NO ejecutar builds/checks automáticamente
-- ❌ NO crear archivos innecesarios (como docs no pedidos)
+- ✅ Explicaciones técnicas detalladas
+- ✅ Análisis de arquitectura y seguridad
+- ✅ Soluciones robustas
+- ❌ NO ejecutar builds automáticamente
+- ❌ NO crear docs no pedidos
 
 ---
 
-_Este documento debe actualizarse cada vez que se implementen cambios significativos en el proyecto._
+_Documento actualizado: 2025-12-29 - Sistema de notificaciones y comentarios completo_

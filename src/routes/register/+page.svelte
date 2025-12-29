@@ -36,7 +36,7 @@
       password,
       options: {
         data: {
-          display_name: displayName || email.split('@')[0]
+          name: displayName || email.split('@')[0]  // Usar 'name' para que el trigger lo capture
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`
       }

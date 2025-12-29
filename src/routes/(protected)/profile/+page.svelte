@@ -125,9 +125,6 @@
                 name={displayName || data.user?.email}
                 size="xl"
               />
-              <p class="text-xs text-base-content/60 text-center max-w-[150px]">
-                Avatar is automatically generated from your name
-              </p>
             </div>
 
             <!-- Form Fields -->
@@ -156,11 +153,6 @@
                   class="input input-bordered"
                   disabled
                 />
-                <label class="label">
-                  <span class="label-text-alt text-base-content/60">
-                    Email cannot be changed
-                  </span>
-                </label>
               </div>
 
               <div class="card-actions justify-end pt-2">

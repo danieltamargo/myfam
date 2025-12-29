@@ -23,7 +23,10 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	// Get pending invitations
 	const { data: invitations } = await supabase
 		.from('family_invitations')
-		.select('*')
+		.select(`
+			*,
+			invited_user:profiles!invited_user_id(email)
+		`)
 		.eq('family_id', familyId)
 		.eq('status', 'pending')
 		.order('created_at', { ascending: false });
@@ -90,29 +93,44 @@ export const actions: Actions = {
 			return fail(400, { message: 'User is already a member of this family' });
 		}
 
-		// Check if already invited
+		// Check if already invited (use maybeSingle to handle case where no rows found)
 		const { data: existingInvite } = await supabase
 			.from('family_invitations')
-			.select('id')
+			.select('id, status')
 			.eq('family_id', familyId)
 			.eq('invited_user_id', invitedUser.id)
 			.eq('status', 'pending')
-			.single();
+			.maybeSingle();
 
 		if (existingInvite) {
-			return fail(400, { message: 'User has already been invited' });
+			// Update the existing invitation to refresh it
+			await supabase
+				.from('family_invitations')
+				.update({
+					invited_by: user.id,
+					updated_at: new Date().toISOString()
+				})
+				.eq('id', existingInvite.id);
+
+			return { success: true, message: 'Invitation resent successfully' };
 		}
 
-		// Create invitation
-		const { error } = await supabase.from('family_invitations').insert({
-			family_id: familyId,
-			invited_by: user.id,
-			invited_user_id: invitedUser.id,
-			status: 'pending'
-		});
+		// Create invitation - use upsert to handle race conditions
+		const { error } = await supabase
+			.from('family_invitations')
+			.upsert({
+				family_id: familyId,
+				invited_by: user.id,
+				invited_user_id: invitedUser.id,
+				status: 'pending'
+			}, {
+				onConflict: 'family_id,invited_user_id',
+				ignoreDuplicates: false
+			});
 
 		if (error) {
-			return fail(500, { message: error.message });
+			console.error('Invitation error:', error);
+			return fail(500, { message: 'Failed to send invitation. Please try again.' });
 		}
 
 		return { success: true, message: 'Invitation sent successfully' };
