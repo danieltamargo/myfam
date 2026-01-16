@@ -1,0 +1,56 @@
+-- ============================================
+-- Fix OAuth Profile Synchronization
+-- ============================================
+-- This migration fixes the issue where OAuth users (Google, GitHub)
+-- don't get their display_name and avatar_url properly synced to profiles table
+
+-- Update the handle_new_user trigger to properly handle OAuth metadata
+-- CREATE OR REPLACE FUNCTION public.handle_new_user()
+-- RETURNS TRIGGER AS $$
+-- BEGIN
+--   INSERT INTO public.profiles (id, display_name, avatar_url, email)
+--   VALUES (
+--     NEW.id,
+--     -- Try multiple possible metadata fields for name
+--     COALESCE(
+--       NEW.raw_user_meta_data->>'full_name',
+--       NEW.raw_user_meta_data->>'name',
+--       NEW.email
+--     ),
+--     -- Try avatar_url from metadata
+--     NEW.raw_user_meta_data->>'avatar_url',
+--     NEW.email
+--   );
+--   RETURN NEW;
+-- END;
+-- $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- -- Recreate the trigger (just to ensure it's active)
+-- DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+-- CREATE TRIGGER on_auth_user_created
+--   AFTER INSERT ON auth.users
+--   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- -- Sync existing OAuth users who have empty display_name or avatar_url
+-- -- This will update profiles for users who registered via OAuth before this fix
+-- UPDATE public.profiles p
+-- SET
+--   display_name = COALESCE(
+--     p.display_name,
+--     u.raw_user_meta_data->>'full_name',
+--     u.raw_user_meta_data->>'name',
+--     p.email
+--   ),
+--   avatar_url = COALESCE(
+--     p.avatar_url,
+--     u.raw_user_meta_data->>'avatar_url'
+--   ),
+--   updated_at = NOW()
+-- FROM auth.users u
+-- WHERE p.id = u.id
+--   AND (
+--     p.display_name IS NULL
+--     OR p.display_name = ''
+--     OR p.display_name = p.email
+--     OR p.avatar_url IS NULL
+--   );

@@ -22,6 +22,16 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 			role: fm.role
 		}));
 
+	// Get user's profile to check active_family_id
+	const { data: profile } = await supabase
+		.from('profiles')
+		.select('active_family_id')
+		.eq('id', user.id)
+		.single();
+
+	// Find the active family from the user's families
+	const activeFamily = families.find((f) => f.id === profile?.active_family_id) || families[0] || null;
+
 	// Get all notifications (both read and unread)
 	const { data: notifications } = await supabase
 		.from('notifications')
@@ -34,6 +44,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 		user,
 		session,
 		families,
+		activeFamily,
 		notifications: notifications || []
 	};
 };

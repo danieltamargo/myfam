@@ -32,8 +32,7 @@
 
 {#if items.length === 0}
 	<div class="text-center py-12">
-		<p class="text-base-content/50 text-lg">No hay regalos en la wishlist</p>
-		<p class="text-base-content/40 text-sm mt-2">¡Añade el primero!</p>
+		<p class="text-base-content/50 text-lg">Aún no hay regalos en la wishlist</p>
 	</div>
 {:else}
 	<div class="overflow-x-auto">

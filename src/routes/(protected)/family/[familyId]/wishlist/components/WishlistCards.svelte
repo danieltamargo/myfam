@@ -34,13 +34,7 @@
 
 {#if items.length === 0}
 	<div class="text-center py-12">
-		{#if currentUserId === null}
-			<p class="text-base-content/50 text-lg">No hay regalos en la wishlist</p>
-		{:else if isMyItem('dummy')}
-			<p class="text-base-content/50 text-lg">Aún no has agregado ningún regalo. ¡Agrega el primero!</p>
-		{:else}
-			<p class="text-base-content/50 text-lg">Aún no hay regalos en esta wishlist.</p>
-		{/if}
+		<p class="text-base-content/50 text-lg">Aún no hay regalos en la wishlist</p>
 	</div>
 {:else}
 	<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">

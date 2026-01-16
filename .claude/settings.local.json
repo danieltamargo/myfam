@@ -10,7 +10,12 @@
       "Bash(ls:*)",
       "Bash(head:*)",
       "Bash(grep:*)",
-      "Bash(npx supabase:*)"
+      "Bash(npx supabase:*)",
+      "Bash(cat:*)",
+      "Bash(wc:*)",
+      "Bash(supabase logs:*)",
+      "Bash(Get-Date -Format \"yyyyMMddHHmmss\")",
+      "mcp__svelte__svelte-autofixer"
     ]
   }
 }

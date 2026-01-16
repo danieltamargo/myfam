@@ -19,12 +19,27 @@
       name: string;
       role: string;
     }>;
+    activeFamily?: {
+      id: string;
+      name: string;
+      role: string;
+    } | null;
     notifications?: Array<any>;
   }
 
-  let { user, families = [], notifications = [] }: Props = $props();
+  let { user, families = [], activeFamily: initialActiveFamily = null, notifications = [] }: Props = $props();
 
   const supabase = createClient();
+
+  // Initialize active family from server data
+  $effect(() => {
+    if (initialActiveFamily && !$activeFamily) {
+      activeFamily.set(initialActiveFamily);
+    } else if (families.length > 0 && !$activeFamily) {
+      // Fallback: select first family if no active family
+      activeFamily.set(families[0]);
+    }
+  });
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -38,14 +53,22 @@
     { href: '/profile', label: 'Profile Settings', icon: '⚙️' }
   ];
 
-  const isActive = $derived((href: string) => {
+  const isActive = (href: string) => {
     return $page.url.pathname === href || $page.url.pathname.startsWith(href + '/');
-  });
+  };
 
-  function selectFamily(familyId: string) {
+  async function selectFamily(familyId: string) {
     const family = families.find(f => f.id === familyId);
-    if (family) {
+    if (family && user?.id) {
+      // Update local store
       activeFamily.set(family);
+
+      // Update database to persist across devices
+      await supabase
+        .from('profiles')
+        .update({ active_family_id: familyId })
+        .eq('id', user.id);
+
       goto(`/family/${familyId}`);
     }
   }

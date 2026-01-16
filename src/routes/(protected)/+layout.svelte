@@ -10,6 +10,11 @@
         name: string;
         role: string;
       }>;
+      activeFamily: {
+        id: string;
+        name: string;
+        role: string;
+      } | null;
       notifications: Array<any>;
     };
     children: any;
@@ -19,7 +24,7 @@
 </script>
 
 <div class="min-h-screen flex flex-col">
-  <Header user={data.user} families={data.families} notifications={data.notifications} />
+  <Header user={data.user} families={data.families} activeFamily={data.activeFamily} notifications={data.notifications} />
 
   <main class="flex-1">
     {@render children()}

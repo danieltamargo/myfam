@@ -287,6 +287,310 @@ export type Database = {
           },
         ]
       }
+      game_achievements: {
+        Row: {
+          achievement_key: string
+          family_id: string | null
+          game_type: Database["public"]["Enums"]["game_type"] | null
+          id: string
+          metadata: Json | null
+          session_id: string | null
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          family_id?: string | null
+          game_type?: Database["public"]["Enums"]["game_type"] | null
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          family_id?: string | null
+          game_type?: Database["public"]["Enums"]["game_type"] | null
+          id?: string
+          metadata?: Json | null
+          session_id?: string | null
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_achievements_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_achievements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_achievements_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_moves: {
+        Row: {
+          created_at: string
+          id: string
+          move_data: Json
+          move_number: number
+          player_id: string | null
+          player_number: number
+          session_id: string
+          state_after: Json
+          time_taken_ms: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          move_data: Json
+          move_number: number
+          player_id?: string | null
+          player_number: number
+          session_id: string
+          state_after: Json
+          time_taken_ms?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          move_data?: Json
+          move_number?: number
+          player_id?: string | null
+          player_number?: number
+          session_id?: string
+          state_after?: Json
+          time_taken_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_moves_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_moves_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "game_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_rooms: {
+        Row: {
+          config: Json | null
+          created_at: string
+          created_by: string
+          family_id: string | null
+          finished_at: string | null
+          game_type: Database["public"]["Enums"]["game_type"]
+          id: string
+          is_public: boolean
+          join_code: string | null
+          max_players: number
+          name: string
+          started_at: string | null
+          status: Database["public"]["Enums"]["room_status"]
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          created_by: string
+          family_id?: string | null
+          finished_at?: string | null
+          game_type: Database["public"]["Enums"]["game_type"]
+          id?: string
+          is_public?: boolean
+          join_code?: string | null
+          max_players?: number
+          name: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["room_status"]
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          created_by?: string
+          family_id?: string | null
+          finished_at?: string | null
+          game_type?: Database["public"]["Enums"]["game_type"]
+          id?: string
+          is_public?: boolean
+          join_code?: string | null
+          max_players?: number
+          name?: string
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["room_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_rooms_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_rooms_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_sessions: {
+        Row: {
+          duration_seconds: number | null
+          final_state: Json | null
+          finished_at: string | null
+          game_state: Json
+          game_type: Database["public"]["Enums"]["game_type"]
+          has_bots: boolean
+          id: string
+          is_draw: boolean
+          room_id: string
+          started_at: string
+          status: string
+          winner_id: string | null
+          winner_player_number: number | null
+        }
+        Insert: {
+          duration_seconds?: number | null
+          final_state?: Json | null
+          finished_at?: string | null
+          game_state?: Json
+          game_type: Database["public"]["Enums"]["game_type"]
+          has_bots?: boolean
+          id?: string
+          is_draw?: boolean
+          room_id: string
+          started_at?: string
+          status?: string
+          winner_id?: string | null
+          winner_player_number?: number | null
+        }
+        Update: {
+          duration_seconds?: number | null
+          final_state?: Json | null
+          finished_at?: string | null
+          game_state?: Json
+          game_type?: Database["public"]["Enums"]["game_type"]
+          has_bots?: boolean
+          id?: string
+          is_draw?: boolean
+          room_id?: string
+          started_at?: string
+          status?: string
+          winner_id?: string | null
+          winner_player_number?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_sessions_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_sessions_winner_id_fkey"
+            columns: ["winner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_stats: {
+        Row: {
+          average_move_time_ms: number | null
+          best_win_streak: number
+          current_win_streak: number
+          elo_rating: number | null
+          family_id: string | null
+          game_specific_stats: Json | null
+          game_type: Database["public"]["Enums"]["game_type"]
+          games_drawn: number
+          games_lost: number
+          games_played: number
+          games_won: number
+          id: string
+          last_played_at: string | null
+          total_time_played_seconds: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_move_time_ms?: number | null
+          best_win_streak?: number
+          current_win_streak?: number
+          elo_rating?: number | null
+          family_id?: string | null
+          game_specific_stats?: Json | null
+          game_type: Database["public"]["Enums"]["game_type"]
+          games_drawn?: number
+          games_lost?: number
+          games_played?: number
+          games_won?: number
+          id?: string
+          last_played_at?: string | null
+          total_time_played_seconds?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_move_time_ms?: number | null
+          best_win_streak?: number
+          current_win_streak?: number
+          elo_rating?: number | null
+          family_id?: string | null
+          game_specific_stats?: Json | null
+          game_type?: Database["public"]["Enums"]["game_type"]
+          games_drawn?: number
+          games_lost?: number
+          games_played?: number
+          games_won?: number
+          id?: string
+          last_played_at?: string | null
+          total_time_played_seconds?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_stats_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_stats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gift_comment_mentions: {
         Row: {
           comment_id: string
@@ -721,6 +1025,60 @@ export type Database = {
         }
         Relationships: []
       }
+      room_participants: {
+        Row: {
+          guest_identifier: string | null
+          guest_name: string | null
+          id: string
+          is_active: boolean
+          is_ready: boolean
+          joined_at: string
+          left_at: string | null
+          player_number: number | null
+          room_id: string
+          user_id: string | null
+        }
+        Insert: {
+          guest_identifier?: string | null
+          guest_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_ready?: boolean
+          joined_at?: string
+          left_at?: string | null
+          player_number?: number | null
+          room_id: string
+          user_id?: string | null
+        }
+        Update: {
+          guest_identifier?: string | null
+          guest_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_ready?: boolean
+          joined_at?: string
+          left_at?: string | null
+          player_number?: number | null
+          room_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_participants_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -729,6 +1087,25 @@ export type Database = {
       extract_mentions_from_comment: {
         Args: { comment_text: string }
         Returns: string[]
+      }
+      generate_join_code: { Args: never; Returns: string }
+      get_game_leaderboard: {
+        Args: {
+          p_family_id: string
+          p_game_type: Database["public"]["Enums"]["game_type"]
+          p_limit?: number
+        }
+        Returns: {
+          avatar_url: string
+          best_win_streak: number
+          display_name: string
+          elo_rating: number
+          games_played: number
+          games_won: number
+          rank: number
+          user_id: string
+          win_rate: number
+        }[]
       }
       get_item_purchased_quantity: {
         Args: { item_uuid: string }
@@ -756,7 +1133,8 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      game_type: "tic_tac_toe" | "connect_four" | "wordle"
+      room_status: "waiting" | "in_progress" | "finished" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -883,6 +1261,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      game_type: ["tic_tac_toe", "connect_four", "wordle"],
+      room_status: ["waiting", "in_progress", "finished", "cancelled"],
+    },
   },
 } as const

@@ -113,8 +113,8 @@
 			<div class="flex flex-col gap-2">
 				<button
 					type="button"
-					class="btn btn-sm {selectedPurchaseStatus === 'purchased'
-						? 'btn-success'
+					class="btn btn-sm transition-all hover:scale-105 {selectedPurchaseStatus === 'purchased'
+						? 'btn-success shadow-md text-white'
 						: 'btn-ghost'} w-full justify-start"
 					onclick={() => {
 						if (selectedPurchaseStatus === 'purchased') {
@@ -131,8 +131,8 @@
 				</button>
 				<button
 					type="button"
-					class="btn btn-sm {selectedPurchaseStatus === 'not_purchased'
-						? 'btn-outline btn-info'
+					class="btn btn-sm transition-all hover:scale-105 {selectedPurchaseStatus === 'not_purchased'
+						? 'btn-info shadow-md text-white'
 						: 'btn-ghost'} w-full justify-start"
 					onclick={() => {
 						if (selectedPurchaseStatus === 'not_purchased') {
