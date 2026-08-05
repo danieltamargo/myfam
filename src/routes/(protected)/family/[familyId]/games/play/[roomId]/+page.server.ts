@@ -1,7 +1,13 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type { TicTacToeState, TicTacToeBoard, Connect4State, BotDifficulty } from '$lib/types/games';
+import type {
+	TicTacToeState,
+	TicTacToeBoard,
+	Connect4State,
+	BotDifficulty
+} from '$lib/types/games';
 import { getBotMove } from '$lib/games/ai/tic-tac-toe-ai';
+import type { Database, Json } from '$lib/types/database';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -250,19 +256,19 @@ async function executeBotTurn(
 		player_number: botPlayerNumber,
 		move_number: moveNumber,
 		move_data: botMove,
-		state_after: newState
+		state_after: newState as unknown as Json
 	});
 
 	// Update session state
-	const updateData: any = {
-		game_state: newState
+	const updateData: Database['public']['Tables']['game_sessions']['Update'] = {
+		game_state: newState as unknown as Json
 	};
 
 	// If game is over, update session
 	if (winner || isDraw) {
 		updateData.status = 'finished';
 		updateData.finished_at = new Date().toISOString();
-		updateData.final_state = newState;
+		updateData.final_state = newState as unknown as Json;
 		updateData.is_draw = isDraw;
 
 		if (winner) {
@@ -323,7 +329,11 @@ export const actions: Actions = {
 			return fail(403, { error: 'You are not a participant in this game' });
 		}
 
-		const state = session.game_state as TicTacToeState;
+		if (participant.player_number !== 1 && participant.player_number !== 2) {
+			return fail(409, { error: 'Participant has no valid player number' });
+		}
+
+		const state = session.game_state as unknown as TicTacToeState;
 
 		// Validate it's this player's turn
 		if (state.currentPlayer !== participant.player_number) {
@@ -369,7 +379,7 @@ export const actions: Actions = {
 			player_number: participant.player_number,
 			move_number: moveNumber,
 			move_data: { row, col },
-			state_after: newState
+			state_after: newState as unknown as Json
 		});
 
 		if (moveError) {
@@ -378,15 +388,15 @@ export const actions: Actions = {
 		}
 
 		// Update session state
-		const updateData: any = {
-			game_state: newState
+		const updateData: Database['public']['Tables']['game_sessions']['Update'] = {
+			game_state: newState as unknown as Json
 		};
 
 		// If game is over, update session
 		if (winner || isDraw) {
 			updateData.status = 'finished';
 			updateData.finished_at = new Date().toISOString();
-			updateData.final_state = newState;
+			updateData.final_state = newState as unknown as Json;
 			updateData.is_draw = isDraw;
 
 			if (winner) {
@@ -470,21 +480,14 @@ export const actions: Actions = {
 		const roomId = params.roomId;
 
 		// Verify room exists and user is participant
-		const { data: room } = await supabase
-			.from('game_rooms')
-			.select('*')
-			.eq('id', roomId)
-			.single();
+		const { data: room } = await supabase.from('game_rooms').select('*').eq('id', roomId).single();
 
 		if (!room) {
 			return fail(404, { error: 'Room not found' });
 		}
 
 		// Reset all participants to not ready
-		await supabase
-			.from('room_participants')
-			.update({ is_ready: false })
-			.eq('room_id', roomId);
+		await supabase.from('room_participants').update({ is_ready: false }).eq('room_id', roomId);
 
 		// Update room status
 		await supabase

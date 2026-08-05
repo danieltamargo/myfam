@@ -20,22 +20,22 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	const enrichedInvitations = await Promise.all(
 		(invitations || []).map(async (inv) => {
 			// Get family data
-			const { data: family, error: familyError } = await supabase
-				.from('families')
-				.select('id, name')
-				.eq('id', inv.family_id)
-				.single();
+			const { data: family, error: familyError } = inv.family_id
+				? await supabase.from('families').select('id, name').eq('id', inv.family_id).single()
+				: { data: null, error: null };
 
 			if (familyError) {
 				console.error('Error fetching family:', familyError);
 			}
 
 			// Get invited_by user data
-			const { data: invitedBy, error: invitedByError } = await supabase
-				.from('profiles')
-				.select('display_name, email')
-				.eq('id', inv.invited_by)
-				.single();
+			const { data: invitedBy, error: invitedByError } = inv.invited_by
+				? await supabase
+						.from('profiles')
+						.select('display_name, email')
+						.eq('id', inv.invited_by)
+						.single()
+				: { data: null, error: null };
 
 			if (invitedByError) {
 				console.error('Error fetching invited_by:', invitedByError);
@@ -74,6 +74,10 @@ export const actions: Actions = {
 		if (invitationError || !invitation) {
 			console.error('Invitation error:', invitationError);
 			return fail(404, { message: 'Invitation not found or already processed' });
+		}
+
+		if (!invitation.family_id) {
+			return fail(400, { message: 'Invitation has no family assigned' });
 		}
 
 		// Check if user is already a member

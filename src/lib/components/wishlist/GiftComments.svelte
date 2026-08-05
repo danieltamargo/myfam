@@ -44,9 +44,7 @@
 
 	// Filter members for @mentions (exclude item owner and current user)
 	let mentionableMembers = $derived(
-		members.filter(
-			(m) => m.user_id !== itemOwnerId && m.user_id !== currentUserId
-		)
+		members.filter((m) => m.user_id !== itemOwnerId && m.user_id !== currentUserId)
 	);
 
 	// Filtered suggestions based on what user is typing
@@ -54,9 +52,7 @@
 		if (!showMentionSuggestions || !mentionFilter) return mentionableMembers;
 
 		const filter = mentionFilter.toLowerCase();
-		return mentionableMembers.filter((m) =>
-			m.profiles.display_name.toLowerCase().includes(filter)
-		);
+		return mentionableMembers.filter((m) => m.profiles.display_name.toLowerCase().includes(filter));
 	});
 
 	// Handle textarea input to detect @mentions
@@ -134,7 +130,10 @@
 	// Converts @{{user_id:display_name}} format to highlighted display name
 	function renderCommentWithMentions(text: string): string {
 		// First, convert the special format to highlighted mentions
-		let result = text.replace(/@\{\{([^:]+):([^}]+)\}\}/g, '<span class="text-primary font-semibold">@$2</span>');
+		let result = text.replace(
+			/@\{\{([^:]+):([^}]+)\}\}/g,
+			'<span class="text-primary font-semibold">@$2</span>'
+		);
 		// Also support legacy simple mentions (without spaces)
 		result = result.replace(/@([\w-]+)/g, '<span class="text-primary font-semibold">@$1</span>');
 		return result;
@@ -151,7 +150,7 @@
 <div class="space-y-4">
 	<!-- Comments Header -->
 	<div class="flex items-center justify-between">
-		<h4 class="font-semibold text-lg">Comentarios ({comments.length})</h4>
+		<h4 class="text-lg font-semibold">Comentarios ({comments.length})</h4>
 	</div>
 
 	<!-- New Comment Form -->
@@ -179,7 +178,7 @@
 				bind:value={newComment}
 				oninput={handleInput}
 				onkeydown={handleKeydown}
-				class="textarea textarea-bordered w-full focus:textarea-primary min-h-[100px]"
+				class="textarea-bordered textarea min-h-[100px] w-full focus:textarea-primary"
 				placeholder="Escribe un comentario... Usa @ para mencionar a alguien"
 				disabled={isSubmitting}
 				required
@@ -189,13 +188,15 @@
 		<!-- Mention Suggestions Dropdown (outside form-control for better visibility) -->
 		{#if showMentionSuggestions && filteredSuggestions().length > 0}
 			<div class="relative">
-				<div class="absolute top-0 left-0 z-[200] bg-base-100 border-2 border-primary rounded-lg shadow-2xl max-h-64 overflow-y-auto w-80">
+				<div
+					class="absolute top-0 left-0 z-[200] max-h-64 w-80 overflow-y-auto rounded-lg border-2 border-primary bg-base-100 shadow-2xl"
+				>
 					<div class="p-2">
-						<p class="text-xs font-semibold text-base-content/70 px-2 py-1">Mencionar a:</p>
+						<p class="px-2 py-1 text-xs font-semibold text-base-content/70">Mencionar a:</p>
 						{#each filteredSuggestions() as member}
 							<button
 								type="button"
-								class="w-full flex items-center gap-3 px-3 py-2 hover:bg-primary hover:text-primary-content rounded-md transition-colors text-left"
+								class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-primary hover:text-primary-content"
 								onclick={() => insertMention(member)}
 							>
 								<Avatar
@@ -211,13 +212,26 @@
 			</div>
 		{/if}
 
-		<div class="flex justify-end mt-2">
-			<button type="submit" class="btn btn-primary btn-sm gap-2" disabled={isSubmitting || !newComment.trim()}>
+		<div class="mt-2 flex justify-end">
+			<button
+				type="submit"
+				class="btn gap-2 btn-sm btn-primary"
+				disabled={isSubmitting || !newComment.trim()}
+			>
 				{#if isSubmitting}
-					<span class="loading loading-spinner loading-xs"></span>
+					<span class="loading loading-xs loading-spinner"></span>
 					Enviando...
 				{:else}
-					<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						class="h-4 w-4"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
 						<line x1="22" y1="2" x2="11" y2="13"></line>
 						<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
 					</svg>
@@ -230,12 +244,12 @@
 	<!-- Comments List -->
 	<div class="space-y-3">
 		{#if comments.length === 0}
-			<div class="text-center py-8 text-base-content/50">
+			<div class="py-8 text-center text-base-content/50">
 				<p class="text-sm">No hay comentarios todavía</p>
 			</div>
 		{:else}
 			{#each comments as comment (comment.id)}
-				<div class="bg-base-200 rounded-lg p-4 space-y-2">
+				<div class="space-y-2 rounded-lg bg-base-200 p-4">
 					<!-- Comment Header -->
 					<div class="flex items-start justify-between gap-2">
 						<div class="flex items-center gap-2">
@@ -245,30 +259,43 @@
 								size="sm"
 							/>
 							<div>
-								<p class="font-semibold text-sm">{comment.profiles.display_name}</p>
+								<p class="text-sm font-semibold">{comment.profiles.display_name}</p>
 								<p class="text-xs text-base-content/60">{formatDate(comment.created_at)}</p>
 							</div>
 						</div>
 
 						<!-- Delete button (only for comment author) -->
 						{#if comment.author_id === currentUserId}
-							<form method="POST" action="?/deleteComment" use:enhance={() => {
-								return async ({ result, update }) => {
-									await update();
-									if (result.type === 'success') {
-										await invalidateAll();
-									}
-								};
-							}}>
+							<form
+								method="POST"
+								action="?/deleteComment"
+								use:enhance={() => {
+									return async ({ result, update }) => {
+										await update();
+										if (result.type === 'success') {
+											await invalidateAll();
+										}
+									};
+								}}
+							>
 								<input type="hidden" name="comment_id" value={comment.id} />
 								<button
 									type="submit"
-									class="btn btn-ghost btn-xs text-error"
+									class="btn text-error btn-ghost btn-xs"
 									title="Eliminar comentario"
 								>
-									<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										class="h-4 w-4"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+									>
 										<polyline points="3 6 5 6 21 6"></polyline>
-										<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+										<path
+											d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+										></path>
 									</svg>
 								</button>
 							</form>

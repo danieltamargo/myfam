@@ -30,7 +30,8 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 		.single();
 
 	// Find the active family from the user's families
-	const activeFamily = families.find((f) => f.id === profile?.active_family_id) || families[0] || null;
+	const activeFamily =
+		families.find((f) => f.id === profile?.active_family_id) || families[0] || null;
 
 	// Get all notifications (both read and unread)
 	const { data: notifications } = await supabase

@@ -49,9 +49,7 @@
 	const titleColor = $derived(style === 'critical' ? 'text-error' : 'text-primary');
 	const messageBgColor = $derived(style === 'critical' ? 'bg-error/5' : 'bg-primary/5');
 	const messageBorderColor = $derived(style === 'critical' ? 'border-error' : 'border-primary');
-	const confirmButtonClass = $derived(
-		style === 'critical' ? 'btn-error' : 'btn-primary'
-	);
+	const confirmButtonClass = $derived(style === 'critical' ? 'btn-error' : 'btn-primary');
 
 	// Check 2FA status when modal opens
 	$effect(() => {
@@ -222,17 +220,17 @@
 </script>
 
 {#if show}
-	<div class="modal modal-open">
+	<div class="modal-open modal">
 		<div class="modal-box border-2 {borderColor}">
 			<!-- Header with icon -->
-			<div class="flex items-center gap-3 mb-4">
-				<div class="{iconBgColor} p-3 rounded-full">
+			<div class="mb-4 flex items-center gap-3">
+				<div class="{iconBgColor} rounded-full p-3">
 					<div class={iconColor}>
 						{@html getIcon()}
 					</div>
 				</div>
 				<div>
-					<h3 class="font-bold text-xl {titleColor}">{title}</h3>
+					<h3 class="text-xl font-bold {titleColor}">{title}</h3>
 					{#if style === 'critical'}
 						<p class="text-sm text-base-content/70">This action cannot be undone</p>
 					{/if}
@@ -241,8 +239,8 @@
 
 			{#if !showVerificationStep}
 				<!-- Warning/Info message -->
-				<div class="{messageBgColor} border-l-4 {messageBorderColor} p-4 mb-4">
-					<p class="text-base-content mb-2">
+				<div class="{messageBgColor} border-l-4 {messageBorderColor} mb-4 p-4">
+					<p class="mb-2 text-base-content">
 						{@html message}
 					</p>
 					{#if details}
@@ -253,10 +251,10 @@
 				</div>
 
 				{#if require2FA && is2FAEnabled}
-					<div class="alert alert-info mb-4">
+					<div class="mb-4 alert alert-info">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="w-5 h-5"
+							class="h-5 w-5"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -274,7 +272,7 @@
 					<div class="alert alert-info">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="w-5 h-5"
+							class="h-5 w-5"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -294,7 +292,7 @@
 							id="verificationCode"
 							type="text"
 							inputmode="numeric"
-							class="input input-bordered w-full text-center text-2xl tracking-widest"
+							class="input-bordered input w-full text-center text-2xl tracking-widest"
 							bind:value={verificationCode}
 							placeholder="000000"
 							maxlength="6"
@@ -334,11 +332,11 @@
 					disabled={isVerifying || checking2FA}
 				>
 					{#if isVerifying || checking2FA}
-						<span class="loading loading-spinner loading-sm"></span>
+						<span class="loading loading-sm loading-spinner"></span>
 					{:else if showVerificationStep}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="w-5 h-5"
+							class="h-5 w-5"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -349,7 +347,7 @@
 					{:else if style === 'critical'}
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="w-5 h-5"
+							class="h-5 w-5"
 							viewBox="0 0 24 24"
 							fill="none"
 							stroke="currentColor"
@@ -358,7 +356,8 @@
 							stroke-linejoin="round"
 						>
 							<polyline points="3 6 5 6 21 6"></polyline>
-							<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+							<path
+								d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
 							></path>
 						</svg>
 					{/if}

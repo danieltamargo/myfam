@@ -139,8 +139,7 @@
 				image_url: item.image_url || '',
 				images: itemImages,
 				links: itemLinks,
-				event_ids:
-					item.gift_item_events?.map((e: any) => e.event_category_id) || [todosEventId()]
+				event_ids: item.gift_item_events?.map((e: any) => e.event_category_id) || [todosEventId()]
 			};
 
 			// Show sections if there's data
@@ -344,7 +343,7 @@
 	<WishlistHeader bind:viewMode onAddGift={() => openEditModal()} />
 
 	<!-- Main Layout: Sidebar (tablet+) + Content -->
-	<div class="flex flex-col md:flex-row gap-6">
+	<div class="flex flex-col gap-6 md:flex-row">
 		<!-- Filters Sidebar -->
 		<WishlistFilters
 			members={data.members}
@@ -355,7 +354,7 @@
 		/>
 
 		<!-- Content Area -->
-		<div class="flex-1 min-w-0">
+		<div class="min-w-0 flex-1">
 			{#if viewMode === 'cards'}
 				<WishlistCards
 					items={filteredItems()}

@@ -22,15 +22,13 @@
 	let { notifications, userId }: Props = $props();
 
 	let showOnlyUnread = $state(true);
-	let unreadCount = $derived(notifications.filter(n => !n.read).length);
+	let unreadCount = $derived(notifications.filter((n) => !n.read).length);
 	let showDropdown = $state(false);
 	let localNotifications = $state<Notification[]>(notifications);
 
 	// Filtered notifications based on toggle
 	let filteredNotifications = $derived(
-		showOnlyUnread
-			? localNotifications.filter(n => !n.read)
-			: localNotifications
+		showOnlyUnread ? localNotifications.filter((n) => !n.read) : localNotifications
 	);
 
 	const supabase = createClient();
@@ -88,10 +86,7 @@
 	}
 
 	async function deleteNotification(notificationId: string) {
-		const { error } = await supabase
-			.from('notifications')
-			.delete()
-			.eq('id', notificationId);
+		const { error } = await supabase.from('notifications').delete().eq('id', notificationId);
 
 		if (!error) {
 			await invalidateAll();
@@ -144,8 +139,8 @@
 	<!-- Bell Button -->
 	<button
 		type="button"
-		class="btn btn-ghost btn-circle"
-		onclick={() => showDropdown = !showDropdown}
+		class="btn btn-circle btn-ghost"
+		onclick={() => (showDropdown = !showDropdown)}
 	>
 		<div class="indicator">
 			<svg
@@ -163,7 +158,7 @@
 				/>
 			</svg>
 			{#if unreadCount > 0}
-				<span class="badge badge-xs badge-error indicator-item">{unreadCount}</span>
+				<span class="indicator-item badge badge-xs badge-error">{unreadCount}</span>
 			{/if}
 		</div>
 	</button>
@@ -171,17 +166,14 @@
 	<!-- Dropdown Content -->
 	{#if showDropdown}
 		<div
-			class="absolute right-0 top-full mt-2 bg-base-200 rounded-box z-100 w-96 shadow-xl border border-base-300 max-h-125 overflow-hidden flex flex-col"
+			class="absolute top-full right-0 z-100 mt-2 flex max-h-125 w-96 flex-col overflow-hidden rounded-box border border-base-300 bg-base-200 shadow-xl"
 		>
 			<!-- Header -->
-			<div class="p-4 border-b border-base-300">
-				<div class="flex justify-between items-center mb-3">
-					<h3 class="font-semibold text-lg">Notificaciones</h3>
+			<div class="border-b border-base-300 p-4">
+				<div class="mb-3 flex items-center justify-between">
+					<h3 class="text-lg font-semibold">Notificaciones</h3>
 					{#if unreadCount > 0}
-						<button
-							onclick={markAllAsRead}
-							class="btn btn-ghost btn-xs text-primary"
-						>
+						<button onclick={markAllAsRead} class="btn text-primary btn-ghost btn-xs">
 							Marcar todas como leídas
 						</button>
 					{/if}
@@ -190,13 +182,13 @@
 				<!-- Toggle filter -->
 				<div class="flex gap-2">
 					<button
-						onclick={() => showOnlyUnread = true}
+						onclick={() => (showOnlyUnread = true)}
 						class="btn btn-xs {showOnlyUnread ? 'btn-primary' : 'btn-ghost'}"
 					>
 						Sin leer ({unreadCount})
 					</button>
 					<button
-						onclick={() => showOnlyUnread = false}
+						onclick={() => (showOnlyUnread = false)}
 						class="btn btn-xs {!showOnlyUnread ? 'btn-primary' : 'btn-ghost'}"
 					>
 						Todas ({localNotifications.length})
@@ -205,10 +197,10 @@
 			</div>
 
 			<!-- Notifications List -->
-			<div class="overflow-y-auto flex-1">
+			<div class="flex-1 overflow-y-auto">
 				{#if filteredNotifications.length === 0}
 					<div class="p-8 text-center text-base-content/50">
-						<div class="text-4xl mb-2">🔔</div>
+						<div class="mb-2 text-4xl">🔔</div>
 						<p class="text-sm">No hay notificaciones</p>
 					</div>
 				{:else}
@@ -225,19 +217,23 @@
 											handleNotificationClick(notification);
 										}
 									}}
-									class="flex items-start gap-2 py-3 px-4 cursor-pointer hover:bg-base-200/50 transition-colors"
+									class="flex cursor-pointer items-start gap-2 px-4 py-3 transition-colors hover:bg-base-200/50"
 								>
 									<span class="text-xl">{getNotificationIcon(notification.type)}</span>
-									<div class="flex-1 min-w-0">
-										<p class="font-semibold text-sm text-left {!notification.read ? 'text-primary' : ''}">
+									<div class="min-w-0 flex-1">
+										<p
+											class="text-left text-sm font-semibold {!notification.read
+												? 'text-primary'
+												: ''}"
+										>
 											{notification.title}
 										</p>
 										{#if notification.message}
-											<p class="text-xs text-base-content/70 text-left truncate">
+											<p class="truncate text-left text-xs text-base-content/70">
 												{notification.message}
 											</p>
 										{/if}
-										<p class="text-xs text-base-content/50 mt-1">
+										<p class="mt-1 text-xs text-base-content/50">
 											{formatDate(notification.created_at)}
 										</p>
 									</div>
@@ -254,7 +250,14 @@
 											class="btn btn-ghost btn-xs"
 											title="Marcar como leída"
 										>
-											<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-4 w-4"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+											>
 												<polyline points="20 6 9 17 4 12"></polyline>
 											</svg>
 										</button>
@@ -264,10 +267,17 @@
 											e.stopPropagation();
 											deleteNotification(notification.id);
 										}}
-										class="btn btn-ghost btn-xs text-error"
+										class="btn text-error btn-ghost btn-xs"
 										title="Eliminar"
 									>
-										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+										>
 											<line x1="18" y1="6" x2="6" y2="18"></line>
 											<line x1="6" y1="6" x2="18" y2="18"></line>
 										</svg>
@@ -286,7 +296,7 @@
 {#if showDropdown}
 	<button
 		class="fixed inset-0 z-[99]"
-		onclick={() => showDropdown = false}
+		onclick={() => (showDropdown = false)}
 		aria-label="Close notifications"
 	></button>
 {/if}

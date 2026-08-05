@@ -8,7 +8,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	// Get all family members
 	const { data: members } = await supabase
 		.from('family_members')
-		.select(`
+		.select(
+			`
 			user_id,
 			role,
 			joined_at,
@@ -16,17 +17,20 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 				display_name,
 				avatar_url
 			)
-		`)
+		`
+		)
 		.eq('family_id', familyId)
 		.order('joined_at', { ascending: true });
 
 	// Get pending invitations
 	const { data: invitations } = await supabase
 		.from('family_invitations')
-		.select(`
+		.select(
+			`
 			*,
 			invited_user:profiles!invited_user_id(email)
-		`)
+		`
+		)
 		.eq('family_id', familyId)
 		.eq('status', 'pending')
 		.order('created_at', { ascending: false });
@@ -116,17 +120,18 @@ export const actions: Actions = {
 		}
 
 		// Create invitation - use upsert to handle race conditions
-		const { error } = await supabase
-			.from('family_invitations')
-			.upsert({
+		const { error } = await supabase.from('family_invitations').upsert(
+			{
 				family_id: familyId,
 				invited_by: user.id,
 				invited_user_id: invitedUser.id,
 				status: 'pending'
-			}, {
+			},
+			{
 				onConflict: 'family_id,invited_user_id',
 				ignoreDuplicates: false
-			});
+			}
+		);
 
 		if (error) {
 			console.error('Invitation error:', error);
@@ -191,7 +196,10 @@ export const actions: Actions = {
 				return fail(500, { message: demoteError.message });
 			}
 
-			return { success: true, message: 'Ownership transferred successfully. You are now an admin.' };
+			return {
+				success: true,
+				message: 'Ownership transferred successfully. You are now an admin.'
+			};
 		}
 
 		// Normal role update
@@ -267,7 +275,9 @@ export const actions: Actions = {
 
 		// Prevent owner from leaving (must transfer ownership first)
 		if (membership.role === 'owner') {
-			return fail(400, { message: 'Owners cannot leave the family. Transfer ownership first or delete the family.' });
+			return fail(400, {
+				message: 'Owners cannot leave the family. Transfer ownership first or delete the family.'
+			});
 		}
 
 		// Remove the member

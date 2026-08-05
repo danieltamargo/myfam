@@ -58,7 +58,7 @@
 </script>
 
 <div
-	class="modal modal-open"
+	class="modal-open modal"
 	onclick={handleClickOutside}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}
 	role="button"
@@ -67,7 +67,7 @@
 	<div class="modal-box max-w-2xl">
 		<!-- Header with steps -->
 		<div class="mb-6">
-			<h3 class="font-bold text-2xl mb-4">Crear Nueva Sala</h3>
+			<h3 class="mb-4 text-2xl font-bold">Crear Nueva Sala</h3>
 
 			<!-- Progress Steps -->
 			<ul class="steps w-full">
@@ -81,27 +81,27 @@
 			<div class="space-y-4">
 				<p class="text-base-content/70">Selecciona el juego que quieres jugar</p>
 
-				<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
 					{#each Object.entries(GAME_METADATA) as [type, metadata]}
 						<button
 							type="button"
 							onclick={() => (selectedGameType = type as GameType)}
-							class="card bg-base-200 hover:bg-base-300 transition-all cursor-pointer {selectedGameType ===
+							class="card cursor-pointer bg-base-200 transition-all hover:bg-base-300 {selectedGameType ===
 							type
 								? 'ring-2 ring-primary'
 								: ''}"
 						>
 							<div class="card-body p-6 text-center">
-								<div class="text-5xl mb-3">{metadata.icon}</div>
-								<h4 class="font-bold text-lg">{metadata.name}</h4>
-								<p class="text-sm text-base-content/60 mt-2">{metadata.description}</p>
+								<div class="mb-3 text-5xl">{metadata.icon}</div>
+								<h4 class="text-lg font-bold">{metadata.name}</h4>
+								<p class="mt-2 text-sm text-base-content/60">{metadata.description}</p>
 								<div class="divider my-2"></div>
 								<div class="flex justify-between text-xs text-base-content/60">
 									<span>{metadata.minPlayers}-{metadata.maxPlayers} jugadores</span>
 									<span>{metadata.estimatedDuration}</span>
 								</div>
 								{#if selectedGameType === type}
-									<div class="badge badge-primary badge-sm mt-2">Seleccionado</div>
+									<div class="mt-2 badge badge-sm badge-primary">Seleccionado</div>
 								{/if}
 							</div>
 						</button>
@@ -120,7 +120,7 @@
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
 						stroke="currentColor"
-						class="w-4 h-4"
+						class="h-4 w-4"
 					>
 						<path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
 					</svg>
@@ -184,7 +184,7 @@
 							name="name"
 							bind:value={roomName}
 							placeholder="Ej: Batalla familiar"
-							class="input input-bordered w-full"
+							class="input-bordered input w-full"
 							required
 							maxlength="50"
 						/>
@@ -203,7 +203,8 @@
 									onclick={() => (maxPlayers = playerCount)}
 									class="btn flex-1 {maxPlayers === playerCount ? 'btn-primary' : 'btn-outline'}"
 								>
-									{playerCount} {playerCount === 1 ? 'jugador' : 'jugadores'}
+									{playerCount}
+									{playerCount === 1 ? 'jugador' : 'jugadores'}
 								</button>
 							{/each}
 						</div>
@@ -222,7 +223,7 @@
 							/>
 							<div>
 								<span class="label-text font-medium">Sala pública con código</span>
-								<p class="text-xs text-base-content/60 mt-1">
+								<p class="mt-1 text-xs text-base-content/60">
 									Genera un código para que cualquiera pueda unirse
 								</p>
 							</div>
@@ -235,7 +236,7 @@
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
-							class="stroke-current shrink-0 w-6 h-6"
+							class="h-6 w-6 shrink-0 stroke-current"
 						>
 							<path
 								stroke-linecap="round"
@@ -244,9 +245,7 @@
 								d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 							/>
 						</svg>
-						<span class="text-sm">
-							Serás añadido automáticamente a la sala al crearla
-						</span>
+						<span class="text-sm"> Serás añadido automáticamente a la sala al crearla </span>
 					</div>
 				</div>
 
@@ -259,15 +258,19 @@
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="w-4 h-4"
+							class="h-4 w-4"
 						>
-							<path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								d="M15.75 19.5L8.25 12l7.5-7.5"
+							/>
 						</svg>
 						Atrás
 					</button>
 					<button type="submit" class="btn btn-primary" disabled={isSubmitting || !canProceed()}>
 						{#if isSubmitting}
-							<span class="loading loading-spinner loading-sm"></span>
+							<span class="loading loading-sm loading-spinner"></span>
 							Creando...
 						{:else}
 							Crear Sala

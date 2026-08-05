@@ -24,7 +24,10 @@ function createToastStore() {
 
 	return {
 		subscribe,
-		show: (message: string, { type = 'info', duration = 4000, useHTML = false }: ToastOptions = {}) => {
+		show: (
+			message: string,
+			{ type = 'info', duration = 4000, useHTML = false }: ToastOptions = {}
+		) => {
 			const toast: Toast = {
 				id: toastCounter++,
 				message,

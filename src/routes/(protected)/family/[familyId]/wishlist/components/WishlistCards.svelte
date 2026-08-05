@@ -33,24 +33,28 @@
 </script>
 
 {#if items.length === 0}
-	<div class="text-center py-12">
-		<p class="text-base-content/50 text-lg">Aún no hay regalos en la wishlist</p>
+	<div class="py-12 text-center">
+		<p class="text-lg text-base-content/50">Aún no hay regalos en la wishlist</p>
 	</div>
 {:else}
-	<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+	<div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
 		{#each items as item (item.id)}
 			{@const isOwner = isMyItem(item.id)}
 			{@const purchased = isPurchasedByMe(item.id)}
 			{@const itemPurchased = isPurchased(item.id)}
 
-			<div class="card bg-base-100 shadow-lg hover:shadow-xl transition-shadow {isOwner ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''} {itemPurchased ? 'ring-2 ring-success ring-offset-2 bg-success/10' : ''}">
+			<div
+				class="card bg-base-100 shadow-lg transition-shadow hover:shadow-xl {isOwner
+					? 'bg-primary/5 ring-2 ring-primary ring-offset-2'
+					: ''} {itemPurchased ? 'bg-success/10 ring-2 ring-success ring-offset-2' : ''}"
+			>
 				<!-- Image -->
 				{#if item.image_url}
 					<figure class="h-48 overflow-hidden">
 						<img
 							src={item.image_url}
 							alt={item.name}
-							class="w-full h-full object-cover"
+							class="h-full w-full object-cover"
 							referrerpolicy="no-referrer"
 							crossorigin="anonymous"
 						/>
@@ -84,8 +88,8 @@
 								{#if eventLink.gift_event_categories}
 									<span
 										class="badge badge-sm"
-										style="background-color: {eventLink.gift_event_categories.color}20; color: {eventLink
-											.gift_event_categories.color};"
+										style="background-color: {eventLink.gift_event_categories
+											.color}20; color: {eventLink.gift_event_categories.color};"
 									>
 										{eventLink.gift_event_categories.icon}
 										{eventLink.gift_event_categories.name}
@@ -98,10 +102,10 @@
 					<!-- Purchase/Reservation indicator (priority: purchased > reservations) -->
 					{#if !isOwner}
 						{#if itemPurchased}
-							<div class="badge badge-success gap-1">
+							<div class="badge gap-1 badge-success">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
+									class="h-4 w-4"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -116,10 +120,10 @@
 						{:else}
 							{@const reservations = getReservations(item.id)}
 							{#if reservations.length > 0}
-								<div class="badge badge-info badge-sm gap-1">
+								<div class="badge gap-1 badge-sm badge-info">
 									<svg
 										xmlns="http://www.w3.org/2000/svg"
-										class="w-3 h-3"
+										class="h-3 w-3"
 										viewBox="0 0 24 24"
 										fill="none"
 										stroke="currentColor"
@@ -136,9 +140,18 @@
 					{/if}
 
 					<!-- Actions -->
-					<div class="card-actions justify-end mt-2">
-						<button class="btn btn-sm btn-ghost gap-1" onclick={() => onOpenDetail(item)}>
-							<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<div class="mt-2 card-actions justify-end">
+						<button class="btn gap-1 btn-ghost btn-sm" onclick={() => onOpenDetail(item)}>
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-4 w-4"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
 								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
 								<circle cx="12" cy="12" r="3"></circle>
 							</svg>
@@ -146,8 +159,17 @@
 						</button>
 
 						{#if isOwner}
-							<button class="btn btn-sm btn-ghost gap-1" onclick={() => onOpenEdit(item)}>
-								<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+							<button class="btn gap-1 btn-ghost btn-sm" onclick={() => onOpenEdit(item)}>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									class="h-4 w-4"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
 									<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
 									<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
 								</svg>
@@ -170,21 +192,40 @@
 								<input type="hidden" name="is_purchased" value={(!purchased).toString()} />
 								<button
 									type="submit"
-									class="btn btn-sm gap-1 {purchased ? 'btn-success' : 'btn-outline btn-success'}"
+									class="btn gap-1 btn-sm {purchased ? 'btn-success' : 'btn-outline btn-success'}"
 									disabled={togglingItemId === item.id}
 								>
 									{#if togglingItemId === item.id}
-										<span class="loading loading-spinner loading-xs"></span>
+										<span class="loading loading-xs loading-spinner"></span>
 									{:else if purchased}
-										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
 											<polyline points="20 6 9 17 4 12"></polyline>
 										</svg>
 										Comprado
 									{:else}
-										<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+										<svg
+											xmlns="http://www.w3.org/2000/svg"
+											class="h-4 w-4"
+											viewBox="0 0 24 24"
+											fill="none"
+											stroke="currentColor"
+											stroke-width="2"
+											stroke-linecap="round"
+											stroke-linejoin="round"
+										>
 											<circle cx="9" cy="21" r="1"></circle>
 											<circle cx="20" cy="21" r="1"></circle>
-											<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+											<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+											></path>
 										</svg>
 										Marcar
 									{/if}

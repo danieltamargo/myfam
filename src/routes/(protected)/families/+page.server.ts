@@ -12,7 +12,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	// Get user's families with member count
 	const { data: familyMembers } = await supabase
 		.from('family_members')
-		.select(`
+		.select(
+			`
 			family_id,
 			role,
 			joined_at,
@@ -22,7 +23,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 				created_at,
 				created_by
 			)
-		`)
+		`
+		)
 		.eq('user_id', user.id)
 		.order('joined_at', { ascending: false });
 
@@ -112,7 +114,7 @@ export const actions: Actions = {
 			{ name: 'Todos', icon: '🎁', color: '#10b981' }
 		];
 
-		const eventInserts = defaultEvents.map(event => ({
+		const eventInserts = defaultEvents.map((event) => ({
 			family_id: family.id,
 			name: event.name,
 			icon: event.icon,

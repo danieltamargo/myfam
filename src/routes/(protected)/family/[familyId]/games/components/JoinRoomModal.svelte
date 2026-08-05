@@ -13,7 +13,10 @@
 	// Format join code as user types (auto uppercase, max 6 chars)
 	function handleInput(event: Event) {
 		const input = event.target as HTMLInputElement;
-		joinCode = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+		joinCode = input.value
+			.toUpperCase()
+			.replace(/[^A-Z0-9]/g, '')
+			.slice(0, 6);
 	}
 
 	function handleClickOutside(event: MouseEvent) {
@@ -24,14 +27,14 @@
 </script>
 
 <div
-	class="modal modal-open"
+	class="modal-open modal"
 	onclick={handleClickOutside}
 	onkeydown={(e) => e.key === 'Escape' && onClose()}
 	role="button"
 	tabindex="0"
 >
 	<div class="modal-box max-w-md">
-		<h3 class="font-bold text-2xl mb-4">Unirse con Código</h3>
+		<h3 class="mb-4 text-2xl font-bold">Unirse con Código</h3>
 
 		<form
 			method="POST"
@@ -60,7 +63,7 @@
 						value={joinCode}
 						oninput={handleInput}
 						placeholder="ABC123"
-						class="input input-bordered input-lg w-full text-center font-mono text-2xl tracking-wider"
+						class="input-bordered input input-lg w-full text-center font-mono text-2xl tracking-wider"
 						required
 						maxlength="6"
 						autocomplete="off"
@@ -79,7 +82,7 @@
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
-						class="stroke-current shrink-0 w-6 h-6"
+						class="h-6 w-6 shrink-0 stroke-current"
 					>
 						<path
 							stroke-linecap="round"
@@ -88,9 +91,7 @@
 							d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
 						/>
 					</svg>
-					<span class="text-sm">
-						El código te lo debe proporcionar el creador de la sala
-					</span>
+					<span class="text-sm"> El código te lo debe proporcionar el creador de la sala </span>
 				</div>
 
 				<!-- Visual representation of code -->
@@ -98,7 +99,7 @@
 					<div class="flex justify-center gap-2">
 						{#each Array(6) as _, i}
 							<div
-								class="w-12 h-14 border-2 rounded-lg flex items-center justify-center text-2xl font-bold {i <
+								class="flex h-14 w-12 items-center justify-center rounded-lg border-2 text-2xl font-bold {i <
 								joinCode.length
 									? 'border-primary bg-primary/10 text-primary'
 									: 'border-base-300 text-base-content/20'}"
@@ -121,7 +122,7 @@
 					disabled={isSubmitting || joinCode.length !== 6}
 				>
 					{#if isSubmitting}
-						<span class="loading loading-spinner loading-sm"></span>
+						<span class="loading loading-sm loading-spinner"></span>
 						Uniéndose...
 					{:else}
 						Unirse a Sala

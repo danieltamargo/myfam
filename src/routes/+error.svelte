@@ -15,7 +15,7 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-base-200">
+<div class="flex min-h-screen items-center justify-center bg-base-200">
 	<div class="card w-full max-w-2xl bg-base-100 shadow-xl">
 		<div class="card-body items-center text-center">
 			<!-- Error Icon -->
@@ -23,7 +23,7 @@
 				{#if errorStatus === 404}
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="w-24 h-24 text-warning"
+						class="h-24 w-24 text-warning"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -39,7 +39,7 @@
 				{:else if errorStatus === 403}
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="w-24 h-24 text-error"
+						class="h-24 w-24 text-error"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -53,7 +53,7 @@
 				{:else}
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="w-24 h-24 text-error"
+						class="h-24 w-24 text-error"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -71,12 +71,12 @@
 			</div>
 
 			<!-- Error Status -->
-			<h1 class="text-6xl font-bold text-base-content mb-2">
+			<h1 class="mb-2 text-6xl font-bold text-base-content">
 				{errorStatus}
 			</h1>
 
 			<!-- Error Title -->
-			<h2 class="text-2xl font-semibold mb-4">
+			<h2 class="mb-4 text-2xl font-semibold">
 				{#if errorStatus === 404}
 					Page Not Found
 				{:else if errorStatus === 403}
@@ -91,7 +91,7 @@
 			</h2>
 
 			<!-- Error Message -->
-			<p class="text-base-content/70 mb-6 max-w-md">
+			<p class="mb-6 max-w-md text-base-content/70">
 				{#if errorStatus === 404}
 					The page you're looking for doesn't exist or you no longer have access to it.
 				{:else if errorStatus === 403}
@@ -106,10 +106,10 @@
 
 			<!-- Additional info for removed members -->
 			{#if errorStatus === 403 || errorStatus === 404}
-				<div class="alert alert-info max-w-md mb-6">
+				<div class="mb-6 alert max-w-md alert-info">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="w-5 h-5"
+						class="h-5 w-5"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -131,10 +131,10 @@
 
 			<!-- Actions -->
 			<div class="card-actions gap-3">
-				<button class="btn btn-ghost gap-2" onclick={goBack}>
+				<button class="btn gap-2 btn-ghost" onclick={goBack}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="w-5 h-5"
+						class="h-5 w-5"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"
@@ -147,10 +147,10 @@
 					</svg>
 					Go Back
 				</button>
-				<button class="btn btn-primary gap-2" onclick={goToDashboard}>
+				<button class="btn gap-2 btn-primary" onclick={goToDashboard}>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="w-5 h-5"
+						class="h-5 w-5"
 						viewBox="0 0 24 24"
 						fill="none"
 						stroke="currentColor"

@@ -21,7 +21,7 @@
 
 {#if isOpen}
 	<div
-		class="modal modal-open"
+		class="modal-open modal"
 		onclick={handleClickOutside}
 		onkeydown={(e) => e.key === 'Escape' && !isSubmitting && onClose()}
 		role="button"
@@ -29,7 +29,7 @@
 	>
 		<div class="modal-box">
 			<!-- Warning icon -->
-			<div class="flex justify-center mb-4">
+			<div class="mb-4 flex justify-center">
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-16 w-16 {isGameInProgress ? 'text-error' : 'text-warning'}"
@@ -47,19 +47,17 @@
 			</div>
 
 			<!-- Title and message -->
-			<h3 class="font-bold text-xl text-center mb-2">
+			<h3 class="mb-2 text-center text-xl font-bold">
 				{isGameInProgress ? '¿Abandonar la partida?' : '¿Salir de la sala?'}
 			</h3>
 
-			<div class="text-center mb-6">
+			<div class="mb-6 text-center">
 				{#if isGameInProgress}
-					<p class="text-base-content/80 mb-3">
-						La partida está en curso. Si abandonas ahora:
-					</p>
+					<p class="mb-3 text-base-content/80">La partida está en curso. Si abandonas ahora:</p>
 					<div class="alert alert-error">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
-							class="stroke-current shrink-0 h-6 w-6"
+							class="h-6 w-6 shrink-0 stroke-current"
 							fill="none"
 							viewBox="0 0 24 24"
 						>
@@ -75,9 +73,7 @@
 						</span>
 					</div>
 				{:else}
-					<p class="text-base-content/70">
-						¿Estás seguro de que quieres salir de esta sala?
-					</p>
+					<p class="text-base-content/70">¿Estás seguro de que quieres salir de esta sala?</p>
 				{/if}
 			</div>
 
@@ -104,7 +100,7 @@
 						disabled={isSubmitting}
 					>
 						{#if isSubmitting}
-							<span class="loading loading-spinner loading-sm"></span>
+							<span class="loading loading-sm loading-spinner"></span>
 							Saliendo...
 						{:else if isGameInProgress}
 							Sí, abandonar

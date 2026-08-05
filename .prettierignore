@@ -7,6 +7,15 @@ bun.lockb
 
 # Miscellaneous
 /static/
+/.agents/
+/.claude/
+/.lazyweb/
+/docs/superpowers/
+/project.inlang/cache/
+/supabase/.temp/
+/playwright-report/
+/test-results/
+*.md
 
-# Prettier doesn't work with Svelte 5 yet, so ignore Svelte files for now
-*.svelte
+# Generated artifacts and local tooling metadata
+skills-lock.json

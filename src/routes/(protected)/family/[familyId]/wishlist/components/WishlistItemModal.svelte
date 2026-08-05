@@ -37,14 +37,14 @@
 </script>
 
 {#if item}
-	<div class="modal modal-open">
-		<div class="modal-box w-[95vw] max-h-[95svh] {isMyItem(item.id) ? 'max-w-xl' : 'max-w-5xl'}">
-			<div class="relative flex gap-2 flex-col md:flex-row">
-				<div class="md:sticky md:top-4 flex-1 h-fit">
-					<div class="flex gap-2 justify-between items-center">
-						<h3 class="font-bold text-lg mb-4">{item.name}</h3>
-						<div class="avatar placeholder rounded-full">
-							<div class="bg-primary text-primary-content rounded-full w-10">
+	<div class="modal-open modal">
+		<div class="modal-box max-h-[95svh] w-[95vw] {isMyItem(item.id) ? 'max-w-xl' : 'max-w-5xl'}">
+			<div class="relative flex flex-col gap-2 md:flex-row">
+				<div class="h-fit flex-1 md:sticky md:top-4">
+					<div class="flex items-center justify-between gap-2">
+						<h3 class="mb-4 text-lg font-bold">{item.name}</h3>
+						<div class="placeholder avatar rounded-full">
+							<div class="w-10 rounded-full bg-primary text-primary-content">
 								{#if item.profiles?.avatar_url}
 									<img
 										src={item.profiles.avatar_url}
@@ -53,7 +53,7 @@
 										crossorigin="anonymous"
 									/>
 								{:else}
-									<span class="text-xs grid place-items-center h-full">
+									<span class="grid h-full place-items-center text-xs">
 										{(item.profiles?.display_name || 'U').substring(0, 2).toUpperCase()}
 									</span>
 								{/if}
@@ -66,7 +66,7 @@
 							<img
 								src={item.image_url}
 								alt={item.name}
-								class="w-full rounded-lg max-h-96 object-cover"
+								class="max-h-96 w-full rounded-lg object-cover"
 								referrerpolicy="no-referrer"
 								crossorigin="anonymous"
 							/>
@@ -77,13 +77,13 @@
 						<!-- Descripción solo si existe -->
 						{#if item.description && item.description.trim().length > 0}
 							<div>
-								<p class="text-base-content/60 mt-1">{item.description}</p>
+								<p class="mt-1 text-base-content/60">{item.description}</p>
 							</div>
 						{/if}
 
 						<div>
 							<span class="font-semibold">Precio:</span>
-							<span class="text-primary ml-2">
+							<span class="ml-2 text-primary">
 								{item.price ? formatPrice(item.price) : 'Desconocido'}
 							</span>
 						</div>
@@ -98,7 +98,7 @@
 						{#if item.links && item.links.length > 0}
 							<div>
 								<span class="font-semibold">Enlaces:</span>
-								<ul class="list-disc list-inside mt-1">
+								<ul class="mt-1 list-inside list-disc">
 									{#each item.links as link}
 										<li>
 											<a
@@ -117,13 +117,13 @@
 
 						<div>
 							<span class="font-semibold">Eventos:</span>
-							<div class="flex flex-wrap gap-1 mt-1">
+							<div class="mt-1 flex flex-wrap gap-1">
 								{#each item.gift_item_events || [] as eventLink}
 									{#if eventLink.gift_event_categories}
 										<span
 											class="badge"
-											style="background-color: {eventLink.gift_event_categories.color}20; color: {eventLink
-												.gift_event_categories.color};"
+											style="background-color: {eventLink.gift_event_categories
+												.color}20; color: {eventLink.gift_event_categories.color};"
 										>
 											{eventLink.gift_event_categories.icon}
 											{eventLink.gift_event_categories.name}
@@ -146,7 +146,7 @@
 							<div class="mt-4 alert alert-info">
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="w-5 h-5"
+									class="h-5 w-5"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -164,12 +164,12 @@
 										>
 										está mirando este regalo
 									{:else}
-										<span 
-										class="font-semibold tooltip tooltip-top" 
-										data-tip="{reservations.map(r => r.profiles.display_name).join(', ')}">
+										<span
+											class="tooltip tooltip-top font-semibold"
+											data-tip={reservations.map((r) => r.profiles.display_name).join(', ')}
+										>
 											{reservations.length} personas
-										</span> están mirando
-										este regalo
+										</span> están mirando este regalo
 									{/if}
 								</div>
 							</div>
@@ -178,7 +178,7 @@
 
 					<!-- Actions for purchase/reservation -->
 					{#if !isMyItem(item.id)}
-						<div class="mt-6 pt-4 border-t border-base-300">
+						<div class="mt-6 border-t border-base-300 pt-4">
 							<div class="flex gap-2">
 								<form
 									method="POST"
@@ -200,21 +200,39 @@
 									/>
 									<button
 										type="submit"
-										class="btn w-full whitespace-nowrap gap-2 {isReservedByMe(item.id)
+										class="btn w-full gap-2 whitespace-nowrap {isReservedByMe(item.id)
 											? 'btn-info'
 											: 'btn-outline btn-info'}"
 										disabled={togglingItemId === item.id}
 									>
 										{#if togglingItemId === item.id}
-											<span class="loading loading-spinner loading-sm"></span>
+											<span class="loading loading-sm loading-spinner"></span>
 										{:else if isReservedByMe(item.id)}
-											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-5 w-5"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											>
 												<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
 												<circle cx="12" cy="12" r="3"></circle>
 											</svg>
 											Lo estoy mirando
 										{:else}
-											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-5 w-5"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											>
 												<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
 												<circle cx="12" cy="12" r="3"></circle>
 											</svg>
@@ -242,23 +260,42 @@
 									/>
 									<button
 										type="submit"
-										class="btn w-full whitespace-nowrap gap-2 {isPurchasedByMe(item.id)
+										class="btn w-full gap-2 whitespace-nowrap {isPurchasedByMe(item.id)
 											? 'btn-success'
 											: 'btn-outline btn-success'}"
 										disabled={togglingItemId === item.id}
 									>
 										{#if togglingItemId === item.id}
-											<span class="loading loading-spinner loading-sm"></span>
+											<span class="loading loading-sm loading-spinner"></span>
 										{:else if isPurchasedByMe(item.id)}
-											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-5 w-5"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											>
 												<polyline points="20 6 9 17 4 12"></polyline>
 											</svg>
 											Ya lo compré
 										{:else}
-											<svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<svg
+												xmlns="http://www.w3.org/2000/svg"
+												class="h-5 w-5"
+												viewBox="0 0 24 24"
+												fill="none"
+												stroke="currentColor"
+												stroke-width="2"
+												stroke-linecap="round"
+												stroke-linejoin="round"
+											>
 												<circle cx="9" cy="21" r="1"></circle>
 												<circle cx="20" cy="21" r="1"></circle>
-												<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+												<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
+												></path>
 											</svg>
 											Marcar como comprado
 										{/if}
@@ -272,7 +309,7 @@
 				<!-- Comments Section (only visible to non-owners) -->
 				{#if !isMyItem(item.id)}
 					<div
-						class="mt-6 pt-6 border-t md:ml-6 md:pl-6 md:border-l md:mt-0 md:pt-0 md:border-t-0 border-base-300 max-w-125 flex-1"
+						class="mt-6 max-w-125 flex-1 border-t border-base-300 pt-6 md:mt-0 md:ml-6 md:border-t-0 md:border-l md:pt-0 md:pl-6"
 					>
 						<GiftComments
 							itemId={item.id}

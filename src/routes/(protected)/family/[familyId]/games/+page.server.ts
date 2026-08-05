@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import type { GameType, BotDifficulty, TicTacToeState, TicTacToeBoard } from '$lib/types/games';
 import { getBotMove } from '$lib/games/ai/tic-tac-toe-ai';
+import type { Json } from '$lib/types/database';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -142,7 +143,13 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 
 	return {
 		members: members || [],
-		rooms: rooms || [],
+		rooms: (rooms || []).map((room) => ({
+			...room,
+			creator: {
+				...room.creator,
+				display_name: room.creator?.display_name ?? 'Familia'
+			}
+		})),
 		participants: participants || [],
 		recentSessions: recentSessions || [],
 		leaderboards,
@@ -400,7 +407,7 @@ export const actions: Actions = {
 		// Check if all players are ready
 		const { data: participants, error: participantsError } = await supabase
 			.from('room_participants')
-			.select('is_ready')
+			.select('is_ready, is_bot, bot_difficulty, player_number')
 			.eq('room_id', roomId)
 			.eq('is_active', true);
 
@@ -480,14 +487,14 @@ export const actions: Actions = {
 		}
 
 		// Check if there are any bots in the game
-		const hasBots = participants?.some((p: any) => p.is_bot) || false;
+		const hasBots = participants?.some((participant) => participant.is_bot) || false;
 
 		const { data: sessionData, error: sessionError } = await supabase
 			.from('game_sessions')
 			.insert({
 				room_id: roomId,
 				game_type: room.game_type,
-				game_state: initialState,
+				game_state: initialState as Json,
 				has_bots: hasBots,
 				status: 'active'
 			})
@@ -509,7 +516,7 @@ export const actions: Actions = {
 
 		// If player 1 is a bot, auto-play the first move for Tic-Tac-Toe
 		if (room.game_type === 'tic_tac_toe' && hasBots) {
-			const player1 = participants?.find((p: any) => p.player_number === 1);
+			const player1 = participants?.find((participant) => participant.player_number === 1);
 
 			if (player1?.is_bot && player1.bot_difficulty) {
 				try {
@@ -537,14 +544,14 @@ export const actions: Actions = {
 						player_id: null,
 						player_number: 1,
 						move_number: 1,
-						move_data: botMove,
-						state_after: newState
+						move_data: botMove as unknown as Json,
+						state_after: newState as unknown as Json
 					});
 
 					// Update session with new state
 					await supabase
 						.from('game_sessions')
-						.update({ game_state: newState })
+						.update({ game_state: newState as unknown as Json })
 						.eq('id', sessionData.id);
 				} catch (botError) {
 					console.error('Error executing first bot move:', botError);

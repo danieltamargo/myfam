@@ -66,7 +66,7 @@
 
 {#if isOpen}
 	<div
-		class="modal modal-open"
+		class="modal-open modal"
 		onclick={handleClickOutside}
 		onkeydown={(e) => e.key === 'Escape' && onClose()}
 		role="button"
@@ -74,23 +74,25 @@
 	>
 		<div class="modal-box max-w-md">
 			<!-- Header with game icon -->
-			<div class="text-center mb-6">
-				<div class="text-6xl mb-4">{resultEmoji()}</div>
-				<h3 class="text-3xl font-bold mb-2">{resultTitle()}</h3>
+			<div class="mb-6 text-center">
+				<div class="mb-4 text-6xl">{resultEmoji()}</div>
+				<h3 class="mb-2 text-3xl font-bold">{resultTitle()}</h3>
 				<p class="text-lg text-base-content/70">{resultMessage()}</p>
 			</div>
 
 			<!-- Winner display (if not draw) -->
 			{#if !isDraw && winner}
-				<div class="card bg-base-200 mb-6">
+				<div class="card mb-6 bg-base-200">
 					<div class="card-body p-4">
 						<div class="flex items-center gap-4">
 							<!-- Avatar -->
 							<div class="avatar">
-								<div class="w-16 h-16 rounded-full ring ring-primary ring-offset-base-100 ring-offset-2">
+								<div
+									class="h-16 w-16 rounded-full ring ring-primary ring-offset-2 ring-offset-base-100"
+								>
 									{#if winner.display_name?.startsWith('Bot ')}
 										<div
-											class="bg-neutral text-neutral-content flex items-center justify-center text-3xl"
+											class="flex items-center justify-center bg-neutral text-3xl text-neutral-content"
 										>
 											🤖
 										</div>
@@ -98,7 +100,7 @@
 										<img src={winner.avatar_url} alt={winner.display_name} />
 									{:else}
 										<div
-											class="bg-primary text-primary-content flex items-center justify-center text-2xl font-semibold"
+											class="flex items-center justify-center bg-primary text-2xl font-semibold text-primary-content"
 										>
 											{winner.display_name.charAt(0).toUpperCase()}
 										</div>
@@ -109,7 +111,7 @@
 							<!-- Name and badge -->
 							<div class="flex-1">
 								<div class="text-xl font-bold">{winner.display_name}</div>
-								<div class="badge badge-success badge-lg mt-1">Ganador</div>
+								<div class="mt-1 badge badge-lg badge-success">Ganador</div>
 							</div>
 
 							<!-- Trophy -->
@@ -121,27 +123,27 @@
 
 			<!-- Game Stats -->
 			{#if stats && (stats.duration || stats.moves || stats.accuracy)}
-				<div class="card bg-base-200 mb-6">
+				<div class="card mb-6 bg-base-200">
 					<div class="card-body p-4">
-						<h4 class="font-semibold mb-3 flex items-center gap-2">
+						<h4 class="mb-3 flex items-center gap-2 font-semibold">
 							<span>📊</span>
 							<span>Estadísticas</span>
 						</h4>
 						<div class="grid grid-cols-2 gap-3">
 							{#if stats.duration}
-								<div class="stat bg-base-100 rounded-lg p-3">
+								<div class="stat rounded-lg bg-base-100 p-3">
 									<div class="stat-title text-xs">Duración</div>
 									<div class="stat-value text-lg">{stats.duration}</div>
 								</div>
 							{/if}
 							{#if stats.moves}
-								<div class="stat bg-base-100 rounded-lg p-3">
+								<div class="stat rounded-lg bg-base-100 p-3">
 									<div class="stat-title text-xs">Movimientos</div>
 									<div class="stat-value text-lg">{stats.moves}</div>
 								</div>
 							{/if}
 							{#if stats.accuracy}
-								<div class="stat bg-base-100 rounded-lg p-3">
+								<div class="stat rounded-lg bg-base-100 p-3">
 									<div class="stat-title text-xs">Precisión</div>
 									<div class="stat-value text-lg">{stats.accuracy}%</div>
 								</div>
@@ -154,14 +156,14 @@
 			<!-- Actions -->
 			<div class="flex gap-2">
 				{#if onRematch}
-					<button onclick={onRematch} class="btn btn-primary flex-1">
+					<button onclick={onRematch} class="btn flex-1 btn-primary">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
 							fill="none"
 							viewBox="0 0 24 24"
 							stroke-width="1.5"
 							stroke="currentColor"
-							class="w-5 h-5"
+							class="h-5 w-5"
 						>
 							<path
 								stroke-linecap="round"
@@ -172,14 +174,14 @@
 						Revancha
 					</button>
 				{/if}
-				<a href="/family/{familyId}/games" class="btn btn-outline flex-1">
+				<a href="/family/{familyId}/games" class="btn flex-1 btn-outline">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke-width="1.5"
 						stroke="currentColor"
-						class="w-5 h-5"
+						class="h-5 w-5"
 					>
 						<path
 							stroke-linecap="round"
@@ -193,7 +195,7 @@
 
 			<!-- Confetti animation for winner -->
 			{#if isCurrentUserWinner}
-				<div class="absolute inset-0 pointer-events-none overflow-hidden">
+				<div class="pointer-events-none absolute inset-0 overflow-hidden">
 					{#each Array(20) as _, i}
 						<div
 							class="confetti"

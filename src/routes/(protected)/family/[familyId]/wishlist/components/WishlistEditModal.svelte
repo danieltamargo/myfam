@@ -47,14 +47,14 @@
 	} = $props();
 </script>
 
-<div class="modal modal-open">
+<div class="modal-open modal">
 	<div class="modal-box max-w-2xl bg-base-100">
 		<!-- Header -->
-		<div class="flex items-center justify-between mb-6 pb-4 border-b border-base-300">
+		<div class="mb-6 flex items-center justify-between border-b border-base-300 pb-4">
 			<h3 class="text-2xl font-bold">
 				{item ? '✏️ Editar Regalo' : '✨ Nuevo Regalo'}
 			</h3>
-			<button type="button" class="btn btn-ghost btn-sm btn-circle" onclick={onClose}> ✕ </button>
+			<button type="button" class="btn btn-circle btn-ghost btn-sm" onclick={onClose}> ✕ </button>
 		</div>
 
 		<form
@@ -82,14 +82,14 @@
 				<!-- Name & Description -->
 				<div class="space-y-4">
 					<div>
-						<label for="name" class="block text-sm font-medium mb-2">
+						<label for="name" class="mb-2 block text-sm font-medium">
 							Nombre del regalo <span class="text-error">*</span>
 						</label>
 						<input
 							type="text"
 							id="name"
 							name="name"
-							class="input input-bordered w-full focus:input-primary transition-colors"
+							class="input-bordered input w-full transition-colors focus:input-primary"
 							bind:value={formData.name}
 							placeholder="ej: Nintendo Switch, 4x Calcetines negros..."
 							required
@@ -97,11 +97,11 @@
 					</div>
 
 					<div>
-						<label for="description" class="block text-sm font-medium mb-2">Descripción</label>
+						<label for="description" class="mb-2 block text-sm font-medium">Descripción</label>
 						<textarea
 							id="description"
 							name="description"
-							class="textarea textarea-bordered w-full focus:textarea-primary transition-colors"
+							class="textarea-bordered textarea w-full transition-colors focus:textarea-primary"
 							rows="3"
 							bind:value={formData.description}
 							placeholder="Añade detalles opcionales: color, talla, modelo..."
@@ -110,15 +110,15 @@
 				</div>
 
 				<!-- Price & Priority Grid -->
-				<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 					<div>
-						<label for="price" class="block text-sm font-medium mb-2">Precio (€)</label>
+						<label for="price" class="mb-2 block text-sm font-medium">Precio (€)</label>
 						<input
 							type="text"
 							inputmode="decimal"
 							id="price"
 							name="price"
-							class="input input-bordered w-full focus:input-primary transition-colors"
+							class="input-bordered input w-full transition-colors focus:input-primary"
 							bind:value={formData.price}
 							placeholder="29.99"
 							pattern="[0-9]*\.?[0-9]*"
@@ -126,11 +126,11 @@
 					</div>
 
 					<div>
-						<label for="priority" class="block text-sm font-medium mb-2">Prioridad</label>
+						<label for="priority" class="mb-2 block text-sm font-medium">Prioridad</label>
 						<select
 							id="priority"
 							name="priority"
-							class="select select-bordered w-full focus:select-primary transition-colors"
+							class="select-bordered select w-full transition-colors focus:select-primary"
 							bind:value={formData.priority}
 						>
 							<option value={2}>🔥 Muy Alta</option>
@@ -142,14 +142,14 @@
 				</div>
 
 				<!-- Events Section -->
-				<div class="bg-base-200 rounded-lg p-4">
-					<label class="block text-sm font-medium mb-3">Eventos</label>
+				<div class="rounded-lg bg-base-200 p-4">
+					<label class="mb-3 block text-sm font-medium">Eventos</label>
 					<div class="flex flex-wrap gap-2">
 						{#each eventCategories as event}
 							{@const isSelected = formData.event_ids.includes(event.id)}
 							<button
 								type="button"
-								class="btn btn-sm transition-all hover:scale-105 {isSelected
+								class="btn transition-all btn-sm hover:scale-105 {isSelected
 									? 'shadow-md'
 									: 'btn-outline'}"
 								style={isSelected
@@ -165,17 +165,17 @@
 							{/if}
 						{/each}
 					</div>
-					<p class="text-xs text-base-content/60 mt-2">
+					<p class="mt-2 text-xs text-base-content/60">
 						Por defecto "Todos". Selecciona eventos específicos si quieres.
 					</p>
 				</div>
 
 				<!-- Images Section (Collapsible) -->
-				<div class="bg-base-200 rounded-lg p-4">
+				<div class="rounded-lg bg-base-200 p-4">
 					{#if !showImagesSection}
 						<button
 							type="button"
-							class="btn btn-ghost btn-sm gap-2"
+							class="btn gap-2 btn-ghost btn-sm"
 							onclick={() => {
 								showImagesSection = true;
 								if (formData.images.length === 0) {
@@ -185,7 +185,7 @@
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								class="w-5 h-5"
+								class="h-5 w-5"
 								viewBox="0 0 24 24"
 								fill="none"
 								stroke="currentColor"
@@ -219,19 +219,19 @@
 								<div class="flex gap-2">
 									<input
 										type="url"
-										class="input input-bordered flex-1 input-sm focus:input-primary transition-colors"
+										class="input-bordered input input-sm flex-1 transition-colors focus:input-primary"
 										bind:value={formData.images[i]}
 										placeholder="https://example.com/imagen.jpg"
 									/>
 									<button
 										type="button"
-										class="btn btn-error btn-sm btn-circle btn-outline hover:btn-error"
+										class="btn btn-circle btn-outline btn-sm btn-error hover:btn-error"
 										onclick={() => removeImageField(i)}
 										title="Eliminar"
 									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
-											class="w-4 h-4"
+											class="h-4 w-4"
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -250,10 +250,10 @@
 								</div>
 							{/each}
 
-							<button type="button" class="btn btn-ghost btn-sm gap-2" onclick={addImageField}>
+							<button type="button" class="btn gap-2 btn-ghost btn-sm" onclick={addImageField}>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
+									class="h-4 w-4"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -271,11 +271,11 @@
 				</div>
 
 				<!-- Links Section (Collapsible) -->
-				<div class="bg-base-200 rounded-lg p-4">
+				<div class="rounded-lg bg-base-200 p-4">
 					{#if !showLinksSection}
 						<button
 							type="button"
-							class="btn btn-ghost btn-sm gap-2"
+							class="btn gap-2 btn-ghost btn-sm"
 							onclick={() => {
 								showLinksSection = true;
 								if (formData.links.length === 0) {
@@ -285,7 +285,7 @@
 						>
 							<svg
 								xmlns="http://www.w3.org/2000/svg"
-								class="w-5 h-5"
+								class="h-5 w-5"
 								viewBox="0 0 24 24"
 								fill="none"
 								stroke="currentColor"
@@ -319,19 +319,19 @@
 									<input
 										type="url"
 										name="links"
-										class="input input-bordered flex-1 input-sm focus:input-primary transition-colors"
+										class="input-bordered input input-sm flex-1 transition-colors focus:input-primary"
 										bind:value={formData.links[i]}
 										placeholder="https://amazon.es/producto..."
 									/>
 									<button
 										type="button"
-										class="btn btn-error btn-sm btn-circle btn-outline hover:btn-error"
+										class="btn btn-circle btn-outline btn-sm btn-error hover:btn-error"
 										onclick={() => removeLinkField(i)}
 										title="Eliminar"
 									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"
-											class="w-4 h-4"
+											class="h-4 w-4"
 											viewBox="0 0 24 24"
 											fill="none"
 											stroke="currentColor"
@@ -350,10 +350,10 @@
 								</div>
 							{/each}
 
-							<button type="button" class="btn btn-ghost btn-sm gap-2" onclick={addLinkField}>
+							<button type="button" class="btn gap-2 btn-ghost btn-sm" onclick={addLinkField}>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
+									class="h-4 w-4"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -372,7 +372,7 @@
 			</div>
 
 			<!-- Footer Actions -->
-			<div class="flex items-center justify-between mt-8 pt-6 border-t border-base-300">
+			<div class="mt-8 flex items-center justify-between border-t border-base-300 pt-6">
 				<div>
 					{#if item}
 						<form
@@ -390,10 +390,10 @@
 							}}
 						>
 							<input type="hidden" name="item_id" value={item.id} />
-							<button type="submit" class="btn btn-error btn-outline gap-2" disabled={isSubmitting}>
+							<button type="submit" class="btn gap-2 btn-outline btn-error" disabled={isSubmitting}>
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
-									class="w-5 h-5"
+									class="h-5 w-5"
 									viewBox="0 0 24 24"
 									fill="none"
 									stroke="currentColor"
@@ -418,9 +418,9 @@
 					<button type="button" class="btn btn-ghost" onclick={onClose} disabled={isSubmitting}>
 						Cancelar
 					</button>
-					<button type="submit" class="btn btn-primary gap-2" disabled={isSubmitting}>
+					<button type="submit" class="btn gap-2 btn-primary" disabled={isSubmitting}>
 						{#if isSubmitting}
-							<span class="loading loading-spinner loading-sm"></span>
+							<span class="loading loading-sm loading-spinner"></span>
 							Guardando...
 						{:else}
 							<span>{item ? '💾' : '✨'}</span>

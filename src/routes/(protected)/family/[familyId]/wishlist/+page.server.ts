@@ -95,7 +95,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	// Load ALL reservations for items in this family (visible to coordinate)
 	const { data: allReservations, error: allReservationsError } = await supabase
 		.from('gift_reservations')
-		.select(`
+		.select(
+			`
 			item_id,
 			reserved_by,
 			reserved_at,
@@ -104,15 +105,16 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 				display_name,
 				avatar_url
 			)
-		`)
-		.in('item_id', items?.map(i => i.id) || []);
+		`
+		)
+		.in('item_id', items?.map((i) => i.id) || []);
 
 	if (allReservationsError) {
 		console.error('Error loading all reservations:', allReservationsError);
 	}
 
 	// Load ALL purchases for items NOT owned by current user (anti-spoiler protection)
-	const itemsNotOwnedByUser = items?.filter(i => i.owner_id !== user.id).map(i => i.id) || [];
+	const itemsNotOwnedByUser = items?.filter((i) => i.owner_id !== user.id).map((i) => i.id) || [];
 
 	const { data: allPurchases, error: allPurchasesError } = await supabase
 		.from('gift_purchases')
@@ -126,15 +128,17 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	// Load comments for all items
 	const { data: comments, error: commentsError } = await supabase
 		.from('gift_item_comments')
-		.select(`
+		.select(
+			`
 			*,
 			profiles (
 				id,
 				display_name,
 				avatar_url
 			)
-		`)
-		.in('item_id', items?.map(i => i.id) || [])
+		`
+		)
+		.in('item_id', items?.map((i) => i.id) || [])
 		.order('created_at', { ascending: true });
 
 	if (commentsError) {
@@ -432,13 +436,11 @@ export const actions: Actions = {
 		}
 
 		// Create the comment
-		const { error: commentError } = await supabase
-			.from('gift_item_comments')
-			.insert({
-				item_id: itemId,
-				author_id: user.id,
-				content: content.trim()
-			});
+		const { error: commentError } = await supabase.from('gift_item_comments').insert({
+			item_id: itemId,
+			author_id: user.id,
+			content: content.trim()
+		});
 
 		if (commentError) {
 			console.error('Error creating comment:', commentError);

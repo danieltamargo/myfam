@@ -3,6 +3,7 @@
 // =====================================================
 // These types will be merged into database.ts after running migrations
 // For now, we define them here for development
+import type { Json } from './database';
 
 export type GameType = 'tic_tac_toe' | 'connect_four' | 'wordle';
 
@@ -21,7 +22,7 @@ export interface GameRoom {
 	is_public: boolean;
 	join_code: string | null;
 	max_players: number;
-	config: Record<string, any>;
+	config: Json;
 	created_at: string;
 	started_at: string | null;
 	finished_at: string | null;
@@ -37,7 +38,7 @@ export interface GameRoomInsert {
 	is_public?: boolean;
 	join_code?: string | null;
 	max_players?: number;
-	config?: Record<string, any>;
+	config?: Json;
 	created_at?: string;
 	started_at?: string | null;
 	finished_at?: string | null;
@@ -48,7 +49,7 @@ export interface GameRoomUpdate {
 	status?: RoomStatus;
 	started_at?: string | null;
 	finished_at?: string | null;
-	config?: Record<string, any>;
+	config?: Json;
 }
 
 // =====================================================
@@ -104,8 +105,8 @@ export interface GameSession {
 	winner_player_number: number | null;
 	is_draw: boolean;
 	has_bots: boolean;
-	game_state: Record<string, any>;
-	final_state: Record<string, any> | null;
+	game_state: Json;
+	final_state: Json | null;
 	started_at: string;
 	finished_at: string | null;
 	duration_seconds: number | null;
@@ -120,8 +121,8 @@ export interface GameSessionInsert {
 	winner_player_number?: number | null;
 	is_draw?: boolean;
 	has_bots?: boolean;
-	game_state?: Record<string, any>;
-	final_state?: Record<string, any> | null;
+	game_state?: Json;
+	final_state?: Json | null;
 	started_at?: string;
 	finished_at?: string | null;
 	duration_seconds?: number | null;
@@ -131,8 +132,8 @@ export interface GameSessionUpdate {
 	winner_id?: string | null;
 	winner_player_number?: number | null;
 	is_draw?: boolean;
-	game_state?: Record<string, any>;
-	final_state?: Record<string, any> | null;
+	game_state?: Json;
+	final_state?: Json | null;
 	finished_at?: string | null;
 	duration_seconds?: number | null;
 }
@@ -146,8 +147,8 @@ export interface GameMove {
 	player_id: string | null;
 	player_number: number;
 	move_number: number;
-	move_data: Record<string, any>;
-	state_after: Record<string, any>;
+	move_data: Json;
+	state_after: Json;
 	created_at: string;
 	time_taken_ms: number | null;
 }
@@ -158,8 +159,8 @@ export interface GameMoveInsert {
 	player_id?: string | null;
 	player_number: number;
 	move_number: number;
-	move_data: Record<string, any>;
-	state_after: Record<string, any>;
+	move_data: Json;
+	state_after: Json;
 	created_at?: string;
 	time_taken_ms?: number | null;
 }
@@ -180,7 +181,7 @@ export interface GameStats {
 	best_win_streak: number;
 	total_time_played_seconds: number;
 	average_move_time_ms: number | null;
-	game_specific_stats: Record<string, any>;
+	game_specific_stats: Json;
 	elo_rating: number;
 	last_played_at: string | null;
 	updated_at: string;
@@ -199,7 +200,7 @@ export interface GameStatsInsert {
 	best_win_streak?: number;
 	total_time_played_seconds?: number;
 	average_move_time_ms?: number | null;
-	game_specific_stats?: Record<string, any>;
+	game_specific_stats?: Json;
 	elo_rating?: number;
 	last_played_at?: string | null;
 	updated_at?: string;
@@ -214,7 +215,7 @@ export interface GameStatsUpdate {
 	best_win_streak?: number;
 	total_time_played_seconds?: number;
 	average_move_time_ms?: number | null;
-	game_specific_stats?: Record<string, any>;
+	game_specific_stats?: Json;
 	elo_rating?: number;
 	last_played_at?: string | null;
 	updated_at?: string;
@@ -231,7 +232,7 @@ export interface GameAchievement {
 	achievement_key: string;
 	unlocked_at: string;
 	session_id: string | null;
-	metadata: Record<string, any>;
+	metadata: Json;
 }
 
 export interface GameAchievementInsert {
@@ -242,7 +243,7 @@ export interface GameAchievementInsert {
 	achievement_key: string;
 	unlocked_at?: string;
 	session_id?: string | null;
-	metadata?: Record<string, any>;
+	metadata?: Json;
 }
 
 // =====================================================

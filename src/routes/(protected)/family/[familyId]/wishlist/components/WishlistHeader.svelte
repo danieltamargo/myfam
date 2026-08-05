@@ -10,28 +10,28 @@
 	} = $props();
 </script>
 
-<div class="bg-base-200 rounded-lg p-4 mb-6 flex items-center justify-between">
+<div class="mb-6 flex items-center justify-between rounded-lg bg-base-200 p-4">
 	<div class="text-sm font-medium text-base-content/70">Wishlist</div>
 	<div class="flex gap-2">
 		<div class="join">
 			<button
-				class="join-item btn btn-sm {viewMode === 'cards' ? 'btn-active' : ''}"
+				class="btn join-item btn-sm {viewMode === 'cards' ? 'btn-active' : ''}"
 				onclick={() => (viewMode = 'cards')}
 			>
 				🃏 Tarjetas
 			</button>
 			<button
-				class="join-item btn btn-sm {viewMode === 'table' ? 'btn-active' : ''}"
+				class="btn join-item btn-sm {viewMode === 'table' ? 'btn-active' : ''}"
 				onclick={() => (viewMode = 'table')}
 			>
 				📊 Tabla
 			</button>
 		</div>
 
-		<button class="btn btn-primary btn-sm gap-2" onclick={onAddGift}>
+		<button class="btn gap-2 btn-sm btn-primary" onclick={onAddGift}>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
-				class="w-4 h-4"
+				class="h-4 w-4"
 				viewBox="0 0 24 24"
 				fill="none"
 				stroke="currentColor"
