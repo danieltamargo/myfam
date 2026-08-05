@@ -322,18 +322,18 @@ Wishlist se considera terminada cuando:
 - Create: `supabase/tests/database/011_wishlist_concurrency.test.sql`
 - Modify: `src/lib/types/database.ts` mediante regeneración
 
-- [ ] **Step 1: Escribir tests anti-spoiler para item owner, coordinador y miembro de otra familia**
-- [ ] **Step 2: Añadir `desired_quantity smallint NOT NULL DEFAULT 1 CHECK (desired_quantity > 0)`**
-- [ ] **Step 3: Añadir `currency text NOT NULL DEFAULT 'EUR' CHECK (currency ~ '^[A-Z]{3}$')` y validar `price >= 0`**
-- [ ] **Step 4: Añadir `status` con valores `active`, `fulfilled` y `archived`**
-- [ ] **Step 5: Añadir `version bigint NOT NULL DEFAULT 1` para control optimista**
-- [ ] **Step 6: Corregir RLS para ocultar reservas, compras, comentarios y menciones al propietario del item**
-- [ ] **Step 7: Añadir RPC transaccionales `reserve_gift_item`, `purchase_gift_item` y `release_gift_item` con bloqueo `FOR UPDATE`**
-- [ ] **Step 8: Validar dentro de cada RPC pertenencia, anti-spoiler y suma de cantidades**
-- [ ] **Step 9: Crear bucket privado `gift-images` y políticas por familia/propietario; guardar paths, no URLs arbitrarias**
-- [ ] **Step 10: Regenerar `src/lib/types/database.ts` desde la base migrada**
-- [ ] **Step 11: Ejecutar tests DB sobre base limpia**
-- [ ] **Step 12: Commit: `feat: harden wishlist data and anti-spoiler rules`**
+- [x] **Step 1: Escribir tests anti-spoiler para item owner, coordinador y miembro de otra familia**
+- [x] **Step 2: Añadir `desired_quantity smallint NOT NULL DEFAULT 1 CHECK (desired_quantity > 0)`**
+- [x] **Step 3: Añadir `currency text NOT NULL DEFAULT 'EUR' CHECK (currency ~ '^[A-Z]{3}$')` y validar `price >= 0`**
+- [x] **Step 4: Añadir `status` con valores `active`, `fulfilled` y `archived`**
+- [x] **Step 5: Añadir `version bigint NOT NULL DEFAULT 1` para control optimista**
+- [x] **Step 6: Corregir RLS para ocultar reservas, compras, comentarios y menciones al propietario del item**
+- [x] **Step 7: Añadir RPC transaccionales `reserve_gift_item`, `purchase_gift_item` y `release_gift_item` con bloqueo `FOR UPDATE`**
+- [x] **Step 8: Validar dentro de cada RPC pertenencia, anti-spoiler y suma de cantidades**
+- [x] **Step 9: Crear bucket privado `gift-images` y políticas por familia/propietario; guardar paths, no URLs arbitrarias**
+- [x] **Step 10: Regenerar `src/lib/types/database.ts` desde la base migrada**
+- [x] **Step 11: Ejecutar tests DB sobre base limpia**
+- [x] **Step 12: Commit: `feat: harden wishlist data and anti-spoiler rules`**
 
 ### Task 6: Separar dominio Wishlist de la página
 

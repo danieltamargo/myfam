@@ -76,6 +76,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'audit_logs_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -130,6 +137,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'external_connections_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -161,6 +175,13 @@ export type Database = {
 						columns: ['created_by'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'families_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					}
 				];
@@ -209,10 +230,24 @@ export type Database = {
 						referencedColumns: ['id'];
 					},
 					{
+						foreignKeyName: 'family_invitations_invited_by_fkey';
+						columns: ['invited_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
 						foreignKeyName: 'family_invitations_invited_user_id_fkey';
 						columns: ['invited_user_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'family_invitations_invited_user_id_fkey';
+						columns: ['invited_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					}
 				];
@@ -253,6 +288,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'family_members_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -290,6 +332,13 @@ export type Database = {
 						columns: ['enabled_by'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'family_modules_enabled_by_fkey';
+						columns: ['enabled_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					},
 					{
@@ -353,6 +402,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'game_achievements_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -396,6 +452,13 @@ export type Database = {
 						columns: ['player_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'game_moves_player_id_fkey';
+						columns: ['player_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					},
 					{
@@ -459,6 +522,13 @@ export type Database = {
 						columns: ['created_by'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'game_rooms_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					},
 					{
@@ -529,6 +599,13 @@ export type Database = {
 						columns: ['winner_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'game_sessions_winner_id_fkey';
+						columns: ['winner_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					}
 				];
@@ -602,6 +679,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'game_stats_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -637,6 +721,13 @@ export type Database = {
 						columns: ['mentioned_user_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'gift_comment_mentions_mentioned_user_id_fkey';
+						columns: ['mentioned_user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					}
 				];
@@ -687,6 +778,13 @@ export type Database = {
 						referencedColumns: ['id'];
 					},
 					{
+						foreignKeyName: 'gift_event_categories_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
 						foreignKeyName: 'gift_event_categories_family_id_fkey';
 						columns: ['family_id'];
 						isOneToOne: false;
@@ -726,6 +824,13 @@ export type Database = {
 						columns: ['author_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'gift_item_comments_author_id_fkey';
+						columns: ['author_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					},
 					{
@@ -776,7 +881,9 @@ export type Database = {
 			gift_items: {
 				Row: {
 					created_at: string | null;
+					currency: string;
 					description: string | null;
+					desired_quantity: number;
 					family_id: string;
 					id: string;
 					image_url: string | null;
@@ -785,11 +892,15 @@ export type Database = {
 					owner_id: string;
 					price: number | null;
 					priority: number | null;
+					status: string;
 					updated_at: string | null;
+					version: number;
 				};
 				Insert: {
 					created_at?: string | null;
+					currency?: string;
 					description?: string | null;
+					desired_quantity?: number;
 					family_id: string;
 					id?: string;
 					image_url?: string | null;
@@ -798,11 +909,15 @@ export type Database = {
 					owner_id: string;
 					price?: number | null;
 					priority?: number | null;
+					status?: string;
 					updated_at?: string | null;
+					version?: number;
 				};
 				Update: {
 					created_at?: string | null;
+					currency?: string;
 					description?: string | null;
+					desired_quantity?: number;
 					family_id?: string;
 					id?: string;
 					image_url?: string | null;
@@ -811,7 +926,9 @@ export type Database = {
 					owner_id?: string;
 					price?: number | null;
 					priority?: number | null;
+					status?: string;
 					updated_at?: string | null;
+					version?: number;
 				};
 				Relationships: [
 					{
@@ -827,6 +944,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'gift_items_owner_id_fkey';
+						columns: ['owner_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -837,7 +961,7 @@ export type Database = {
 					notes: string | null;
 					purchased_at: string | null;
 					purchased_by: string;
-					quantity_purchased: number | null;
+					quantity_purchased: number;
 				};
 				Insert: {
 					id?: string;
@@ -845,7 +969,7 @@ export type Database = {
 					notes?: string | null;
 					purchased_at?: string | null;
 					purchased_by: string;
-					quantity_purchased?: number | null;
+					quantity_purchased?: number;
 				};
 				Update: {
 					id?: string;
@@ -853,7 +977,7 @@ export type Database = {
 					notes?: string | null;
 					purchased_at?: string | null;
 					purchased_by?: string;
-					quantity_purchased?: number | null;
+					quantity_purchased?: number;
 				};
 				Relationships: [
 					{
@@ -869,6 +993,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'gift_purchases_purchased_by_fkey';
+						columns: ['purchased_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -877,6 +1008,7 @@ export type Database = {
 					id: string;
 					item_id: string;
 					notes: string | null;
+					quantity: number;
 					reserved_at: string | null;
 					reserved_by: string;
 					status: string;
@@ -885,6 +1017,7 @@ export type Database = {
 					id?: string;
 					item_id: string;
 					notes?: string | null;
+					quantity?: number;
 					reserved_at?: string | null;
 					reserved_by: string;
 					status?: string;
@@ -893,6 +1026,7 @@ export type Database = {
 					id?: string;
 					item_id?: string;
 					notes?: string | null;
+					quantity?: number;
 					reserved_at?: string | null;
 					reserved_by?: string;
 					status?: string;
@@ -910,6 +1044,13 @@ export type Database = {
 						columns: ['reserved_by'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'gift_reservations_reserved_by_fkey';
+						columns: ['reserved_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					}
 				];
@@ -954,6 +1095,13 @@ export type Database = {
 						columns: ['created_by'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'notes_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					},
 					{
@@ -1008,6 +1156,13 @@ export type Database = {
 						columns: ['user_id'];
 						isOneToOne: false;
 						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'notifications_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
 						referencedColumns: ['id'];
 					}
 				];
@@ -1107,6 +1262,13 @@ export type Database = {
 						isOneToOne: false;
 						referencedRelation: 'profiles';
 						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'room_participants_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
 					}
 				];
 			};
@@ -1117,6 +1279,16 @@ export type Database = {
 					avatar_url: string | null;
 					display_name: string | null;
 					id: string | null;
+				};
+				Insert: {
+					avatar_url?: string | null;
+					display_name?: string | null;
+					id?: string | null;
+				};
+				Update: {
+					avatar_url?: string | null;
+					display_name?: string | null;
+					id?: string | null;
 				};
 				Relationships: [];
 			};
@@ -1130,14 +1302,8 @@ export type Database = {
 				Args: { p_difficulty?: string; p_room_id: string };
 				Returns: string;
 			};
-			create_family: {
-				Args: { p_name: string };
-				Returns: string;
-			};
-			delete_family: {
-				Args: { p_family_id: string };
-				Returns: undefined;
-			};
+			create_family: { Args: { p_name: string }; Returns: string };
+			delete_family: { Args: { p_family_id: string }; Returns: undefined };
 			extract_mentions_from_comment: {
 				Args: { comment_text: string };
 				Returns: string[];
@@ -1161,6 +1327,10 @@ export type Database = {
 					win_rate: number;
 				}[];
 			};
+			get_item_purchased_quantity: {
+				Args: { item_uuid: string };
+				Returns: number;
+			};
 			get_managed_family_invitations: {
 				Args: { p_family_id: string };
 				Returns: {
@@ -1177,18 +1347,14 @@ export type Database = {
 			get_my_profile: {
 				Args: never;
 				Returns: {
-					active_family_id: string | null;
-					avatar_url: string | null;
-					created_at: string | null;
-					display_name: string | null;
-					email: string | null;
+					active_family_id: string;
+					avatar_url: string;
+					created_at: string;
+					display_name: string;
+					email: string;
 					id: string;
-					updated_at: string | null;
+					updated_at: string;
 				}[];
-			};
-			get_item_purchased_quantity: {
-				Args: { item_uuid: string };
-				Returns: number;
 			};
 			get_unread_notification_count: {
 				Args: { user_uuid: string };
@@ -1202,17 +1368,29 @@ export type Database = {
 				Args: { p_email: string; p_family_id: string };
 				Returns: string;
 			};
-			remove_family_member: {
-				Args: { p_family_id: string; p_target_user_id: string };
-				Returns: undefined;
-			};
 			is_room_owner: {
 				Args: { p_room_id: string; p_user_id: string };
 				Returns: boolean;
 			};
+			purchase_gift_item: {
+				Args: { p_item_id: string; p_quantity?: number };
+				Returns: string;
+			};
 			reject_family_invitation: {
 				Args: { p_invitation_id: string };
 				Returns: undefined;
+			};
+			release_gift_item: {
+				Args: { p_coordination_type?: string; p_item_id: string };
+				Returns: undefined;
+			};
+			remove_family_member: {
+				Args: { p_family_id: string; p_target_user_id: string };
+				Returns: undefined;
+			};
+			reserve_gift_item: {
+				Args: { p_item_id: string; p_quantity?: number; p_status?: string };
+				Returns: string;
 			};
 			transfer_family_ownership: {
 				Args: { p_family_id: string; p_target_user_id: string };
