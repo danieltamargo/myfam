@@ -23,11 +23,7 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
 		}));
 
 	// Get user's profile to check active_family_id
-	const { data: profile } = await supabase
-		.from('profiles')
-		.select('active_family_id')
-		.eq('id', user.id)
-		.single();
+	const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle();
 
 	// Find the active family from the user's families
 	const activeFamily =

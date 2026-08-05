@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 	} = await supabase.auth.getUser();
 
 	// Get profile
-	const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+	const { data: profile } = await supabase.rpc('get_my_profile').maybeSingle();
 
 	// Get identities
 	const identities = fullUser?.identities || [];

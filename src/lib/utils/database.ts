@@ -49,7 +49,7 @@ export async function getFamilyWithMembers(supabase: SupabaseClient<Database>, f
 
 	const { data: members, error: membersError } = await supabase
 		.from('family_members')
-		.select('*, profile:profiles(*)')
+		.select('*, profile:profiles(id, display_name, avatar_url, created_at, updated_at)')
 		.eq('family_id', familyId);
 
 	if (membersError) return { data: null, error: membersError };

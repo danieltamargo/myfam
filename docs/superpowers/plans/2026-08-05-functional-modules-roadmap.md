@@ -262,17 +262,17 @@ Los timestamps son nombres planificados; cada migración debe probarse sobre una
 - Test: `supabase/tests/database/001_family_roles_rls.test.sql`
 - Test: `supabase/tests/database/002_notifications_rls.test.sql`
 
-- [ ] **Step 1: Escribir casos pgTAP con Alice/Bob en familia A y Carol en familia B**
-- [ ] **Step 2: Demostrar que actualmente Bob puede intentar autoasignarse owner y que las invitaciones/perfiles se exponen**
-- [ ] **Step 3: Eliminar `can_insert_family_members` y reemplazar altas por funciones transaccionales autorizadas**
-- [ ] **Step 4: Impedir a admin insertar, actualizar o borrar un owner**
-- [ ] **Step 5: Sustituir lectura global de `profiles` por una proyección pública sin email y acceso al perfil completo solo para el titular**
-- [ ] **Step 6: Eliminar la política global de invitaciones; destinatario, emisor y gestores autorizados serán los únicos lectores**
-- [ ] **Step 7: Revocar inserción cliente de notificaciones; crearlas mediante servicio/RPC con tipo y enlace internos validados**
-- [ ] **Step 8: Mover helpers RLS a esquema `private`, fijar `search_path = ''`, comprobar `auth.uid()` y revocar ejecución pública**
-- [ ] **Step 9: Indexar todas las FK y columnas usadas por RLS**
-- [ ] **Step 10: Ejecutar `npm run test:db` y verificar todos los casos negativos**
-- [ ] **Step 11: Commit: `fix: enforce least privilege across family data`**
+- [x] **Step 1: Escribir casos pgTAP con Alice/Bob en familia A y Carol en familia B**
+- [x] **Step 2: Demostrar que actualmente Bob puede intentar autoasignarse owner y que las invitaciones/perfiles se exponen**
+- [x] **Step 3: Eliminar `can_insert_family_members` y reemplazar altas por funciones transaccionales autorizadas**
+- [x] **Step 4: Impedir a admin insertar, actualizar o borrar un owner**
+- [x] **Step 5: Sustituir lectura global de `profiles` por una proyección pública sin email y acceso al perfil completo solo para el titular**
+- [x] **Step 6: Eliminar la política global de invitaciones; destinatario, emisor y gestores autorizados serán los únicos lectores**
+- [x] **Step 7: Revocar inserción cliente de notificaciones; crearlas mediante servicio/RPC con tipo y enlace internos validados**
+- [x] **Step 8: Mover helpers RLS a esquema `private`, fijar `search_path = ''`, comprobar `auth.uid()` y revocar ejecución pública**
+- [x] **Step 9: Indexar todas las FK y columnas usadas por RLS**
+- [x] **Step 10: Ejecutar `npm run test:db` y verificar todos los casos negativos**
+- [x] **Step 11: Commit: `fix: enforce least privilege across family data`**
 
 ### Task 4: Hacer atómicas las operaciones sensibles de familia
 

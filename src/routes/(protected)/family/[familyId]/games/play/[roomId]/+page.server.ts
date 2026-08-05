@@ -50,14 +50,15 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.eq('is_active', true)
 		.single();
 
-	const isFamilyMember = room.family_id
+	const { data: familyMembership } = room.family_id
 		? await supabase
-				.rpc('is_family_member', {
-					family_uuid: room.family_id,
-					user_uuid: user.id
-				})
-				.then((res) => res.data)
-		: false;
+				.from('family_members')
+				.select('id')
+				.eq('family_id', room.family_id)
+				.eq('user_id', user.id)
+				.maybeSingle()
+		: { data: null };
+	const isFamilyMember = Boolean(familyMembership);
 
 	if (!participation && !isFamilyMember) {
 		throw error(403, 'You are not a participant in this room');

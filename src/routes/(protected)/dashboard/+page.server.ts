@@ -30,11 +30,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
 			// Get invited_by user data
 			const { data: invitedBy, error: invitedByError } = inv.invited_by
-				? await supabase
-						.from('profiles')
-						.select('display_name, email')
-						.eq('id', inv.invited_by)
-						.single()
+				? await supabase.from('profiles').select('display_name').eq('id', inv.invited_by).single()
 				: { data: null, error: null };
 
 			if (invitedByError) {
@@ -62,61 +58,15 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const invitationId = formData.get('invitation_id') as string;
 
-		// Get invitation details
-		const { data: invitation, error: invitationError } = await supabase
-			.from('family_invitations')
-			.select('family_id')
-			.eq('id', invitationId)
-			.eq('invited_user_id', user.id)
-			.eq('status', 'pending')
-			.single();
-
-		if (invitationError || !invitation) {
-			console.error('Invitation error:', invitationError);
-			return fail(404, { message: 'Invitation not found or already processed' });
-		}
-
-		if (!invitation.family_id) {
-			return fail(400, { message: 'Invitation has no family assigned' });
-		}
-
-		// Check if user is already a member
-		const { data: existingMember } = await supabase
-			.from('family_members')
-			.select('id')
-			.eq('family_id', invitation.family_id)
-			.eq('user_id', user.id)
-			.single();
-
-		if (existingMember) {
-			// Just update the invitation status
-			await supabase
-				.from('family_invitations')
-				.update({ status: 'accepted' })
-				.eq('id', invitationId);
-			return { success: true, message: 'You are already a member of this family' };
-		}
-
-		// Add user to family as member
-		const { error: memberError } = await supabase.from('family_members').insert({
-			family_id: invitation.family_id,
-			user_id: user.id,
-			role: 'member'
+		const { error: invitationError } = await supabase.rpc('accept_family_invitation', {
+			p_invitation_id: invitationId
 		});
 
-		if (memberError) {
-			console.error('Member insert error:', memberError);
-			return fail(500, { message: `Failed to join family: ${memberError.message}` });
-		}
-
-		// Update invitation status
-		const { error: updateError } = await supabase
-			.from('family_invitations')
-			.update({ status: 'accepted' })
-			.eq('id', invitationId);
-
-		if (updateError) {
-			console.error('Invitation update error:', updateError);
+		if (invitationError) {
+			console.error('Invitation error:', invitationError);
+			return fail(invitationError.code === 'P0002' ? 404 : 500, {
+				message: invitationError.message
+			});
 		}
 
 		// Redirect to families page with success message
@@ -131,11 +81,9 @@ export const actions: Actions = {
 		const invitationId = formData.get('invitation_id') as string;
 
 		// Update invitation status
-		const { error } = await supabase
-			.from('family_invitations')
-			.update({ status: 'rejected' })
-			.eq('id', invitationId)
-			.eq('invited_user_id', user.id);
+		const { error } = await supabase.rpc('reject_family_invitation', {
+			p_invitation_id: invitationId
+		});
 
 		if (error) {
 			return fail(500, { message: 'Failed to reject invitation' });

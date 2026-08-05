@@ -1112,9 +1112,20 @@ export type Database = {
 			};
 		};
 		Views: {
-			[_ in never]: never;
+			public_profiles: {
+				Row: {
+					avatar_url: string | null;
+					display_name: string | null;
+					id: string | null;
+				};
+				Relationships: [];
+			};
 		};
 		Functions: {
+			accept_family_invitation: {
+				Args: { p_invitation_id: string };
+				Returns: string;
+			};
 			add_bot_to_room: {
 				Args: { p_difficulty?: string; p_room_id: string };
 				Returns: string;
@@ -1142,6 +1153,31 @@ export type Database = {
 					win_rate: number;
 				}[];
 			};
+			get_managed_family_invitations: {
+				Args: { p_family_id: string };
+				Returns: {
+					created_at: string;
+					family_id: string;
+					id: string;
+					invited_by: string;
+					invited_email: string;
+					invited_user_id: string;
+					status: string;
+					updated_at: string;
+				}[];
+			};
+			get_my_profile: {
+				Args: never;
+				Returns: {
+					active_family_id: string | null;
+					avatar_url: string | null;
+					created_at: string | null;
+					display_name: string | null;
+					email: string | null;
+					id: string;
+					updated_at: string | null;
+				}[];
+			};
 			get_item_purchased_quantity: {
 				Args: { item_uuid: string };
 				Returns: number;
@@ -1150,25 +1186,21 @@ export type Database = {
 				Args: { user_uuid: string };
 				Returns: number;
 			};
-			has_family_role: {
-				Args: {
-					family_uuid: string;
-					required_roles: string[];
-					user_uuid: string;
-				};
-				Returns: boolean;
-			};
 			has_user_purchased_item: {
 				Args: { item_uuid: string; user_uuid: string };
 				Returns: boolean;
 			};
-			is_family_member: {
-				Args: { family_uuid: string; user_uuid: string };
-				Returns: boolean;
+			invite_family_member: {
+				Args: { p_email: string; p_family_id: string };
+				Returns: string;
 			};
 			is_room_owner: {
 				Args: { p_room_id: string; p_user_id: string };
 				Returns: boolean;
+			};
+			reject_family_invitation: {
+				Args: { p_invitation_id: string };
+				Returns: undefined;
 			};
 		};
 		Enums: {

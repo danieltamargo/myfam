@@ -23,17 +23,9 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.order('joined_at', { ascending: true });
 
 	// Get pending invitations
-	const { data: invitations } = await supabase
-		.from('family_invitations')
-		.select(
-			`
-			*,
-			invited_user:profiles!invited_user_id(email)
-		`
-		)
-		.eq('family_id', familyId)
-		.eq('status', 'pending')
-		.order('created_at', { ascending: false });
+	const { data: invitations } = await supabase.rpc('get_managed_family_invitations', {
+		p_family_id: familyId
+	});
 
 	return {
 		members: (members || []).map((m) => ({
@@ -43,7 +35,12 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 			displayName: (m.profile as any)?.display_name || 'Unknown User',
 			avatarUrl: (m.profile as any)?.avatar_url
 		})),
-		invitations: invitations || [],
+		invitations: (invitations || [])
+			.filter((invitation) => invitation.status === 'pending')
+			.map((invitation) => ({
+				...invitation,
+				invited_user: { email: invitation.invited_email }
+			})),
 		currentUserId: user?.id
 	};
 };
@@ -74,68 +71,15 @@ export const actions: Actions = {
 			return fail(400, { message: 'Valid email is required' });
 		}
 
-		// Check if user exists
-		const { data: invitedUser } = await supabase
-			.from('profiles')
-			.select('id')
-			.eq('email', email)
-			.single();
-
-		if (!invitedUser) {
-			return fail(404, { message: 'User not found. They need to create an account first.' });
-		}
-
-		// Check if already a member
-		const { data: existingMember } = await supabase
-			.from('family_members')
-			.select('id')
-			.eq('family_id', familyId)
-			.eq('user_id', invitedUser.id)
-			.single();
-
-		if (existingMember) {
-			return fail(400, { message: 'User is already a member of this family' });
-		}
-
-		// Check if already invited (use maybeSingle to handle case where no rows found)
-		const { data: existingInvite } = await supabase
-			.from('family_invitations')
-			.select('id, status')
-			.eq('family_id', familyId)
-			.eq('invited_user_id', invitedUser.id)
-			.eq('status', 'pending')
-			.maybeSingle();
-
-		if (existingInvite) {
-			// Update the existing invitation to refresh it
-			await supabase
-				.from('family_invitations')
-				.update({
-					invited_by: user.id,
-					updated_at: new Date().toISOString()
-				})
-				.eq('id', existingInvite.id);
-
-			return { success: true, message: 'Invitation resent successfully' };
-		}
-
-		// Create invitation - use upsert to handle race conditions
-		const { error } = await supabase.from('family_invitations').upsert(
-			{
-				family_id: familyId,
-				invited_by: user.id,
-				invited_user_id: invitedUser.id,
-				status: 'pending'
-			},
-			{
-				onConflict: 'family_id,invited_user_id',
-				ignoreDuplicates: false
-			}
-		);
+		const { error } = await supabase.rpc('invite_family_member', {
+			p_family_id: familyId,
+			p_email: email.trim()
+		});
 
 		if (error) {
 			console.error('Invitation error:', error);
-			return fail(500, { message: 'Failed to send invitation. Please try again.' });
+			const status = error.code === 'P0002' ? 404 : error.code === '23505' ? 409 : 500;
+			return fail(status, { message: error.message });
 		}
 
 		return { success: true, message: 'Invitation sent successfully' };
