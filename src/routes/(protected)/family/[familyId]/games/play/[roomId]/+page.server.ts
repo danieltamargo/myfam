@@ -8,8 +8,11 @@ import type {
 } from '$lib/types/games';
 import { getBotMove } from '$lib/games/ai/tic-tac-toe-ai';
 import type { Database, Json } from '$lib/types/database';
+import { requireModuleAvailable } from '$lib/server/modules/availability';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	requireModuleAvailable('games');
+
 	const { user } = await safeGetSession();
 	if (!user) {
 		throw error(401, 'Unauthorized');
@@ -291,6 +294,7 @@ async function executeBotTurn(
 export const actions: Actions = {
 	// Make a move in Tic-Tac-Toe
 	makeMove: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -472,6 +476,7 @@ export const actions: Actions = {
 
 	// Rematch - create a new session in the same room
 	rematch: async ({ params, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -500,6 +505,7 @@ export const actions: Actions = {
 
 	// Leave game and return to lobby
 	leaveGame: async ({ params, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });

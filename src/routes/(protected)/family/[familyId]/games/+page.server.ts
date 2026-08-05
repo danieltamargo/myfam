@@ -3,8 +3,11 @@ import type { Actions, PageServerLoad } from './$types';
 import type { GameType, BotDifficulty, TicTacToeState, TicTacToeBoard } from '$lib/types/games';
 import { getBotMove } from '$lib/games/ai/tic-tac-toe-ai';
 import type { Json } from '$lib/types/database';
+import { requireModuleAvailable } from '$lib/server/modules/availability';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	requireModuleAvailable('games');
+
 	const { user } = await safeGetSession();
 	if (!user) {
 		throw error(401, 'Unauthorized');
@@ -161,6 +164,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 export const actions: Actions = {
 	// Create a new game room
 	createRoom: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -230,6 +234,7 @@ export const actions: Actions = {
 
 	// Join an existing room
 	joinRoom: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -316,6 +321,7 @@ export const actions: Actions = {
 
 	// Leave a room
 	leaveRoom: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -348,6 +354,7 @@ export const actions: Actions = {
 
 	// Toggle ready status
 	toggleReady: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -377,6 +384,7 @@ export const actions: Actions = {
 
 	// Start game (only creator can start)
 	startGame: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -565,6 +573,7 @@ export const actions: Actions = {
 
 	// Delete/cancel room (only creator)
 	deleteRoom: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -593,6 +602,7 @@ export const actions: Actions = {
 
 	// Add bot to room (only creator)
 	addBot: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
@@ -657,6 +667,7 @@ export const actions: Actions = {
 
 	// Remove bot from room (only creator)
 	removeBot: async ({ request, locals: { supabase, safeGetSession } }) => {
+		requireModuleAvailable('games');
 		const { user } = await safeGetSession();
 		if (!user) {
 			return fail(401, { error: 'Unauthorized' });
