@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { redirect, fail } from '@sveltejs/kit';
+import { requireAal2 } from '$lib/server/auth/authorization';
 
 // LOAD FUNCTION
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
@@ -84,6 +85,7 @@ export const actions: Actions = {
 	deleteAccount: async ({ locals: { supabase, safeGetSession }, fetch }) => {
 		const { user, session } = await safeGetSession();
 		if (!user || !session) return fail(401, { message: 'Unauthorized' });
+		await requireAal2(supabase);
 
 		// Call Edge Function to delete user
 		const response = await fetch(

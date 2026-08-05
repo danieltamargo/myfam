@@ -1,6 +1,5 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
-import { supabaseAdmin } from '$lib/supabase-admin';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -67,7 +66,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
 export const actions: Actions = {
 	createFamily: async ({ request, locals: { supabase, safeGetSession } }) => {
-		const { user, session } = await safeGetSession();
+		const { user } = await safeGetSession();
 		if (!user) return fail(401, { message: 'Unauthorized' });
 
 		const formData = await request.formData();
@@ -77,61 +76,16 @@ export const actions: Actions = {
 			return fail(400, { message: 'Family name is required' });
 		}
 
-		// Create family using admin client to bypass RLS
-		// (RLS will be enforced for all subsequent operations)
-		const { data: family, error: familyError } = await supabaseAdmin
-			.from('families')
-			.insert({
-				name: name.trim(),
-				created_by: user.id
-			})
-			.select()
-			.single();
-
-		if (familyError || !family) {
-			return fail(500, { message: familyError?.message || 'Failed to create family' });
-		}
-
-		// Add user as owner using admin client
-		const { error: memberError } = await supabaseAdmin.from('family_members').insert({
-			family_id: family.id,
-			user_id: user.id,
-			role: 'owner'
+		const { data: familyId, error: familyError } = await supabase.rpc('create_family', {
+			p_name: name.trim()
 		});
 
-		if (memberError) {
-			// Rollback: delete the family
-			await supabase.from('families').delete().eq('id', family.id);
-			return fail(500, { message: 'Failed to add you as owner' });
+		if (familyError || !familyId) {
+			return fail(familyError?.code === '22023' ? 400 : 500, {
+				message: familyError?.message || 'Failed to create family'
+			});
 		}
 
-		// Create default event categories for the family
-		const defaultEvents = [
-			{ name: 'Navidad', icon: '🎄', color: '#dc2626' },
-			{ name: 'Cumpleaños', icon: '🎂', color: '#f59e0b' },
-			{ name: 'Reyes', icon: '👑', color: '#8b5cf6' },
-			{ name: 'San Valentín', icon: '❤️', color: '#ec4899' },
-			{ name: 'Todos', icon: '🎁', color: '#10b981' }
-		];
-
-		const eventInserts = defaultEvents.map((event) => ({
-			family_id: family.id,
-			name: event.name,
-			icon: event.icon,
-			color: event.color,
-			is_system: true,
-			created_by: user.id
-		}));
-
-		const { error: eventsError } = await supabaseAdmin
-			.from('gift_event_categories')
-			.insert(eventInserts);
-
-		if (eventsError) {
-			console.error('Warning: Failed to create default event categories:', eventsError);
-			// Not critical - continue
-		}
-
-		return { success: true, familyId: family.id };
+		return { success: true, familyId };
 	}
 };

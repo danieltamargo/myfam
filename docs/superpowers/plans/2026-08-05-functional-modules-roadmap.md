@@ -285,15 +285,15 @@ Los timestamps son nombres planificados; cada migración debe probarse sobre una
 - Modify: `src/lib/server/auth/authorization.ts`
 - Test: `tests/e2e/family-roles.spec.ts`
 
-- [ ] **Step 1: Escribir tests para crear familia, aceptar invitación, transferir propiedad, expulsar y abandonar**
-- [ ] **Step 2: Crear RPC `create_family(name)` que inserte familia, owner y categorías Wishlist en una transacción**
-- [ ] **Step 3: Crear RPC `transfer_family_ownership(family_id, target_user_id)` con bloqueo de filas e invariante de owner único**
-- [ ] **Step 4: Crear RPC `remove_family_member(family_id, target_user_id)` que proteja owners**
-- [ ] **Step 5: Comprobar AAL2 en servidor para transferencia, borrado de familia y borrado de cuenta**
-- [ ] **Step 6: Retirar `supabaseAdmin` de la creación ordinaria de familias**
-- [ ] **Step 7: Registrar estas operaciones en `audit_logs` desde la transacción**
-- [ ] **Step 8: Ejecutar tests DB y E2E**
-- [ ] **Step 9: Commit: `fix: make family ownership operations atomic`**
+- [x] **Step 1: Escribir tests para crear familia, aceptar invitación, transferir propiedad, expulsar y abandonar**
+- [x] **Step 2: Crear RPC `create_family(name)` que inserte familia, owner y categorías Wishlist en una transacción**
+- [x] **Step 3: Crear RPC `transfer_family_ownership(family_id, target_user_id)` con bloqueo de filas e invariante de owner único**
+- [x] **Step 4: Crear RPC `remove_family_member(family_id, target_user_id)` que proteja owners**
+- [x] **Step 5: Comprobar AAL2 en servidor para transferencia, borrado de familia y borrado de cuenta**
+- [x] **Step 6: Retirar `supabaseAdmin` de la creación ordinaria de familias**
+- [x] **Step 7: Registrar estas operaciones en `audit_logs` desde la transacción**
+- [x] **Step 8: Ejecutar tests DB y E2E**
+- [x] **Step 9: Commit: `fix: make family ownership operations atomic`**
 
 ---
 

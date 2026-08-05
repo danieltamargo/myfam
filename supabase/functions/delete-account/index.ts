@@ -5,6 +5,20 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
+function getAuthenticatorLevel(token: string): string | null {
+	try {
+		const encodedPayload = token.split('.')[1];
+		if (!encodedPayload) return null;
+
+		const normalized = encodedPayload.replaceAll('-', '+').replaceAll('_', '/');
+		const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+		const payload = JSON.parse(atob(padded)) as { aal?: string };
+		return payload.aal ?? null;
+	} catch {
+		return null;
+	}
+}
+
 Deno.serve(async (req) => {
 	// CORS headers
 	if (req.method === 'OPTIONS') {
@@ -50,6 +64,15 @@ Deno.serve(async (req) => {
 		if (userError || !user) {
 			return new Response(JSON.stringify({ error: 'Invalid token' }), {
 				status: 401,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
+		// The token was verified above; now enforce recent MFA assurance before
+		// allowing this irreversible operation.
+		if (getAuthenticatorLevel(token) !== 'aal2') {
+			return new Response(JSON.stringify({ error: 'Two-factor verification is required' }), {
+				status: 403,
 				headers: { 'Content-Type': 'application/json' }
 			});
 		}

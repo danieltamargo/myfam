@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import { requireAal2 } from '$lib/server/auth/authorization';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -118,26 +119,16 @@ export const actions: Actions = {
 
 		// If transferring ownership, update both users
 		if (newRole === 'owner') {
-			// Update new owner
-			const { error: newOwnerError } = await supabase
-				.from('family_members')
-				.update({ role: 'owner' })
-				.eq('family_id', familyId)
-				.eq('user_id', targetUserId);
+			await requireAal2(supabase);
+			const { error: transferError } = await supabase.rpc('transfer_family_ownership', {
+				p_family_id: familyId,
+				p_target_user_id: targetUserId
+			});
 
-			if (newOwnerError) {
-				return fail(500, { message: newOwnerError.message });
-			}
-
-			// Demote current owner to admin
-			const { error: demoteError } = await supabase
-				.from('family_members')
-				.update({ role: 'admin' })
-				.eq('family_id', familyId)
-				.eq('user_id', user.id);
-
-			if (demoteError) {
-				return fail(500, { message: demoteError.message });
+			if (transferError) {
+				return fail(transferError.code === '42501' ? 403 : 500, {
+					message: transferError.message
+				});
 			}
 
 			return {
@@ -186,11 +177,10 @@ export const actions: Actions = {
 			return fail(400, { message: 'Cannot remove yourself' });
 		}
 
-		const { error } = await supabase
-			.from('family_members')
-			.delete()
-			.eq('family_id', familyId)
-			.eq('user_id', targetUserId);
+		const { error } = await supabase.rpc('remove_family_member', {
+			p_family_id: familyId,
+			p_target_user_id: targetUserId
+		});
 
 		if (error) {
 			return fail(500, { message: error.message });
@@ -224,12 +214,10 @@ export const actions: Actions = {
 			});
 		}
 
-		// Remove the member
-		const { error } = await supabase
-			.from('family_members')
-			.delete()
-			.eq('family_id', familyId)
-			.eq('user_id', user.id);
+		const { error } = await supabase.rpc('remove_family_member', {
+			p_family_id: familyId,
+			p_target_user_id: user.id
+		});
 
 		if (error) {
 			return fail(500, { message: error.message });
@@ -242,5 +230,25 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'You have left the family', redirect: '/dashboard' };
+	},
+
+	deleteFamily: async ({ params, locals: { supabase, safeGetSession }, cookies }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { message: 'Unauthorized' });
+
+		await requireAal2(supabase);
+		const { error } = await supabase.rpc('delete_family', {
+			p_family_id: params.familyId
+		});
+
+		if (error) {
+			return fail(error.code === '42501' ? 403 : 500, { message: error.message });
+		}
+
+		if (cookies.get('activeFamily') === params.familyId) {
+			cookies.delete('activeFamily', { path: '/' });
+		}
+
+		return { success: true, message: 'Family deleted', redirect: '/families' };
 	}
 };

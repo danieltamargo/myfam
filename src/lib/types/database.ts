@@ -1130,6 +1130,14 @@ export type Database = {
 				Args: { p_difficulty?: string; p_room_id: string };
 				Returns: string;
 			};
+			create_family: {
+				Args: { p_name: string };
+				Returns: string;
+			};
+			delete_family: {
+				Args: { p_family_id: string };
+				Returns: undefined;
+			};
 			extract_mentions_from_comment: {
 				Args: { comment_text: string };
 				Returns: string[];
@@ -1194,12 +1202,20 @@ export type Database = {
 				Args: { p_email: string; p_family_id: string };
 				Returns: string;
 			};
+			remove_family_member: {
+				Args: { p_family_id: string; p_target_user_id: string };
+				Returns: undefined;
+			};
 			is_room_owner: {
 				Args: { p_room_id: string; p_user_id: string };
 				Returns: boolean;
 			};
 			reject_family_invitation: {
 				Args: { p_invitation_id: string };
+				Returns: undefined;
+			};
+			transfer_family_ownership: {
+				Args: { p_family_id: string; p_target_user_id: string };
 				Returns: undefined;
 			};
 		};
