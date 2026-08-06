@@ -387,15 +387,15 @@ Wishlist se considera terminada cuando:
 - Modify: `src/routes/(protected)/family/[familyId]/wishlist/components/WishlistTable.svelte`
 - Test: `tests/e2e/wishlist.spec.ts`
 
-- [ ] **Step 1: Escribir E2E con owner del regalo, comprador y usuario externo**
-- [ ] **Step 2: Implementar filtros por miembro, categoría, prioridad y estado con query string compartible**
-- [ ] **Step 3: Implementar coordinación sobre las RPC y mostrar cantidades restantes solo a no-owners**
-- [ ] **Step 4: Reconciliar eventos Realtime por ID/version para evitar duplicados**
-- [ ] **Step 5: Añadir deep link seguro `/family/:familyId/wishlist?item=:itemId`**
-- [ ] **Step 6: Añadir exportación del wishlist propio sin datos de coordinación**
-- [ ] **Step 7: Verificar desktop, móvil, teclado y lector de pantalla básico**
-- [ ] **Step 8: Ejecutar test DB, unitario, E2E, check, lint y build**
-- [ ] **Step 9: Commit: `feat: complete wishlist coordination experience`**
+- [x] **Step 1: Escribir E2E con owner del regalo, comprador y usuario externo**
+- [x] **Step 2: Implementar filtros por miembro, categoría, prioridad y estado con query string compartible**
+- [x] **Step 3: Implementar coordinación sobre las RPC y mostrar cantidades restantes solo a no-owners**
+- [x] **Step 4: Reconciliar eventos Realtime por ID/version para evitar duplicados**
+- [x] **Step 5: Añadir deep link seguro `/family/:familyId/wishlist?item=:itemId`**
+- [x] **Step 6: Añadir exportación del wishlist propio sin datos de coordinación**
+- [x] **Step 7: Verificar desktop, móvil, teclado y lector de pantalla básico**
+- [x] **Step 8: Ejecutar test DB, unitario, E2E, check, lint y build**
+- [x] **Step 9: Commit: `feat: complete wishlist coordination experience`**
 
 **Gate Wishlist:** no empezar Gastos hasta que Wishlist tenga cero hallazgos P0/P1, todos los comandos de verificación estén verdes y el flujo E2E de tres usuarios pase.
 

@@ -3,31 +3,41 @@
 
 	let {
 		viewMode = $bindable(),
-		onAddGift
+		onAddGift,
+		onExport
 	}: {
 		viewMode: ViewMode;
 		onAddGift: () => void;
+		onExport: () => void;
 	} = $props();
 </script>
 
-<div class="mb-6 flex items-center justify-between rounded-lg bg-base-200 p-4">
-	<div class="text-sm font-medium text-base-content/70">Wishlist</div>
-	<div class="flex gap-2">
+<div
+	class="mb-6 flex flex-col gap-3 rounded-box bg-base-200 p-4 sm:flex-row sm:items-center sm:justify-between"
+>
+	<div>
+		<h1 class="font-bold">Wishlist</h1>
+		<p class="text-xs text-base-content/65">Regalos, ideas y coordinación familiar sin spoilers.</p>
+	</div>
+	<div class="flex flex-wrap gap-2">
 		<div class="join">
 			<button
 				class="btn join-item btn-sm {viewMode === 'cards' ? 'btn-active' : ''}"
 				onclick={() => (viewMode = 'cards')}
+				aria-pressed={viewMode === 'cards'}
 			>
-				🃏 Tarjetas
+				Tarjetas
 			</button>
 			<button
 				class="btn join-item btn-sm {viewMode === 'table' ? 'btn-active' : ''}"
 				onclick={() => (viewMode = 'table')}
+				aria-pressed={viewMode === 'table'}
 			>
-				📊 Tabla
+				Tabla
 			</button>
 		</div>
 
+		<button class="btn btn-ghost btn-sm" onclick={onExport}>Exportar mi lista</button>
 		<button class="btn gap-2 btn-sm btn-primary" onclick={onAddGift}>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -42,7 +52,7 @@
 				<line x1="12" y1="5" x2="12" y2="19"></line>
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
-			Añadir Regalo
+			Añadir regalo
 		</button>
 	</div>
 </div>

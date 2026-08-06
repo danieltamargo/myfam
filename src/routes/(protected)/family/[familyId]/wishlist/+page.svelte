@@ -1,244 +1,325 @@
 <script lang="ts">
+	import { afterNavigate, invalidateAll, pushState, replaceState } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { createClient } from '$lib/supabase';
-	import { page } from '$app/stores';
-	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
-	import type {
-		WishlistCommentDto,
-		WishlistItemDto,
-		WishlistReservationDto
-	} from '$lib/server/wishlist/presenters';
+	import type { WishlistCommentDto, WishlistItemDto } from '$lib/server/wishlist/presenters';
+	import { summarizeWishlistCoordination } from '$lib/wishlist/coordination';
+	import { createOwnWishlistExport } from '$lib/wishlist/export';
+	import {
+		createWishlistRealtimeReconciler,
+		type WishlistRealtimePayload,
+		type WishlistRealtimeTable
+	} from '$lib/wishlist/realtime';
 
-	// Import components
-	import WishlistHeader from './components/WishlistHeader.svelte';
-	import WishlistFilters from './components/WishlistFilters.svelte';
 	import WishlistCards from './components/WishlistCards.svelte';
-	import WishlistTable from './components/WishlistTable.svelte';
-	import WishlistItemModal from './components/WishlistItemModal.svelte';
 	import WishlistEditModal from './components/WishlistEditModal.svelte';
+	import WishlistFilters from './components/WishlistFilters.svelte';
+	import WishlistHeader from './components/WishlistHeader.svelte';
+	import WishlistItemModal from './components/WishlistItemModal.svelte';
+	import WishlistTable from './components/WishlistTable.svelte';
+
+	type FilterName = 'member' | 'category' | 'priority' | 'status';
 
 	let { data }: { data: PageData } = $props();
 
-	// View mode state
+	const statusFilters = new Set([
+		'all',
+		'active',
+		'fulfilled',
+		'archived',
+		'available',
+		'reserved',
+		'purchased'
+	]);
+	const priorityFilters = new Set(['all', '-1', '0', '1', '2']);
+	const queryParams = new SvelteURLSearchParams(page.url.searchParams);
+	function validFilter(value: string | null, allowed: ReadonlySet<string>): string {
+		return value && allowed.has(value) ? value : 'all';
+	}
+
+	function initialMemberFilter(): string {
+		return validFilter(
+			page.url.searchParams.get('member'),
+			new Set(data.members.map((member) => member.user_id))
+		);
+	}
+
+	function initialCategoryFilter(): string {
+		return validFilter(
+			page.url.searchParams.get('category'),
+			new Set(data.eventCategories.map((category) => category.id))
+		);
+	}
+
 	let viewMode = $state<'cards' | 'table'>('cards');
-	let selectedMemberId = $state<string | 'all'>('all');
-	let selectedEventId = $state<string | 'all'>('all');
-	let selectedPurchaseStatus = $state<'all' | 'purchased' | 'not_purchased'>('all');
-	let showDetailModal = $state(false);
+	let selectedMemberId = $state(initialMemberFilter());
+	let selectedCategoryId = $state(initialCategoryFilter());
+	let selectedPriority = $state(
+		validFilter(page.url.searchParams.get('priority'), priorityFilters)
+	);
+	let selectedStatus = $state(validFilter(page.url.searchParams.get('status'), statusFilters));
+	let detailItemId = $state<string | null>(null);
 	let showEditModal = $state(false);
-	let selectedItem = $state<WishlistItemDto | null>(null);
+	let editItem = $state<WishlistItemDto | null>(null);
 
-	// Check if item has any purchases
-	function isPurchased(itemId: string): boolean {
-		return data.allPurchases?.some((p) => p.item_id === itemId) || false;
+	const detailItem = $derived(
+		detailItemId ? (data.items.find((item) => item.id === detailItemId) ?? null) : null
+	);
+	const todosEventId = $derived(
+		data.eventCategories.find((category) => category.name === 'Todos')?.id ?? ''
+	);
+
+	function getCoordination(item: WishlistItemDto) {
+		return summarizeWishlistCoordination(
+			item.id,
+			item.desired_quantity,
+			data.currentUserId,
+			data.allReservations,
+			data.allPurchases
+		);
 	}
 
-	// Computed: filtered items
-	let filteredItems = $derived.by(() => {
-		let items = data.items;
-
-		// Filter by member
-		if (selectedMemberId !== 'all') {
-			items = items.filter((item) => item.owner_id === selectedMemberId);
-		}
-
-		// Filter by event
-		if (selectedEventId !== 'all') {
-			items = items.filter((item) =>
-				item.gift_item_events.some((event) => event.event_category_id === selectedEventId)
-			);
-		}
-
-		// Filter by purchase status
-		if (selectedPurchaseStatus !== 'all') {
-			items = items.filter((item) => {
-				const purchased = isPurchased(item.id);
-				return selectedPurchaseStatus === 'purchased' ? purchased : !purchased;
-			});
-		}
-
-		return items;
-	});
-
-	// Get "Todos" event ID
-	let todosEventId = $derived.by(() => {
-		return data.eventCategories.find((e) => e.name === 'Todos')?.id || '';
-	});
-
-	// Check if current user purchased this item
-	function isPurchasedByMe(itemId: string): boolean {
-		return data.myPurchases.some((p) => p.item_id === itemId);
+	function getReservationNames(itemId: string): string[] {
+		return data.allReservations
+			.filter((reservation) => reservation.item_id === itemId)
+			.map((reservation) => reservation.profiles.display_name);
 	}
 
-	// Check if current user reserved this item
-	function isReservedByMe(itemId: string): boolean {
-		return data.myReservations.some((r) => r.item_id === itemId);
-	}
-
-	// Get all reservations for an item
-	function getReservations(itemId: string): WishlistReservationDto[] {
-		return data.allReservations.filter((r) => r.item_id === itemId);
-	}
-
-	// Check if item is owned by current user
 	function isMyItem(itemId: string): boolean {
-		const item = data.items.find((i) => i.id === itemId);
-		return item?.owner_id === data.currentUserId;
+		return data.items.some((item) => item.id === itemId && item.owner_id === data.currentUserId);
 	}
 
-	// Get comments for an item
 	function getComments(itemId: string): WishlistCommentDto[] {
-		return data.comments.filter((c) => c.item_id === itemId);
+		return data.comments.filter((comment) => comment.item_id === itemId);
 	}
 
-	// Open detail modal
-	function openDetailModal(item: WishlistItemDto) {
-		selectedItem = item;
-		showDetailModal = true;
-	}
-
-	// Check URL params and open modal if item param exists
-	onMount(() => {
-		const itemId = $page.url.searchParams.get('item');
-		if (itemId) {
-			const item = data.items.find((i) => i.id === itemId);
-			if (item) {
-				openDetailModal(item);
-				// Clean URL after opening modal
-				window.history.replaceState({}, '', $page.url.pathname);
+	const filteredItems = $derived.by(() => {
+		return data.items.filter((item) => {
+			if (selectedMemberId !== 'all' && item.owner_id !== selectedMemberId) return false;
+			if (
+				selectedCategoryId !== 'all' &&
+				!item.gift_item_events.some((event) => event.event_category_id === selectedCategoryId)
+			)
+				return false;
+			if (selectedPriority !== 'all' && item.priority !== Number(selectedPriority)) return false;
+			if (selectedStatus === 'all') return true;
+			if (['active', 'fulfilled', 'archived'].includes(selectedStatus)) {
+				return item.status === selectedStatus;
 			}
-		}
+
+			const coordination = getCoordination(item);
+			if (selectedStatus === 'available') return coordination.remainingQuantity > 0;
+			if (selectedStatus === 'reserved') return coordination.reservedQuantity > 0;
+			return coordination.purchasedQuantity > 0;
+		});
 	});
 
-	// Open edit modal
-	function openEditModal(item?: WishlistItemDto) {
-		selectedItem = item ?? null;
+	function pathWithQuery(params: URLSearchParams): string {
+		const query = params.toString();
+		return `${page.url.pathname}${query ? `?${query}` : ''}`;
+	}
+
+	function updateQuery(
+		changes: Partial<Record<FilterName | 'item', string | null>>,
+		replaceHistory = true
+	): void {
+		for (const [name, value] of Object.entries(changes)) {
+			if (!value || value === 'all') queryParams.delete(name);
+			else queryParams.set(name, value);
+		}
+		const nextPath = pathWithQuery(queryParams) as `/family/${string}/wishlist`;
+		if (replaceHistory) replaceState(resolve(nextPath), page.state);
+		else pushState(resolve(nextPath), page.state);
+	}
+
+	function changeFilter(name: FilterName, value: string): void {
+		if (name === 'member') selectedMemberId = value;
+		if (name === 'category') selectedCategoryId = value;
+		if (name === 'priority') selectedPriority = value;
+		if (name === 'status') selectedStatus = value;
+		updateQuery({ [name]: value });
+	}
+
+	function clearFilters(): void {
+		selectedMemberId = 'all';
+		selectedCategoryId = 'all';
+		selectedPriority = 'all';
+		selectedStatus = 'all';
+		updateQuery({ member: null, category: null, priority: null, status: null });
+	}
+
+	function syncNavigation(url: URL): void {
+		for (const name of [...queryParams.keys()]) queryParams.delete(name);
+		url.searchParams.forEach((value, name) => queryParams.set(name, value));
+		selectedMemberId = validFilter(
+			url.searchParams.get('member'),
+			new Set(data.members.map((member) => member.user_id))
+		);
+		selectedCategoryId = validFilter(
+			url.searchParams.get('category'),
+			new Set(data.eventCategories.map((category) => category.id))
+		);
+		selectedPriority = validFilter(url.searchParams.get('priority'), priorityFilters);
+		selectedStatus = validFilter(url.searchParams.get('status'), statusFilters);
+
+		const requestedItemId = url.searchParams.get('item');
+		detailItemId =
+			requestedItemId && data.items.some((item) => item.id === requestedItemId)
+				? requestedItemId
+				: null;
+	}
+
+	afterNavigate(({ to }) => {
+		if (to) syncNavigation(to.url);
+	});
+
+	function openDetailModal(item: WishlistItemDto): void {
+		detailItemId = item.id;
+		updateQuery({ item: item.id }, false);
+	}
+
+	function closeDetailModal(): void {
+		detailItemId = null;
+		updateQuery({ item: null });
+	}
+
+	function openEditModal(item?: WishlistItemDto): void {
+		editItem = item ?? null;
 		showEditModal = true;
 	}
 
-	// Close modals
-	function closeModals() {
-		showDetailModal = false;
+	function closeEditModal(): void {
 		showEditModal = false;
-		selectedItem = null;
+		editItem = null;
 	}
 
-	// Realtime subscriptions for live updates
-	onMount(() => {
-		const familyId = $page.params.familyId;
-		const supabase = createClient();
+	function exportOwnWishlist(): void {
+		const familyId = page.params.familyId;
+		if (!familyId) return;
+		const exported = createOwnWishlistExport(data.items, data.currentUserId, familyId);
+		const blobUrl = URL.createObjectURL(
+			new Blob([JSON.stringify(exported, null, 2)], { type: 'application/json;charset=utf-8' })
+		);
+		const link = document.createElement('a');
+		link.href = blobUrl;
+		link.download = `myfamily-wishlist-${page.params.familyId}.json`;
+		link.click();
+		URL.revokeObjectURL(blobUrl);
+	}
 
-		// Subscribe to wishlist changes in this family
+	function formatPrice(price: number | null, currency: string): string {
+		if (price === null) return 'Sin precio';
+		return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(price);
+	}
+
+	function getPriorityLabel(priority: number): string {
+		return (
+			({ 2: 'Muy alta', 1: 'Alta', 0: 'Normal', '-1': 'Baja' } as Record<number, string>)[
+				priority
+			] ?? 'Normal'
+		);
+	}
+
+	function getPriorityColor(priority: number): string {
+		return (
+			(
+				{ 2: 'badge-error', 1: 'badge-warning', 0: 'badge-info', '-1': 'badge-ghost' } as Record<
+					number,
+					string
+				>
+			)[priority] ?? 'badge-info'
+		);
+	}
+
+	onMount(() => {
+		const familyId: string = page.params.familyId ?? '';
+		if (!familyId) return;
+		const supabase = createClient();
+		const realtime = createWishlistRealtimeReconciler(
+			data.items.map((item) => ({ id: item.id, version: item.version }))
+		);
+		let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+
+		function scheduleRefresh(): void {
+			if (refreshTimer) return;
+			refreshTimer = setTimeout(async () => {
+				refreshTimer = undefined;
+				await invalidateAll();
+				realtime.sync(data.items.map((item) => ({ id: item.id, version: item.version })));
+			}, 75);
+		}
+
+		function reconcile(table: WishlistRealtimeTable, payload: WishlistRealtimePayload): void {
+			const visibleItemIds = new Set(data.items.map((item) => item.id));
+			if (realtime.shouldRefresh(table, payload, familyId, visibleItemIds)) scheduleRefresh();
+		}
+
 		const channel = supabase
-			.channel('wishlist-changes')
+			.channel(`wishlist:${familyId}`)
 			.on(
 				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'gift_items',
-					filter: `family_id=eq.${familyId}`
-				},
-				() => {
-					invalidateAll();
-				}
+				{ event: '*', schema: 'public', table: 'gift_items', filter: `family_id=eq.${familyId}` },
+				(payload) => reconcile('gift_items', payload as WishlistRealtimePayload)
 			)
 			.on(
 				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'gift_purchases'
-				},
-				() => {
-					invalidateAll();
-				}
+				{ event: '*', schema: 'public', table: 'gift_purchases' },
+				(payload) => reconcile('gift_purchases', payload as WishlistRealtimePayload)
 			)
 			.on(
 				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'gift_item_events'
-				},
-				() => {
-					invalidateAll();
-				}
+				{ event: '*', schema: 'public', table: 'gift_reservations' },
+				(payload) => reconcile('gift_reservations', payload as WishlistRealtimePayload)
 			)
 			.on(
 				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'gift_reservations'
-				},
-				() => {
-					invalidateAll();
-				}
+				{ event: '*', schema: 'public', table: 'gift_item_events' },
+				(payload) => reconcile('gift_item_events', payload as WishlistRealtimePayload)
+			)
+			.on(
+				'postgres_changes',
+				{ event: '*', schema: 'public', table: 'gift_item_comments' },
+				(payload) => reconcile('gift_item_comments', payload as WishlistRealtimePayload)
 			)
 			.subscribe();
 
-		// Cleanup on component unmount
 		return () => {
-			supabase.removeChannel(channel);
+			if (refreshTimer) clearTimeout(refreshTimer);
+			void supabase.removeChannel(channel);
 		};
 	});
-
-	// Format price
-	function formatPrice(price: number | null): string {
-		if (!price) return '-';
-		return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(price);
-	}
-
-	// Get priority label
-	function getPriorityLabel(priority: number): string {
-		const labels: Record<number, string> = {
-			2: 'Muy Alta',
-			1: 'Alta',
-			0: 'Normal',
-			'-1': 'Baja'
-		};
-		return labels[priority] || 'Normal';
-	}
-
-	// Get priority badge color
-	function getPriorityColor(priority: number): string {
-		const colors: Record<number, string> = {
-			2: 'badge-error',
-			1: 'badge-warning',
-			0: 'badge-info',
-			'-1': 'badge-ghost'
-		};
-		return colors[priority] || 'badge-info';
-	}
 </script>
 
 <div class="container mx-auto max-w-7xl">
-	<!-- Header -->
-	<WishlistHeader bind:viewMode onAddGift={() => openEditModal()} />
+	<WishlistHeader bind:viewMode onAddGift={() => openEditModal()} onExport={exportOwnWishlist} />
 
-	<!-- Main Layout: Sidebar (tablet+) + Content -->
 	<div class="flex flex-col gap-6 md:flex-row">
-		<!-- Filters Sidebar -->
 		<WishlistFilters
 			members={data.members}
 			eventCategories={data.eventCategories}
-			bind:selectedMemberId
-			bind:selectedEventId
-			bind:selectedPurchaseStatus
+			{selectedMemberId}
+			{selectedCategoryId}
+			{selectedPriority}
+			{selectedStatus}
+			onChange={changeFilter}
+			onClear={clearFilters}
 		/>
 
-		<!-- Content Area -->
-		<div class="min-w-0 flex-1">
+		<main class="min-w-0 flex-1" aria-label="Regalos de la wishlist">
+			<p class="mb-3 text-sm text-base-content/60" aria-live="polite">
+				{filteredItems.length}
+				{filteredItems.length === 1 ? 'regalo' : 'regalos'}
+			</p>
 			{#if viewMode === 'cards'}
 				<WishlistCards
 					items={filteredItems}
-					currentUserId={data.currentUserId}
 					{isMyItem}
-					{isPurchased}
-					{isPurchasedByMe}
-					{getReservations}
+					{getCoordination}
+					{getReservationNames}
 					{getPriorityLabel}
 					{getPriorityColor}
 					{formatPrice}
@@ -248,10 +329,9 @@
 			{:else}
 				<WishlistTable
 					items={filteredItems}
-					currentUserId={data.currentUserId}
 					{isMyItem}
-					{isPurchased}
-					{isPurchasedByMe}
+					{getCoordination}
+					{getReservationNames}
 					{getPriorityLabel}
 					{getPriorityColor}
 					{formatPrice}
@@ -259,31 +339,28 @@
 					onOpenEdit={openEditModal}
 				/>
 			{/if}
-		</div>
+		</main>
 	</div>
 </div>
 
-<!-- Detail Modal -->
-{#if showDetailModal}
+{#if detailItem}
 	<WishlistItemModal
-		item={selectedItem}
+		item={detailItem}
 		members={data.members}
 		currentUserId={data.currentUserId}
 		{isMyItem}
-		{isPurchasedByMe}
-		{isReservedByMe}
-		{getReservations}
+		{getCoordination}
+		{getReservationNames}
 		{getComments}
-		onClose={closeModals}
+		onClose={closeDetailModal}
 	/>
 {/if}
 
-<!-- Edit/Create Modal -->
 {#if showEditModal}
 	<WishlistEditModal
-		item={selectedItem}
+		item={editItem}
 		eventCategories={data.eventCategories}
 		{todosEventId}
-		onClose={closeModals}
+		onClose={closeEditModal}
 	/>
 {/if}

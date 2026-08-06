@@ -1,14 +1,13 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import type { WishlistItemDto, WishlistReservationDto } from '$lib/server/wishlist/presenters';
+	import WishlistCoordination from '$lib/components/wishlist/WishlistCoordination.svelte';
+	import type { WishlistItemDto } from '$lib/server/wishlist/presenters';
+	import type { WishlistCoordinationSummary } from '$lib/wishlist/coordination';
 
 	let {
 		items,
-		currentUserId,
 		isMyItem,
-		isPurchased,
-		isPurchasedByMe,
-		getReservations,
+		getCoordination,
+		getReservationNames,
 		getPriorityLabel,
 		getPriorityColor,
 		formatPrice,
@@ -16,38 +15,33 @@
 		onOpenEdit
 	}: {
 		items: WishlistItemDto[];
-		currentUserId: string;
 		isMyItem: (itemId: string) => boolean;
-		isPurchased: (itemId: string) => boolean;
-		isPurchasedByMe: (itemId: string) => boolean;
-		getReservations: (itemId: string) => WishlistReservationDto[];
+		getCoordination: (item: WishlistItemDto) => WishlistCoordinationSummary;
+		getReservationNames: (itemId: string) => string[];
 		getPriorityLabel: (priority: number) => string;
 		getPriorityColor: (priority: number) => string;
-		formatPrice: (price: number | null) => string;
+		formatPrice: (price: number | null, currency: string) => string;
 		onOpenDetail: (item: WishlistItemDto) => void;
 		onOpenEdit: (item: WishlistItemDto) => void;
 	} = $props();
-
-	let togglingItemId = $state<string | null>(null);
 </script>
 
 {#if items.length === 0}
-	<div class="py-12 text-center">
-		<p class="text-lg text-base-content/50">Aún no hay regalos en la wishlist</p>
+	<div class="rounded-box border border-dashed border-base-300 py-12 text-center" role="status">
+		<p class="text-lg text-base-content/60">No hay regalos que coincidan con estos filtros.</p>
 	</div>
 {:else}
 	<div class="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
 		{#each items as item (item.id)}
 			{@const isOwner = isMyItem(item.id)}
-			{@const purchased = isPurchasedByMe(item.id)}
-			{@const itemPurchased = isPurchased(item.id)}
+			{@const coordination = getCoordination(item)}
 
-			<div
-				class="card bg-base-100 shadow-lg transition-shadow hover:shadow-xl {isOwner
-					? 'bg-primary/5 ring-2 ring-primary ring-offset-2'
-					: ''} {itemPurchased ? 'bg-success/10 ring-2 ring-success ring-offset-2' : ''}"
+			<article
+				class="card border border-base-300 bg-base-100 shadow-sm transition-shadow hover:shadow-md {isOwner
+					? 'ring-2 ring-primary/30'
+					: ''}"
+				data-testid={`wishlist-item-${item.id}`}
 			>
-				<!-- Image -->
 				{#if item.image_src}
 					<figure class="h-48 overflow-hidden">
 						<img
@@ -60,36 +54,26 @@
 					</figure>
 				{/if}
 
-				<div class="card-body">
-					<!-- Title & Owner -->
-					<h2 class="card-title text-lg">
-						{item.name}
-						{#if item.priority !== 0}
-							<span class="badge {getPriorityColor(item.priority!)} badge-sm">
-								{getPriorityLabel(item.priority!)}
-							</span>
-						{/if}
-					</h2>
-
-					<p class="text-sm text-base-content/60">
-						Por: {item.profiles?.display_name || 'Usuario'}
-					</p>
-
-					<!-- Price -->
-					<div class="text-sm">
-						<span class="font-semibold text-primary">{formatPrice(item.price)}</span>
+				<div class="card-body gap-3">
+					<div class="flex items-start justify-between gap-2">
+						<div>
+							<h2 class="card-title text-lg">{item.name}</h2>
+							<p class="text-sm text-base-content/60">
+								Por {item.profiles.display_name}{isOwner ? ' · Tu regalo' : ''}
+							</p>
+						</div>
+						<span class="badge badge-sm {getPriorityColor(item.priority)}">
+							{getPriorityLabel(item.priority)}
+						</span>
 					</div>
 
-					<!-- Events -->
-					{#if item.gift_item_events && item.gift_item_events.length > 0}
-						<div class="flex flex-wrap gap-1">
+					<p class="font-semibold text-primary">{formatPrice(item.price, item.currency)}</p>
+
+					{#if item.gift_item_events.length > 0}
+						<div class="flex flex-wrap gap-1" aria-label="Categorías">
 							{#each item.gift_item_events as eventLink (eventLink.event_category_id)}
 								{#if eventLink.gift_event_categories}
-									<span
-										class="badge badge-sm"
-										style="background-color: {eventLink.gift_event_categories
-											.color}20; color: {eventLink.gift_event_categories.color};"
-									>
+									<span class="badge badge-ghost badge-sm">
 										{eventLink.gift_event_categories.icon}
 										{eventLink.gift_event_categories.name}
 									</span>
@@ -98,142 +82,30 @@
 						</div>
 					{/if}
 
-					<!-- Purchase/Reservation indicator (priority: purchased > reservations) -->
 					{#if !isOwner}
-						{#if itemPurchased}
-							<div class="badge gap-1 badge-success">
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="h-4 w-4"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<polyline points="20 6 9 17 4 12"></polyline>
-								</svg>
-								Ya comprado
-							</div>
-						{:else}
-							{@const reservations = getReservations(item.id)}
-							{#if reservations.length > 0}
-								<div class="badge gap-1 badge-sm badge-info">
-									<svg
-										xmlns="http://www.w3.org/2000/svg"
-										class="h-3 w-3"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="2"
-									>
-										<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-										<circle cx="12" cy="12" r="3"></circle>
-									</svg>
-									{reservations.length}
-									{reservations.length === 1 ? 'persona mirando' : 'personas mirando'}
-								</div>
-							{/if}
-						{/if}
+						<WishlistCoordination
+							itemId={item.id}
+							summary={coordination}
+							reservationNames={getReservationNames(item.id)}
+							variant="summary"
+						/>
+					{:else}
+						<p class="rounded-box bg-primary/5 p-3 text-xs text-base-content/65">
+							La coordinación de tu regalo permanece oculta para no estropear la sorpresa.
+						</p>
 					{/if}
 
-					<!-- Actions -->
-					<div class="mt-2 card-actions justify-end">
-						<button class="btn gap-1 btn-ghost btn-sm" onclick={() => onOpenDetail(item)}>
-							<svg
-								xmlns="http://www.w3.org/2000/svg"
-								class="h-4 w-4"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"
-							>
-								<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-								<circle cx="12" cy="12" r="3"></circle>
-							</svg>
-							Ver
+					<div class="mt-auto card-actions justify-end">
+						<button class="btn btn-ghost btn-sm" onclick={() => onOpenDetail(item)}>
+							Ver detalles
 						</button>
-
 						{#if isOwner}
-							<button class="btn gap-1 btn-ghost btn-sm" onclick={() => onOpenEdit(item)}>
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="h-4 w-4"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-								>
-									<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-									<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-								</svg>
-								Editar
-							</button>
-						{:else}
-							<!-- Toggle purchase button -->
-							<form
-								method="POST"
-								action="?/togglePurchase"
-								use:enhance={() => {
-									togglingItemId = item.id;
-									return async ({ result, update }) => {
-										await update();
-										togglingItemId = null;
-									};
-								}}
+							<button class="btn btn-sm btn-primary" onclick={() => onOpenEdit(item)}>Editar</button
 							>
-								<input type="hidden" name="item_id" value={item.id} />
-								<input type="hidden" name="is_purchased" value={(!purchased).toString()} />
-								<button
-									type="submit"
-									class="btn gap-1 btn-sm {purchased ? 'btn-success' : 'btn-outline btn-success'}"
-									disabled={togglingItemId === item.id}
-								>
-									{#if togglingItemId === item.id}
-										<span class="loading loading-xs loading-spinner"></span>
-									{:else if purchased}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											class="h-4 w-4"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<polyline points="20 6 9 17 4 12"></polyline>
-										</svg>
-										Comprado
-									{:else}
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											class="h-4 w-4"
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="2"
-											stroke-linecap="round"
-											stroke-linejoin="round"
-										>
-											<circle cx="9" cy="21" r="1"></circle>
-											<circle cx="20" cy="21" r="1"></circle>
-											<path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"
-											></path>
-										</svg>
-										Marcar
-									{/if}
-								</button>
-							</form>
 						{/if}
 					</div>
 				</div>
-			</div>
+			</article>
 		{/each}
 	</div>
 {/if}
