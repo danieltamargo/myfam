@@ -33,6 +33,8 @@
 		itemOwnerId: string;
 	}
 
+	type CommentSegment = { type: 'text'; value: string } | { type: 'mention'; value: string };
+
 	let { itemId, comments, members, currentUserId, itemOwnerId }: Props = $props();
 
 	let newComment = $state('');
@@ -40,7 +42,6 @@
 	let showMentionSuggestions = $state(false);
 	let mentionFilter = $state('');
 	let cursorPosition = $state(0);
-	let textareaElement: HTMLTextAreaElement;
 
 	// Filter members for @mentions (exclude item owner and current user)
 	let mentionableMembers = $derived(
@@ -48,7 +49,7 @@
 	);
 
 	// Filtered suggestions based on what user is typing
-	let filteredSuggestions = $derived(() => {
+	let filteredSuggestions = $derived.by(() => {
 		if (!showMentionSuggestions || !mentionFilter) return mentionableMembers;
 
 		const filter = mentionFilter.toLowerCase();
@@ -92,6 +93,9 @@
 
 		// Focus back on textarea
 		setTimeout(() => {
+			const textareaElement = document.querySelector<HTMLTextAreaElement>(
+				`#gift-comment-${CSS.escape(itemId)}`
+			);
 			textareaElement?.focus();
 			const newCursorPos = beforeMention.length + mentionText.length + 1;
 			textareaElement?.setSelectionRange(newCursorPos, newCursorPos);
@@ -100,7 +104,7 @@
 
 	// Handle keyboard navigation in suggestions
 	function handleKeydown(e: KeyboardEvent) {
-		if (showMentionSuggestions && filteredSuggestions().length > 0) {
+		if (showMentionSuggestions && filteredSuggestions.length > 0) {
 			if (e.key === 'Escape') {
 				showMentionSuggestions = false;
 				e.preventDefault();
@@ -126,17 +130,27 @@
 		return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
 	}
 
-	// Render comment with highlighted @mentions
-	// Converts @{{user_id:display_name}} format to highlighted display name
-	function renderCommentWithMentions(text: string): string {
-		// First, convert the special format to highlighted mentions
-		let result = text.replace(
-			/@\{\{([^:]+):([^}]+)\}\}/g,
-			'<span class="text-primary font-semibold">@$2</span>'
-		);
-		// Also support legacy simple mentions (without spaces)
-		result = result.replace(/@([\w-]+)/g, '<span class="text-primary font-semibold">@$1</span>');
-		return result;
+	// Parse mention tokens into data so Svelte escapes every stored value as text.
+	function parseCommentSegments(text: string): CommentSegment[] {
+		const segments: CommentSegment[] = [];
+		const mentionPattern = /@\{\{[^:}]+:([^}]+)\}\}|@([\p{L}\p{N}_-]+)/gu;
+		let cursor = 0;
+
+		for (const match of text.matchAll(mentionPattern)) {
+			const index = match.index ?? 0;
+			if (index > cursor) {
+				segments.push({ type: 'text', value: text.slice(cursor, index) });
+			}
+
+			segments.push({ type: 'mention', value: match[1] ?? match[2] ?? '' });
+			cursor = index + match[0].length;
+		}
+
+		if (cursor < text.length) {
+			segments.push({ type: 'text', value: text.slice(cursor) });
+		}
+
+		return segments.length > 0 ? segments : [{ type: 'text', value: text }];
 	}
 
 	// Reset form
@@ -173,7 +187,7 @@
 
 		<div class="form-control relative">
 			<textarea
-				bind:this={textareaElement}
+				id={`gift-comment-${itemId}`}
 				name="content"
 				bind:value={newComment}
 				oninput={handleInput}
@@ -186,14 +200,14 @@
 		</div>
 
 		<!-- Mention Suggestions Dropdown (outside form-control for better visibility) -->
-		{#if showMentionSuggestions && filteredSuggestions().length > 0}
+		{#if showMentionSuggestions && filteredSuggestions.length > 0}
 			<div class="relative">
 				<div
 					class="absolute top-0 left-0 z-[200] max-h-64 w-80 overflow-y-auto rounded-lg border-2 border-primary bg-base-100 shadow-2xl"
 				>
 					<div class="p-2">
 						<p class="px-2 py-1 text-xs font-semibold text-base-content/70">Mencionar a:</p>
-						{#each filteredSuggestions() as member}
+						{#each filteredSuggestions as member (member.user_id)}
 							<button
 								type="button"
 								class="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-primary hover:text-primary-content"
@@ -302,10 +316,16 @@
 						{/if}
 					</div>
 
-					<!-- Comment Content with @mentions highlighted -->
-					<div class="text-sm whitespace-pre-wrap">
-						{@html renderCommentWithMentions(comment.content)}
-					</div>
+					<!-- Comment content and mentions are always rendered as escaped text nodes. -->
+					<p class="text-sm whitespace-pre-wrap">
+						{#each parseCommentSegments(comment.content) as segment, index (index)}
+							{#if segment.type === 'mention'}
+								<span class="font-semibold text-primary">@{segment.value}</span>
+							{:else}
+								{segment.value}
+							{/if}
+						{/each}
+					</p>
 				</div>
 			{/each}
 		{/if}

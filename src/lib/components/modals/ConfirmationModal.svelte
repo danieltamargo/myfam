@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { createClient } from '$lib/supabase';
-	import { onMount } from 'svelte';
+	import type { Snippet } from 'svelte';
 
 	type ConfirmationStyle = 'normal' | 'critical';
 	type IconType = 'warning' | 'info' | 'trash' | 'send' | 'logout' | 'transfer' | 'shield';
@@ -9,6 +9,7 @@
 		show = $bindable(),
 		title,
 		message,
+		messageContent,
 		details,
 		style = 'normal',
 		icon,
@@ -20,7 +21,8 @@
 	}: {
 		show: boolean;
 		title: string;
-		message: string;
+		message?: string;
+		messageContent?: Snippet;
 		details?: string;
 		style?: ConfirmationStyle;
 		icon?: IconType;
@@ -50,20 +52,16 @@
 	const messageBgColor = $derived(style === 'critical' ? 'bg-error/5' : 'bg-primary/5');
 	const messageBorderColor = $derived(style === 'critical' ? 'border-error' : 'border-primary');
 	const confirmButtonClass = $derived(style === 'critical' ? 'btn-error' : 'btn-primary');
+	const selectedIcon = $derived(icon || (style === 'critical' ? 'warning' : 'info'));
 
-	// Check 2FA status when modal opens
-	$effect(() => {
-		if (show && require2FA && !hasChecked2FA) {
-			check2FAStatus();
-		}
-
-		// Reset when modal closes
-		if (!show) {
-			hasChecked2FA = false;
-			is2FAEnabled = false;
-			checking2FA = false;
-		}
-	});
+	function manageDialogFocus(dialog: HTMLElement) {
+		const returnFocus =
+			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		queueMicrotask(() => {
+			dialog.querySelector<HTMLButtonElement>('[data-cancel]')?.focus();
+		});
+		return () => returnFocus?.focus();
+	}
 
 	async function check2FAStatus() {
 		console.log('Checking 2FA status...');
@@ -88,6 +86,10 @@
 	}
 
 	async function handleConfirm() {
+		if (require2FA && !hasChecked2FA) {
+			await check2FAStatus();
+		}
+
 		// If 2FA is required and enabled, show verification step
 		if (require2FA && is2FAEnabled && !showVerificationStep) {
 			showVerificationStep = true;
@@ -157,80 +159,142 @@
 		verificationCode = '';
 		verificationError = '';
 		isVerifying = false;
-	}
-
-	// Get icon based on icon prop or default by style
-	function getIcon() {
-		// If custom icon is specified, use it
-		const iconType = icon || (style === 'critical' ? 'warning' : 'info');
-
-		const icons: Record<IconType, string> = {
-			warning: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-					<line x1="12" y1="9" x2="12" y2="13"></line>
-					<line x1="12" y1="17" x2="12.01" y2="17"></line>
-				</svg>
-			`,
-			info: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="12" cy="12" r="10"></circle>
-					<line x1="12" y1="8" x2="12" y2="12"></line>
-					<line x1="12" y1="16" x2="12.01" y2="16"></line>
-				</svg>
-			`,
-			trash: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<polyline points="3 6 5 6 21 6"></polyline>
-					<path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-					<line x1="10" y1="11" x2="10" y2="17"></line>
-					<line x1="14" y1="11" x2="14" y2="17"></line>
-				</svg>
-			`,
-			send: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<line x1="22" y1="2" x2="11" y2="13"></line>
-					<polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-				</svg>
-			`,
-			logout: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-					<polyline points="16 17 21 12 16 7"></polyline>
-					<line x1="21" y1="12" x2="9" y2="12"></line>
-				</svg>
-			`,
-			transfer: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<polyline points="17 1 21 5 17 9"></polyline>
-					<path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
-					<polyline points="7 23 3 19 7 15"></polyline>
-					<path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
-				</svg>
-			`,
-			shield: `
-				<svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-				</svg>
-			`
-		};
-
-		return icons[iconType];
+		hasChecked2FA = false;
+		is2FAEnabled = false;
+		checking2FA = false;
 	}
 </script>
 
+<svelte:window
+	onkeydown={(event) => show && event.key === 'Escape' && !isVerifying && handleCancel()}
+/>
+
 {#if show}
 	<div class="modal-open modal">
-		<div class="modal-box border-2 {borderColor}">
+		<div
+			{@attach manageDialogFocus}
+			class="modal-box border-2 {borderColor}"
+			role="dialog"
+			aria-modal="true"
+			aria-labelledby="confirmation-modal-title"
+			data-confirmation-modal
+		>
 			<!-- Header with icon -->
 			<div class="mb-4 flex items-center gap-3">
 				<div class="{iconBgColor} rounded-full p-3">
 					<div class={iconColor}>
-						{@html getIcon()}
+						{#if selectedIcon === 'warning'}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+							>
+								<path
+									d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+								></path><line x1="12" y1="9" x2="12" y2="13"></line><line
+									x1="12"
+									y1="17"
+									x2="12.01"
+									y2="17"
+								></line>
+							</svg>
+						{:else if selectedIcon === 'trash'}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><polyline points="3 6 5 6 21 6"></polyline><path
+									d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+								></path><line x1="10" y1="11" x2="10" y2="17"></line><line
+									x1="14"
+									y1="11"
+									x2="14"
+									y2="17"
+								></line></svg
+							>
+						{:else if selectedIcon === 'send'}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><line x1="22" y1="2" x2="11" y2="13"></line><polygon
+									points="22 2 15 22 11 13 2 9 22 2"
+								></polygon></svg
+							>
+						{:else if selectedIcon === 'logout'}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline
+									points="16 17 21 12 16 7"
+								></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg
+							>
+						{:else if selectedIcon === 'transfer'}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"
+								></path><polyline points="7 23 3 19 7 15"></polyline><path
+									d="M21 13v2a4 4 0 0 1-4 4H3"
+								></path></svg
+							>
+						{:else if selectedIcon === 'shield'}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg
+							>
+						{:else}
+							<svg
+								xmlns="http://www.w3.org/2000/svg"
+								class="h-8 w-8"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"
+								></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg
+							>
+						{/if}
 					</div>
 				</div>
 				<div>
-					<h3 class="text-xl font-bold {titleColor}">{title}</h3>
+					<h3 id="confirmation-modal-title" class="text-xl font-bold {titleColor}">{title}</h3>
 					{#if style === 'critical'}
 						<p class="text-sm text-base-content/70">This action cannot be undone</p>
 					{/if}
@@ -240,9 +304,13 @@
 			{#if !showVerificationStep}
 				<!-- Warning/Info message -->
 				<div class="{messageBgColor} border-l-4 {messageBorderColor} mb-4 p-4">
-					<p class="mb-2 text-base-content">
-						{@html message}
-					</p>
+					<div class="mb-2 text-base-content">
+						{#if messageContent}
+							{@render messageContent()}
+						{:else}
+							{message}
+						{/if}
+					</div>
 					{#if details}
 						<p class="text-sm text-base-content/70">
 							{details}
@@ -320,7 +388,13 @@
 						Back
 					</button>
 				{:else}
-					<button type="button" class="btn btn-ghost" onclick={handleCancel} disabled={isVerifying}>
+					<button
+						type="button"
+						class="btn btn-ghost"
+						data-cancel
+						onclick={handleCancel}
+						disabled={isVerifying}
+					>
 						{cancelText}
 					</button>
 				{/if}
@@ -365,6 +439,11 @@
 				</button>
 			</div>
 		</div>
-		<div class="modal-backdrop" onclick={handleCancel}></div>
+		<button
+			type="button"
+			class="modal-backdrop cursor-default"
+			aria-label="Cerrar"
+			onclick={handleCancel}
+		></button>
 	</div>
 {/if}

@@ -60,11 +60,11 @@
 					>
 						<td>
 							<div class="flex items-center gap-3">
-								{#if item.image_url}
+								{#if item.image_src}
 									<div class="avatar">
 										<div class="h-12 w-12 rounded">
 											<img
-												src={item.image_url}
+												src={item.image_src}
 												alt={item.name}
 												referrerpolicy="no-referrer"
 												crossorigin="anonymous"

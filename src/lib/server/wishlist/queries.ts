@@ -165,6 +165,23 @@ export async function loadWishlistQueryData(
 		...commentRows.map((comment) => comment.author_id)
 	];
 	const profiles = await loadProfiles(supabase, profileIds);
+	const imagePaths = [
+		...new Set(itemRows.flatMap((item) => (item.image_url ? [item.image_url] : [])))
+	];
+	const imageSources = new Map<string, string>();
+	if (imagePaths.length > 0) {
+		const signedImages = await supabase.storage
+			.from('gift-images')
+			.createSignedUrls(imagePaths, 300);
+		if (signedImages.error) {
+			console.error('No se pudieron firmar las imágenes privadas de Wishlist', signedImages.error);
+		} else {
+			for (const image of signedImages.data) {
+				if (image.path && image.signedUrl && !image.error)
+					imageSources.set(image.path, image.signedUrl);
+			}
+		}
+	}
 	const categoriesById = new Map(eventCategories.map((category) => [category.id, category]));
 	const eventsByItem = new Map<string, WishlistItemDto['gift_item_events']>();
 
@@ -187,6 +204,7 @@ export async function loadWishlistQueryData(
 		links: item.links ?? [],
 		priority: item.priority ?? 0,
 		status: normalizeItemStatus(item.status),
+		image_src: item.image_url ? (imageSources.get(item.image_url) ?? null) : null,
 		profiles: profileFor(item.owner_id, profiles),
 		gift_item_events: eventsByItem.get(item.id) ?? []
 	}));

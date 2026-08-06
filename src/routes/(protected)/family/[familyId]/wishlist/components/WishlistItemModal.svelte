@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import GiftComments from '$lib/components/wishlist/GiftComments.svelte';
+	import WishlistItemDetails from '$lib/components/wishlist/WishlistItemDetails.svelte';
 	import type {
 		WishlistCommentDto,
 		WishlistItemDto,
@@ -17,9 +18,6 @@
 		isReservedByMe,
 		getReservations,
 		getComments,
-		getPriorityLabel,
-		getPriorityColor,
-		formatPrice,
 		onClose
 	}: {
 		item: WishlistItemDto | null;
@@ -30,13 +28,17 @@
 		isReservedByMe: (itemId: string) => boolean;
 		getReservations: (itemId: string) => WishlistReservationDto[];
 		getComments: (itemId: string) => WishlistCommentDto[];
-		getPriorityLabel: (priority: number) => string;
-		getPriorityColor: (priority: number) => string;
-		formatPrice: (price: number | null) => string;
 		onClose: () => void;
 	} = $props();
 
 	let togglingItemId = $state<string | null>(null);
+
+	function getItemEvents(value: WishlistItemDto) {
+		return value.gift_item_events.flatMap((eventLink) => {
+			const event = eventLink.gift_event_categories;
+			return event ? [{ id: eventLink.event_category_id, name: event.name, icon: event.icon }] : [];
+		});
+	}
 </script>
 
 {#if item}
@@ -44,8 +46,8 @@
 		<div class="modal-box max-h-[95svh] w-[95vw] {isMyItem(item.id) ? 'max-w-xl' : 'max-w-5xl'}">
 			<div class="relative flex flex-col gap-2 md:flex-row">
 				<div class="h-fit flex-1 md:sticky md:top-4">
-					<div class="flex items-center justify-between gap-2">
-						<h3 class="mb-4 text-lg font-bold">{item.name}</h3>
+					<div class="mb-5 flex items-center justify-between gap-2">
+						<h2 class="text-lg font-bold">Detalle del regalo</h2>
 						<div class="placeholder avatar rounded-full">
 							<div class="w-10 rounded-full bg-primary text-primary-content">
 								{#if item.profiles?.avatar_url}
@@ -64,83 +66,18 @@
 						</div>
 					</div>
 
-					{#if item.image_url}
-						<figure class="mb-4">
-							<img
-								src={item.image_url}
-								alt={item.name}
-								class="max-h-96 w-full rounded-lg object-cover"
-								referrerpolicy="no-referrer"
-								crossorigin="anonymous"
-							/>
-						</figure>
-					{/if}
-
-					<div class="space-y-3">
-						<!-- Descripción solo si existe -->
-						{#if item.description && item.description.trim().length > 0}
-							<div>
-								<p class="mt-1 text-base-content/60">{item.description}</p>
-							</div>
-						{/if}
-
-						<div>
-							<span class="font-semibold">Precio:</span>
-							<span class="ml-2 text-primary">
-								{item.price ? formatPrice(item.price) : 'Desconocido'}
-							</span>
-						</div>
-
-						<div>
-							<span class="font-semibold">Prioridad:</span>
-							<span class="badge {getPriorityColor(item.priority)} ml-2">
-								{getPriorityLabel(item.priority)}
-							</span>
-						</div>
-
-						{#if item.links && item.links.length > 0}
-							<div>
-								<span class="font-semibold">Enlaces:</span>
-								<ul class="mt-1 list-inside list-disc">
-									{#each item.links as link (link)}
-										<li>
-											<a
-												href={link}
-												target="_blank"
-												rel="noopener noreferrer"
-												class="link link-primary"
-											>
-												{link}
-											</a>
-										</li>
-									{/each}
-								</ul>
-							</div>
-						{/if}
-
-						<div>
-							<span class="font-semibold">Eventos:</span>
-							<div class="mt-1 flex flex-wrap gap-1">
-								{#each item.gift_item_events || [] as eventLink (eventLink.event_category_id)}
-									{#if eventLink.gift_event_categories}
-										<span
-											class="badge"
-											style="background-color: {eventLink.gift_event_categories
-												.color}20; color: {eventLink.gift_event_categories.color};"
-										>
-											{eventLink.gift_event_categories.icon}
-											{eventLink.gift_event_categories.name}
-										</span>
-									{/if}
-								{/each}
-							</div>
-						</div>
-
-						<div>
-							<span class="font-semibold">Deseado por:</span>
-							<span class="ml-2">{item.profiles?.display_name || 'Usuario'}</span>
-						</div>
-					</div>
+					<WishlistItemDetails
+						name={item.name}
+						description={item.description}
+						price={item.price}
+						currency={item.currency}
+						priority={item.priority}
+						desiredQuantity={item.desired_quantity}
+						imageSrc={item.image_src}
+						links={item.links}
+						events={getItemEvents(item)}
+						ownerName={item.profiles?.display_name || 'Usuario'}
+					/>
 
 					<!-- Reservations info (visible to all) -->
 					{#if !isMyItem(item.id)}

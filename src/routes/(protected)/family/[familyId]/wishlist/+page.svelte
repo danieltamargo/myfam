@@ -29,23 +29,6 @@
 	let showEditModal = $state(false);
 	let selectedItem = $state<WishlistItemDto | null>(null);
 
-	// Form state for create/edit
-	let formData = $state({
-		name: '',
-		description: '',
-		price: '',
-		priority: 0,
-		image_url: '',
-		images: [] as string[],
-		links: [] as string[],
-		event_ids: [] as string[]
-	});
-
-	// UI state for showing/hiding sections
-	let showLinksSection = $state(false);
-	let showImagesSection = $state(false);
-	let isSubmitting = $state(false);
-
 	// Check if item has any purchases
 	function isPurchased(itemId: string): boolean {
 		return data.allPurchases?.some((p) => p.item_id === itemId) || false;
@@ -130,45 +113,7 @@
 
 	// Open edit modal
 	function openEditModal(item?: WishlistItemDto) {
-		if (item) {
-			// Edit existing item
-			selectedItem = item;
-			const itemLinks = item.links || [];
-			const itemImages = item.image_url ? [item.image_url] : [];
-			const selectedEventIds = item.gift_item_events.map((event) => event.event_category_id);
-
-			formData = {
-				name: item.name,
-				description: item.description || '',
-				price: item.price?.toString() || '',
-				priority: item.priority,
-				image_url: item.image_url || '',
-				images: itemImages,
-				links: itemLinks,
-				event_ids: selectedEventIds.length > 0 ? selectedEventIds : [todosEventId]
-			};
-
-			// Show sections if there's data
-			showLinksSection = itemLinks.length > 0;
-			showImagesSection = itemImages.length > 0;
-		} else {
-			// Create new item with "Todos" selected by default
-			selectedItem = null;
-			formData = {
-				name: '',
-				description: '',
-				price: '',
-				priority: 0,
-				image_url: '',
-				images: [],
-				links: [],
-				event_ids: [todosEventId]
-			};
-
-			// Reset section visibility
-			showLinksSection = false;
-			showImagesSection = false;
-		}
+		selectedItem = item ?? null;
 		showEditModal = true;
 	}
 
@@ -177,32 +122,6 @@
 		showDetailModal = false;
 		showEditModal = false;
 		selectedItem = null;
-	}
-
-	// Add link field
-	function addLinkField() {
-		formData.links = [...formData.links, ''];
-	}
-
-	// Remove link field
-	function removeLinkField(index: number) {
-		formData.links = formData.links.filter((_, i) => i !== index);
-		if (formData.links.length === 0) {
-			showLinksSection = false;
-		}
-	}
-
-	// Add image field
-	function addImageField() {
-		formData.images = [...formData.images, ''];
-	}
-
-	// Remove image field
-	function removeImageField(index: number) {
-		formData.images = formData.images.filter((_, i) => i !== index);
-		if (formData.images.length === 0) {
-			showImagesSection = false;
-		}
 	}
 
 	// Realtime subscriptions for live updates
@@ -266,36 +185,6 @@
 		};
 	});
 
-	// Toggle event selection
-	function toggleEvent(eventId: string) {
-		const todos = todosEventId;
-		const isTodos = eventId === todos;
-
-		if (isTodos) {
-			// If clicking "Todos", select only "Todos"
-			formData.event_ids = [todos];
-		} else {
-			// If clicking a specific event
-			const isSelected = formData.event_ids.includes(eventId);
-
-			if (isSelected) {
-				// Deselect this event
-				formData.event_ids = formData.event_ids.filter((id) => id !== eventId);
-
-				// If no events selected, select "Todos"
-				if (formData.event_ids.length === 0) {
-					formData.event_ids = [todos];
-				} else {
-					// Remove "Todos" if it was selected
-					formData.event_ids = formData.event_ids.filter((id) => id !== todos);
-				}
-			} else {
-				// Select this event and remove "Todos"
-				formData.event_ids = [...formData.event_ids.filter((id) => id !== todos), eventId];
-			}
-		}
-	}
-
 	// Format price
 	function formatPrice(price: number | null): string {
 		if (!price) return '-';
@@ -322,25 +211,6 @@
 			'-1': 'badge-ghost'
 		};
 		return colors[priority] || 'badge-info';
-	}
-
-	// Prepare form submission
-	function prepareFormData(formElement: HTMLFormElement): FormData {
-		const submitData = new FormData(formElement);
-
-		// Filter and add only non-empty links
-		const nonEmptyLinks = formData.links.filter((link) => link.trim().length > 0);
-		submitData.delete('links');
-		nonEmptyLinks.forEach((link) => {
-			submitData.append('links', link.trim());
-		});
-
-		// Use first image as main image_url
-		if (formData.images.length > 0 && formData.images[0].trim().length > 0) {
-			submitData.set('image_url', formData.images[0].trim());
-		}
-
-		return submitData;
 	}
 </script>
 
@@ -404,9 +274,6 @@
 		{isReservedByMe}
 		{getReservations}
 		{getComments}
-		{getPriorityLabel}
-		{getPriorityColor}
-		{formatPrice}
 		onClose={closeModals}
 	/>
 {/if}
@@ -417,16 +284,6 @@
 		item={selectedItem}
 		eventCategories={data.eventCategories}
 		{todosEventId}
-		bind:formData
-		bind:showLinksSection
-		bind:showImagesSection
-		bind:isSubmitting
-		{toggleEvent}
-		{addLinkField}
-		{removeLinkField}
-		{addImageField}
-		{removeImageField}
-		{prepareFormData}
 		onClose={closeModals}
 	/>
 {/if}

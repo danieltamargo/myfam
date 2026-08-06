@@ -26,6 +26,7 @@ export interface WishlistItemDto extends Omit<
 	links: string[];
 	priority: number;
 	status: 'active' | 'fulfilled' | 'archived';
+	image_src: string | null;
 	profiles: WishlistProfileDto;
 	gift_item_events: WishlistItemEventDto[];
 }

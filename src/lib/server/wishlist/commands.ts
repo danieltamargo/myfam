@@ -142,16 +142,17 @@ export async function deleteWishlistItem(
 	supabase: SupabaseClient<Database>,
 	ownerId: string,
 	itemId: string
-): Promise<void> {
+): Promise<string | null> {
 	const { data, error } = await supabase
 		.from('gift_items')
 		.delete()
 		.eq('id', itemId)
 		.eq('owner_id', ownerId)
-		.select('id')
+		.select('id, image_url')
 		.maybeSingle();
 	if (error) throwCommandError(error, 'No se pudo eliminar el regalo.');
 	if (!data) throw new WishlistCommandError(404, 'El regalo no existe.');
+	return data.image_url;
 }
 
 export async function reserveWishlistItem(

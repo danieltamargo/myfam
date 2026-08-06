@@ -48,10 +48,10 @@
 					: ''} {itemPurchased ? 'bg-success/10 ring-2 ring-success ring-offset-2' : ''}"
 			>
 				<!-- Image -->
-				{#if item.image_url}
+				{#if item.image_src}
 					<figure class="h-48 overflow-hidden">
 						<img
-							src={item.image_url}
+							src={item.image_src}
 							alt={item.name}
 							class="h-full w-full object-cover"
 							referrerpolicy="no-referrer"

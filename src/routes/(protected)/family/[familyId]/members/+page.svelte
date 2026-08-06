@@ -25,12 +25,9 @@
 	let editingRole = $state<string | null>(null);
 	let showDeleteModal = $state(false);
 	let memberToDelete = $state<{ userId: string; displayName: string } | null>(null);
-	let deleteFormRef = $state<HTMLFormElement | null>(null);
 	let showLeaveModal = $state(false);
-	let leaveFormRef = $state<HTMLFormElement | null>(null);
 	let showTransferOwnershipModal = $state(false);
 	let ownershipTransfer = $state<{ userId: string; displayName: string } | null>(null);
-	let transferFormRef = $state<HTMLFormElement | null>(null);
 
 	const canManageMembers = $derived(data.userRole === 'owner' || data.userRole === 'admin');
 	const isOwner = $derived(data.userRole === 'owner');
@@ -47,9 +44,14 @@
 	}
 
 	async function handleDeleteConfirm() {
-		if (deleteFormRef && memberToDelete) {
-			deleteFormRef.requestSubmit();
+		if (memberToDelete) {
+			submitHiddenForm('delete-member-form');
 		}
+	}
+
+	function submitHiddenForm(id: string) {
+		const formElement = document.getElementById(id);
+		if (formElement instanceof HTMLFormElement) formElement.requestSubmit();
 	}
 
 	function handleRoleChange(event: Event, userId: string, displayName: string) {
@@ -71,8 +73,8 @@
 	}
 
 	async function handleTransferOwnership() {
-		if (transferFormRef && ownershipTransfer) {
-			transferFormRef.requestSubmit();
+		if (ownershipTransfer) {
+			submitHiddenForm('transfer-ownership-form');
 		}
 	}
 
@@ -134,7 +136,7 @@
 		<div class="mb-8">
 			<h3 class="mb-3 text-lg font-semibold">Pending Invitations</h3>
 			<div class="space-y-2">
-				{#each data.invitations as invitation}
+				{#each data.invitations as invitation (invitation.id)}
 					<div class="alert alert-info">
 						<span>
 							Invitation sent to <strong>{invitation.invited_user?.email || 'unknown user'}</strong>
@@ -149,7 +151,7 @@
 
 	<!-- Members List -->
 	<div class="flex flex-wrap items-stretch gap-4 space-y-4">
-		{#each data.members as member}
+		{#each data.members as member (member.userId)}
 			<div
 				class="card relative mb-0 max-w-full min-w-75 flex-1 bg-base-100 shadow-md transition-shadow hover:shadow-lg md:w-96 {member.userId ===
 				data.currentUserId
@@ -336,14 +338,19 @@
 				</div>
 			</form>
 		</div>
-		<div class="modal-backdrop" onclick={resetInviteForm}></div>
+		<button
+			type="button"
+			class="modal-backdrop cursor-default"
+			aria-label="Close invitation dialog"
+			onclick={resetInviteForm}
+		></button>
 	</div>
 {/if}
 
 <!-- Hidden form for member deletion -->
 {#if memberToDelete}
 	<form
-		bind:this={deleteFormRef}
+		id="delete-member-form"
 		method="POST"
 		action="?/removeMember"
 		use:enhance={() => {
@@ -364,7 +371,7 @@
 	<ConfirmationModal
 		bind:show={showDeleteModal}
 		title="Remove Family Member"
-		message="You are about to remove <strong class='text-error'>{memberToDelete.displayName}</strong> from your family."
+		message={`You are about to remove ${memberToDelete.displayName} from your family.`}
 		details="This member will lose access to all family data, wishlists, and shared content immediately."
 		style="critical"
 		icon="trash"
@@ -380,7 +387,7 @@
 
 <!-- Hidden form for leaving family -->
 <form
-	bind:this={leaveFormRef}
+	id="leave-family-form"
 	method="POST"
 	action="?/leaveFamily"
 	use:enhance={() => {
@@ -399,18 +406,16 @@
 <ConfirmationModal
 	bind:show={showLeaveModal}
 	title="Leave Family"
-	message="You are about to leave <strong class='text-error'>{data.members.find(
-		(m) => m.userId === data.currentUserId
-	)?.displayName || 'this'} family</strong>."
+	message={`You are about to leave ${
+		data.members.find((m) => m.userId === data.currentUserId)?.displayName || 'this'
+	} family.`}
 	details="You will lose access to all family data, wishlists, and shared content. You can only rejoin if invited again by an owner or admin."
 	style="critical"
 	icon="logout"
 	confirmText="Leave Family"
 	require2FA={true}
 	onConfirm={() => {
-		if (leaveFormRef) {
-			leaveFormRef.requestSubmit();
-		}
+		submitHiddenForm('leave-family-form');
 	}}
 	onCancel={() => {
 		showLeaveModal = false;
@@ -420,7 +425,7 @@
 <!-- Hidden form for ownership transfer -->
 {#if ownershipTransfer}
 	<form
-		bind:this={transferFormRef}
+		id="transfer-ownership-form"
 		method="POST"
 		action="?/updateRole"
 		use:enhance={() => {
@@ -442,7 +447,7 @@
 	<ConfirmationModal
 		bind:show={showTransferOwnershipModal}
 		title="Transfer Ownership"
-		message="You are about to transfer ownership to <strong class='text-primary'>{ownershipTransfer.displayName}</strong>."
+		message={`You are about to transfer ownership to ${ownershipTransfer.displayName}.`}
 		details="This will make them the new owner of this family with full control. Your role will be automatically changed to Admin. This action requires careful consideration and 2FA verification."
 		style="critical"
 		icon="transfer"

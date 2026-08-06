@@ -14,6 +14,16 @@ import {
 import { loadWishlistQueryData, WishlistQueryError } from '$lib/server/wishlist/queries';
 import { presentWishlistData } from '$lib/server/wishlist/presenters';
 import {
+	finalizeWishlistImage,
+	loadWishlistImagePath,
+	prepareWishlistImage,
+	removeWishlistImage,
+	rollbackWishlistImage,
+	uploadWishlistImage,
+	WishlistImageError,
+	type PreparedWishlistImage
+} from '$lib/server/wishlist/images';
+import {
 	parseBooleanField,
 	parseCommentForm,
 	parseCoordinationForm,
@@ -36,6 +46,23 @@ function commandFailure(caught: unknown, fallback: string) {
 	return fail(500, { error: fallback });
 }
 
+function imageFailure(caught: unknown) {
+	if (caught instanceof WishlistImageError) {
+		return fail(caught.status, { error: caught.message, fieldErrors: { image: caught.message } });
+	}
+	return null;
+}
+
+async function rollbackAfterFailure(
+	supabase: Parameters<typeof rollbackWishlistImage>[0],
+	prepared: PreparedWishlistImage,
+	caught: unknown,
+	fallback: string
+) {
+	await rollbackWishlistImage(supabase, prepared);
+	return imageFailure(caught) ?? commandFailure(caught, fallback);
+}
+
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
@@ -55,17 +82,27 @@ export const actions: Actions = {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
 
-		const parsed = parseWishlistItemForm(await request.formData(), {
-			familyId: params.familyId,
-			ownerId: user.id
-		});
+		const formData = await request.formData();
+		let prepared: PreparedWishlistImage;
+		try {
+			prepared = prepareWishlistImage(
+				formData,
+				{ familyId: params.familyId, ownerId: user.id },
+				null
+			);
+		} catch (caught) {
+			return imageFailure(caught) ?? commandFailure(caught, 'No se pudo preparar la imagen.');
+		}
+		const parsed = parseWishlistItemForm(formData, { familyId: params.familyId, ownerId: user.id });
 		if (!parsed.success) return invalidForm(parsed.errors);
 
 		try {
+			await uploadWishlistImage(supabase, prepared);
 			await createWishlistItem(supabase, params.familyId, user.id, parsed.data);
+			await finalizeWishlistImage(supabase, prepared);
 			return { success: true };
 		} catch (caught) {
-			return commandFailure(caught, 'No se pudo crear el regalo.');
+			return rollbackAfterFailure(supabase, prepared, caught, 'No se pudo crear el regalo.');
 		}
 	},
 
@@ -76,15 +113,24 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const item = parseUuidField(formData, 'item_id');
 		const version = parseVersionField(formData);
+		if (!item.success) return invalidForm(item.errors);
+		if (!version.success) return invalidForm(version.errors);
+		let prepared: PreparedWishlistImage;
+		try {
+			const context = { familyId: params.familyId, ownerId: user.id };
+			const previousPath = await loadWishlistImagePath(supabase, context, item.data);
+			prepared = prepareWishlistImage(formData, context, previousPath);
+		} catch (caught) {
+			return imageFailure(caught) ?? commandFailure(caught, 'No se pudo preparar la imagen.');
+		}
 		const parsed = parseWishlistItemForm(formData, {
 			familyId: params.familyId,
 			ownerId: user.id
 		});
-		if (!item.success) return invalidForm(item.errors);
-		if (!version.success) return invalidForm(version.errors);
 		if (!parsed.success) return invalidForm(parsed.errors);
 
 		try {
+			await uploadWishlistImage(supabase, prepared);
 			await updateWishlistItem(
 				supabase,
 				params.familyId,
@@ -93,9 +139,10 @@ export const actions: Actions = {
 				version.data,
 				parsed.data
 			);
+			await finalizeWishlistImage(supabase, prepared);
 			return { success: true };
 		} catch (caught) {
-			return commandFailure(caught, 'No se pudo actualizar el regalo.');
+			return rollbackAfterFailure(supabase, prepared, caught, 'No se pudo actualizar el regalo.');
 		}
 	},
 
@@ -107,7 +154,8 @@ export const actions: Actions = {
 		if (!item.success) return invalidForm(item.errors);
 
 		try {
-			await deleteWishlistItem(supabase, user.id, item.data);
+			const imagePath = await deleteWishlistItem(supabase, user.id, item.data);
+			await removeWishlistImage(supabase, imagePath);
 			return { success: true };
 		} catch (caught) {
 			return commandFailure(caught, 'No se pudo eliminar el regalo.');

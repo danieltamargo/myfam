@@ -367,14 +367,14 @@ Wishlist se considera terminada cuando:
 - Modify: `src/routes/(protected)/family/[familyId]/wishlist/components/WishlistItemModal.svelte`
 - Modify: `src/lib/components/modals/ConfirmationModal.svelte`
 
-- [ ] **Step 1: Escribir un test de componente con `<img src=x onerror=...>` como nombre/comentario**
-- [ ] **Step 2: Crear un único formulario sin formularios anidados para alta y edición**
-- [ ] **Step 3: Renderizar comentarios y menciones como nodos de texto/componentes, nunca mediante `{@html}`**
-- [ ] **Step 4: Cambiar ConfirmationModal para recibir texto y snippets seguros en lugar de HTML interpolado**
-- [ ] **Step 5: Añadir estados de envío, errores por campo, foco inicial y retorno de foco**
-- [ ] **Step 6: Ejecutar `svelte-autofixer` sobre cada componente modificado hasta obtener cero incidencias**
-- [ ] **Step 7: Ejecutar unit tests, `npm run check` y lint**
-- [ ] **Step 8: Commit: `fix: remove stored xss from wishlist flows`**
+- [x] **Step 1: Escribir un test de componente con `<img src=x onerror=...>` como nombre/comentario**
+- [x] **Step 2: Crear un único formulario sin formularios anidados para alta y edición**
+- [x] **Step 3: Renderizar comentarios y menciones como nodos de texto/componentes, nunca mediante `{@html}`**
+- [x] **Step 4: Cambiar ConfirmationModal para recibir texto y snippets seguros en lugar de HTML interpolado**
+- [x] **Step 5: Añadir estados de envío, errores por campo, foco inicial y retorno de foco**
+- [x] **Step 6: Ejecutar `svelte-autofixer` sobre cada componente modificado hasta obtener cero incidencias**
+- [x] **Step 7: Ejecutar unit tests, `npm run check` y lint**
+- [x] **Step 8: Commit: `fix: remove stored xss from wishlist flows`**
 
 ### Task 8: Completar coordinación, filtros y tiempo real
 

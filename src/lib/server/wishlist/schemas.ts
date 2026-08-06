@@ -86,7 +86,7 @@ function isHttpsUrl(value: string): boolean {
 	}
 }
 
-function isOwnedImagePath(value: string, context: WishlistItemContext): boolean {
+export function isOwnedImagePath(value: string, context: WishlistItemContext): boolean {
 	if (!value || value.length > WISHLIST_LIMITS.imagePath) return false;
 	const requiredPrefix = `${context.familyId}/${context.ownerId}/`;
 	return (
