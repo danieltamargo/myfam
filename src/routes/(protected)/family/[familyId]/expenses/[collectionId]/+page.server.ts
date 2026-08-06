@@ -5,8 +5,10 @@ import type { Database } from '$lib/types/database';
 import { parseExpenseFilters } from '$lib/server/expenses/filters';
 import {
 	createExpense,
+	createRecurringExpenseRule,
 	deleteExpense,
 	ExpenseCommandError,
+	setRecurringExpenseRuleActive,
 	updateExpense
 } from '$lib/server/expenses/commands';
 import {
@@ -29,6 +31,9 @@ import {
 	canMutateExpense,
 	parseExpenseForm,
 	parseExpenseMutationIdentity,
+	parseExpenseSplits,
+	parseExpenseUuidField,
+	parseRecurringExpenseForm,
 	type ExpenseValidationErrors
 } from '$lib/server/expenses/schemas';
 
@@ -94,6 +99,7 @@ export const load: PageServerLoad = async ({
 		return await loadExpenseCollectionPage(
 			supabase,
 			expenseCollection,
+			user.id,
 			filters,
 			url.searchParams.get('cursor')
 		);
@@ -129,9 +135,11 @@ export const actions: Actions = {
 			activeUserIds: context.activeUserIds
 		});
 		if (!parsed.success) return invalidForm(parsed.errors);
+		const splits = parseExpenseSplits(formData, parsed.data.amount, context.activeUserIds);
+		if (!splits.success) return invalidForm(splits.errors);
 		try {
 			await uploadExpenseReceipt(supabase, prepared);
-			await createExpense(supabase, params.collectionId, user.id, parsed.data);
+			await createExpense(supabase, params.collectionId, parsed.data, splits.data);
 			await finalizeExpenseReceipt(supabase, prepared);
 			return { success: true, message: 'Gasto añadido.' };
 		} catch (caught) {
@@ -178,6 +186,8 @@ export const actions: Actions = {
 			activeUserIds: context.activeUserIds
 		});
 		if (!parsed.success) return invalidForm(parsed.errors);
+		const splits = parseExpenseSplits(formData, parsed.data.amount, context.activeUserIds);
+		if (!splits.success) return invalidForm(splits.errors);
 		try {
 			await uploadExpenseReceipt(supabase, prepared);
 			await updateExpense(
@@ -185,7 +195,8 @@ export const actions: Actions = {
 				params.collectionId,
 				identity.data.expenseId,
 				identity.data.version,
-				parsed.data
+				parsed.data,
+				splits.data
 			);
 			await finalizeExpenseReceipt(supabase, prepared);
 			return { success: true, message: 'Gasto actualizado.' };
@@ -228,6 +239,58 @@ export const actions: Actions = {
 			return { success: true, message: 'Gasto eliminado.' };
 		} catch (caught) {
 			return commandFailure(caught, 'No se pudo eliminar el gasto.');
+		}
+	},
+
+	createRecurring: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		let context;
+		try {
+			context = await loadActionContext(supabase, params.familyId, params.collectionId, user.id);
+			if (!canCreateExpense(context.collection.role) || context.collection.archivedAt)
+				throw new ExpenseCommandError(403, 'No puedes programar gastos en esta colección.');
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo validar la colección.');
+		}
+		const formData = await request.formData();
+		const parsed = parseRecurringExpenseForm(formData, {
+			collectionId: params.collectionId,
+			activeUserIds: context.activeUserIds
+		});
+		if (!parsed.success) return invalidForm(parsed.errors);
+		const splits = parseExpenseSplits(formData, parsed.data.amount, context.activeUserIds);
+		if (!splits.success) return invalidForm(splits.errors);
+		try {
+			await createRecurringExpenseRule(supabase, params.collectionId, parsed.data, splits.data);
+			return { success: true, message: 'Gasto recurrente programado.' };
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo programar el gasto recurrente.');
+		}
+	},
+
+	setRecurringActive: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		const formData = await request.formData();
+		const ruleId = parseExpenseUuidField(formData, 'rule_id', 'La regla recurrente no es válida.');
+		if (!ruleId.success) return invalidForm(ruleId.errors);
+		const activeValue = formData.get('active');
+		if (activeValue !== 'true' && activeValue !== 'false')
+			return invalidForm({ active: 'El estado de la regla no es válido.' });
+		try {
+			await setRecurringExpenseRuleActive(
+				supabase,
+				params.collectionId,
+				ruleId.data,
+				activeValue === 'true'
+			);
+			return {
+				success: true,
+				message: activeValue === 'true' ? 'Regla reactivada.' : 'Regla pausada.'
+			};
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo cambiar la regla recurrente.');
 		}
 	}
 };

@@ -570,13 +570,13 @@ El dashboard mostrará:
 - Create: `src/lib/components/expenses/RecurringExpenseForm.svelte`
 - Test: `supabase/tests/database/022_expense_splits.test.sql`
 
-- [ ] **Step 1: Añadir `expense_splits(expense_id, user_id, amount)` con suma exacta igual al gasto**
-- [ ] **Step 2: Permitir reparto equitativo o importes manuales entre participantes activos**
-- [ ] **Step 3: Añadir reglas recurrentes mensuales/semanales sin llamadas externas dentro de transacciones**
-- [ ] **Step 4: Generar ocurrencias idempotentes con clave única por regla y fecha**
-- [ ] **Step 5: Mostrar balances informativos por miembro sin introducir pagos ni liquidaciones**
-- [ ] **Step 6: Probar redondeo, cambio de participantes e idempotencia**
-- [ ] **Step 7: Commit: `feat: add expense splits and recurring entries`**
+- [x] **Step 1: Añadir `expense_splits(expense_id, user_id, amount)` con suma exacta igual al gasto**
+- [x] **Step 2: Permitir reparto equitativo o importes manuales entre participantes activos**
+- [x] **Step 3: Añadir reglas recurrentes mensuales/semanales sin llamadas externas dentro de transacciones**
+- [x] **Step 4: Generar ocurrencias idempotentes con clave única por regla y fecha**
+- [x] **Step 5: Mostrar balances informativos por miembro sin introducir pagos ni liquidaciones**
+- [x] **Step 6: Probar redondeo, cambio de participantes e idempotencia**
+- [x] **Step 7: Commit: `feat: add expense splits and recurring entries`**
 
 **Gate Gastos:** aislamiento de colección demostrado, dashboard exacto en todas las ventanas temporales, exportación consistente y cero dependencia del rol owner de familia.
 

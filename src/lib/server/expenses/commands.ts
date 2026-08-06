@@ -1,9 +1,11 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
+import type { ExpenseSplitValue } from '$lib/expenses/splits';
 import type {
 	AssignableExpenseCollectionRole,
 	ExpenseCollectionInput,
-	ExpenseInput
+	ExpenseInput,
+	RecurringExpenseInput
 } from './schemas';
 
 export class ExpenseCommandError extends Error {
@@ -21,6 +23,11 @@ function throwExpenseCommandError(error: PostgrestError, fallback: string): neve
 		throw new ExpenseCommandError(403, 'No tienes permiso para realizar esta acción.');
 	if (error.code === 'P0002')
 		throw new ExpenseCommandError(404, 'La invitación ya no está disponible.');
+	if (error.code === '40001')
+		throw new ExpenseCommandError(
+			409,
+			'El gasto cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'
+		);
 	if (error.code === '23505')
 		throw new ExpenseCommandError(
 			409,
@@ -29,6 +36,12 @@ function throwExpenseCommandError(error: PostgrestError, fallback: string): neve
 	if (error.code === '23514' || error.code === '22023')
 		throw new ExpenseCommandError(400, error.message || fallback);
 	throw new ExpenseCommandError(500, fallback);
+}
+
+// PostgreSQL accepts NULL for these RPC arguments, although generated function argument types
+// do not expose nullability unless an argument has a default.
+function nullableRpcText(value: string | null): string {
+	return value as string;
 }
 
 export async function createExpenseCollection(
@@ -176,26 +189,22 @@ export async function deleteExpenseCategory(
 export async function createExpense(
 	supabase: SupabaseClient<Database>,
 	collectionId: string,
-	createdBy: string,
-	input: ExpenseInput
+	input: ExpenseInput,
+	splits: ExpenseSplitValue[]
 ): Promise<string> {
-	const { data, error } = await supabase
-		.from('expenses')
-		.insert({
-			collection_id: collectionId,
-			category_id: input.categoryId,
-			created_by: createdBy,
-			paid_by: input.paidBy,
-			description: input.description,
-			amount: input.amount,
-			occurred_on: input.occurredOn,
-			notes: input.notes,
-			receipt_path: input.receiptPath
-		})
-		.select('id')
-		.single();
+	const { data, error } = await supabase.rpc('create_expense_with_splits', {
+		p_collection_id: collectionId,
+		p_category_id: nullableRpcText(input.categoryId),
+		p_paid_by: input.paidBy,
+		p_description: input.description,
+		p_amount: input.amount,
+		p_occurred_on: input.occurredOn,
+		p_notes: nullableRpcText(input.notes),
+		p_receipt_path: nullableRpcText(input.receiptPath),
+		p_splits: splits.map((split) => ({ user_id: split.userId, amount: split.amount }))
+	});
 	if (error) throwExpenseCommandError(error, 'No se pudo crear el gasto.');
-	return data.id;
+	return data;
 }
 
 export async function updateExpense(
@@ -203,30 +212,58 @@ export async function updateExpense(
 	collectionId: string,
 	expenseId: string,
 	version: number,
-	input: ExpenseInput
+	input: ExpenseInput,
+	splits: ExpenseSplitValue[]
 ): Promise<void> {
-	const { data, error } = await supabase
-		.from('expenses')
-		.update({
-			category_id: input.categoryId,
-			paid_by: input.paidBy,
-			description: input.description,
-			amount: input.amount,
-			occurred_on: input.occurredOn,
-			notes: input.notes,
-			receipt_path: input.receiptPath
-		})
-		.eq('collection_id', collectionId)
-		.eq('id', expenseId)
-		.eq('version', version)
-		.select('id')
-		.maybeSingle();
+	const { error } = await supabase.rpc('update_expense_with_splits', {
+		p_collection_id: collectionId,
+		p_expense_id: expenseId,
+		p_version: version,
+		p_category_id: nullableRpcText(input.categoryId),
+		p_paid_by: input.paidBy,
+		p_description: input.description,
+		p_amount: input.amount,
+		p_occurred_on: input.occurredOn,
+		p_notes: nullableRpcText(input.notes),
+		p_receipt_path: nullableRpcText(input.receiptPath),
+		p_splits: splits.map((split) => ({ user_id: split.userId, amount: split.amount }))
+	});
 	if (error) throwExpenseCommandError(error, 'No se pudo actualizar el gasto.');
-	if (!data)
-		throw new ExpenseCommandError(
-			409,
-			'El gasto cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'
-		);
+}
+
+export async function createRecurringExpenseRule(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	input: RecurringExpenseInput,
+	splits: ExpenseSplitValue[]
+): Promise<string> {
+	const { data, error } = await supabase.rpc('create_recurring_expense_rule', {
+		p_collection_id: collectionId,
+		p_category_id: nullableRpcText(input.categoryId),
+		p_paid_by: input.paidBy,
+		p_description: input.description,
+		p_amount: input.amount,
+		p_notes: nullableRpcText(input.notes),
+		p_frequency: input.frequency,
+		p_next_run: input.nextRun,
+		p_splits: splits.map((split) => ({ user_id: split.userId, amount: split.amount }))
+	});
+	if (error) throwExpenseCommandError(error, 'No se pudo crear el gasto recurrente.');
+	return data;
+}
+
+export async function setRecurringExpenseRuleActive(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	ruleId: string,
+	active: boolean
+): Promise<void> {
+	const { error } = await supabase.rpc('set_recurring_expense_rule_active', {
+		p_collection_id: collectionId,
+		p_rule_id: ruleId,
+		p_active: active
+	});
+	if (error) throwExpenseCommandError(error, 'No se pudo cambiar el gasto recurrente.');
 }
 
 export async function deleteExpense(

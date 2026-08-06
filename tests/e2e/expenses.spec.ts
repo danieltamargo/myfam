@@ -65,9 +65,8 @@ async function signIn(page: Page, email: string, password: string): Promise<void
 	await page.waitForURL('**/dashboard', { timeout: 15_000 });
 }
 
-test('filtra, exporta y respeta el modo de solo lectura del dashboard de gastos', async ({
-	page,
-	browser
+test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura', async ({
+	page
 }) => {
 	test.setTimeout(120_000);
 	const status = getLocalSupabaseStatus();
@@ -81,7 +80,6 @@ test('filtra, exporta y respeta el modo de solo lectura del dashboard de gastos'
 	const createdUserIds: string[] = [];
 	let familyId: string | undefined;
 	let collectionId: string | undefined;
-	let ownerContext: Awaited<ReturnType<typeof browser.newContext>> | undefined;
 
 	try {
 		const createdUsers = await Promise.all(
@@ -185,14 +183,13 @@ test('filtra, exporta y respeta el modo de solo lectura del dashboard de gastos'
 		]);
 		expect(seedError).toBeNull();
 
-		await signIn(page, viewerEmail, password);
+		await signIn(page, ownerEmail, password);
 		await page.goto(`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15`);
 		await expect(page.getByRole('heading', { name: `Casa ${suffix}` })).toBeVisible();
 		await expect(page.getByTestId('expenses-current-total')).toContainText('125,50');
-		await expect(page.getByText(`Supermercado ${suffix}`)).toBeVisible();
+		await expect(page.getByText(`Supermercado ${suffix}`, { exact: true }).first()).toBeVisible();
 		await expect(page.getByText(`Fuera de periodo ${suffix}`)).toHaveCount(0);
-		await expect(page.getByRole('link', { name: 'Añadir gasto' })).toHaveCount(0);
-		await expect(page.getByText('Tienes acceso de solo lectura')).toBeVisible();
+		await expect(page.getByRole('link', { name: 'Añadir gasto' })).toBeVisible();
 
 		await page.waitForTimeout(750);
 		const categoryFilter = page.getByTestId('expenses-filter-category');
@@ -220,22 +217,70 @@ test('filtra, exporta y respeta el modo de solo lectura del dashboard de gastos'
 			.select('id');
 		expect(forbiddenError).toBeNull();
 		expect(forbiddenUpdate).toEqual([]);
+		const { data: viewerExpenses, error: viewerReadError } = await viewer
+			.from('expenses')
+			.select('id')
+			.eq('collection_id', collectionId!);
+		expect(viewerReadError).toBeNull();
+		expect(viewerExpenses).toHaveLength(3);
 
-		ownerContext = await browser.newContext();
-		const ownerPage = await ownerContext.newPage();
-		await signIn(ownerPage, ownerEmail, password);
-		await ownerPage.goto(
-			`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15`
-		);
-		const createForm = ownerPage.locator('#nuevo-gasto');
+		await page.goto(`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15`);
+		const createForm = page.locator('#nuevo-gasto');
 		await createForm.getByLabel('Concepto').fill(`Farmacia ${suffix}`);
-		await createForm.getByLabel('Importe').fill('18.25');
+		await createForm.getByLabel('Importe', { exact: true }).fill('18.25');
 		await createForm.getByLabel('Fecha').fill('2026-08-20');
 		await createForm.getByRole('button', { name: 'Añadir gasto' }).press('Enter');
-		await expect(ownerPage.getByText(`Farmacia ${suffix}`, { exact: true })).toBeVisible();
-		await expect(ownerPage.getByTestId('expenses-current-total')).toContainText('143,75');
+		await expect(page.getByText(`Farmacia ${suffix}`, { exact: true })).toBeVisible();
+		await expect(page.getByTestId('expenses-current-total')).toContainText('143,75');
+
+		const { data: createdExpense, error: createdExpenseError } = await owner
+			.from('expenses')
+			.select('id')
+			.eq('collection_id', collectionId!)
+			.eq('description', `Farmacia ${suffix}`)
+			.single();
+		expect(createdExpenseError).toBeNull();
+		const { data: createdSplits, error: createdSplitsError } = await owner
+			.from('expense_splits')
+			.select('amount')
+			.eq('expense_id', createdExpense!.id);
+		expect(createdSplitsError).toBeNull();
+		expect(createdSplits).toHaveLength(2);
+		expect(createdSplits!.reduce((sum, split) => sum + Number(split.amount), 0)).toBe(18.25);
+
+		await page.getByText('Programar un gasto recurrente', { exact: true }).press('Enter');
+		const recurringForm = page.locator('form[action="?/createRecurring"]');
+		await recurringForm.getByLabel('Concepto').fill(`Internet ${suffix}`);
+		await recurringForm.getByLabel('Importe', { exact: true }).fill('12.00');
+		await recurringForm.getByLabel('Próxima fecha').fill('2026-08-25');
+		await recurringForm.getByRole('button', { name: 'Guardar regla' }).press('Enter');
+		await expect(page.getByText(`Internet ${suffix}`, { exact: true })).toBeVisible();
+		const { data: recurringRule, error: recurringRuleError } = await owner
+			.from('recurring_expense_rules')
+			.select('id')
+			.eq('collection_id', collectionId!)
+			.eq('description', `Internet ${suffix}`)
+			.single();
+		expect(recurringRuleError).toBeNull();
+		expect(
+			(
+				await owner
+					.from('recurring_expense_splits')
+					.select('user_id')
+					.eq('rule_id', recurringRule!.id)
+			).data
+		).toHaveLength(2);
+
+		const { data: processedCount, error: processingError } = await admin.rpc(
+			'process_due_recurring_expenses',
+			{ p_as_of: '2026-08-25' }
+		);
+		expect(processingError).toBeNull();
+		expect(processedCount).toBe(1);
+		await page.reload();
+		await expect(page.getByTestId('expenses-current-total')).toContainText('155,75');
+		await expect(page.getByText(`Internet ${suffix}`, { exact: true }).first()).toBeVisible();
 	} finally {
-		await ownerContext?.close().catch(() => undefined);
 		if (familyId) await admin.from('families').delete().eq('id', familyId);
 		for (const userId of createdUserIds) await admin.auth.admin.deleteUser(userId);
 	}

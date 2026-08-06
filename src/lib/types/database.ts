@@ -242,6 +242,42 @@ export type Database = {
 					}
 				];
 			};
+			expense_splits: {
+				Row: {
+					amount: number;
+					collection_id: string;
+					expense_id: string;
+					user_id: string;
+				};
+				Insert: {
+					amount: number;
+					collection_id: string;
+					expense_id: string;
+					user_id: string;
+				};
+				Update: {
+					amount?: number;
+					collection_id?: string;
+					expense_id?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'expense_splits_collection_id_expense_id_fkey';
+						columns: ['collection_id', 'expense_id'];
+						isOneToOne: false;
+						referencedRelation: 'expenses';
+						referencedColumns: ['collection_id', 'id'];
+					},
+					{
+						foreignKeyName: 'expense_splits_collection_id_user_id_fkey';
+						columns: ['collection_id', 'user_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collection_members';
+						referencedColumns: ['collection_id', 'user_id'];
+					}
+				];
+			};
 			expenses: {
 				Row: {
 					amount: number;
@@ -255,6 +291,8 @@ export type Database = {
 					occurred_on: string;
 					paid_by: string;
 					receipt_path: string | null;
+					recurring_occurrence_on: string | null;
+					recurring_rule_id: string | null;
 					updated_at: string;
 					version: number;
 				};
@@ -270,6 +308,8 @@ export type Database = {
 					occurred_on: string;
 					paid_by: string;
 					receipt_path?: string | null;
+					recurring_occurrence_on?: string | null;
+					recurring_rule_id?: string | null;
 					updated_at?: string;
 					version?: number;
 				};
@@ -285,6 +325,8 @@ export type Database = {
 					occurred_on?: string;
 					paid_by?: string;
 					receipt_path?: string | null;
+					recurring_occurrence_on?: string | null;
+					recurring_rule_id?: string | null;
 					updated_at?: string;
 					version?: number;
 				};
@@ -343,6 +385,13 @@ export type Database = {
 						columns: ['paid_by'];
 						isOneToOne: false;
 						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expenses_recurring_rule_id_fkey';
+						columns: ['recurring_rule_id'];
+						isOneToOne: false;
+						referencedRelation: 'recurring_expense_rules';
 						referencedColumns: ['id'];
 					}
 				];
@@ -1466,6 +1515,150 @@ export type Database = {
 					}
 				];
 			};
+			recurring_expense_rules: {
+				Row: {
+					active: boolean;
+					amount: number;
+					category_id: string | null;
+					collection_id: string;
+					created_at: string;
+					created_by: string;
+					day_of_month: number;
+					description: string;
+					frequency: string;
+					id: string;
+					next_run: string;
+					notes: string | null;
+					paid_by: string;
+					updated_at: string;
+				};
+				Insert: {
+					active?: boolean;
+					amount: number;
+					category_id?: string | null;
+					collection_id: string;
+					created_at?: string;
+					created_by: string;
+					day_of_month: number;
+					description: string;
+					frequency: string;
+					id?: string;
+					next_run: string;
+					notes?: string | null;
+					paid_by: string;
+					updated_at?: string;
+				};
+				Update: {
+					active?: boolean;
+					amount?: number;
+					category_id?: string | null;
+					collection_id?: string;
+					created_at?: string;
+					created_by?: string;
+					day_of_month?: number;
+					description?: string;
+					frequency?: string;
+					id?: string;
+					next_run?: string;
+					notes?: string | null;
+					paid_by?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'recurring_expense_rules_collection_id_category_id_fkey';
+						columns: ['collection_id', 'category_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_categories';
+						referencedColumns: ['collection_id', 'id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_collection_id_created_by_fkey';
+						columns: ['collection_id', 'created_by'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collection_members';
+						referencedColumns: ['collection_id', 'user_id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_collection_id_fkey';
+						columns: ['collection_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collections';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_collection_id_paid_by_fkey';
+						columns: ['collection_id', 'paid_by'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collection_members';
+						referencedColumns: ['collection_id', 'user_id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_paid_by_fkey';
+						columns: ['paid_by'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_rules_paid_by_fkey';
+						columns: ['paid_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			recurring_expense_splits: {
+				Row: {
+					amount: number;
+					collection_id: string;
+					rule_id: string;
+					user_id: string;
+				};
+				Insert: {
+					amount: number;
+					collection_id: string;
+					rule_id: string;
+					user_id: string;
+				};
+				Update: {
+					amount?: number;
+					collection_id?: string;
+					rule_id?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'recurring_expense_splits_collection_id_rule_id_fkey';
+						columns: ['collection_id', 'rule_id'];
+						isOneToOne: false;
+						referencedRelation: 'recurring_expense_rules';
+						referencedColumns: ['collection_id', 'id'];
+					},
+					{
+						foreignKeyName: 'recurring_expense_splits_collection_id_user_id_fkey';
+						columns: ['collection_id', 'user_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collection_members';
+						referencedColumns: ['collection_id', 'user_id'];
+					}
+				];
+			};
 			room_participants: {
 				Row: {
 					bot_difficulty: string | null;
@@ -1580,13 +1773,50 @@ export type Database = {
 				};
 				Returns: string;
 			};
+			create_expense_with_splits: {
+				Args: {
+					p_amount: number;
+					p_category_id: string;
+					p_collection_id: string;
+					p_description: string;
+					p_notes: string;
+					p_occurred_on: string;
+					p_paid_by: string;
+					p_receipt_path: string;
+					p_splits: Json;
+				};
+				Returns: string;
+			};
 			create_family: { Args: { p_name: string }; Returns: string };
+			create_recurring_expense_rule: {
+				Args: {
+					p_amount: number;
+					p_category_id: string;
+					p_collection_id: string;
+					p_description: string;
+					p_frequency: string;
+					p_next_run: string;
+					p_notes: string;
+					p_paid_by: string;
+					p_splits: Json;
+				};
+				Returns: string;
+			};
 			delete_family: { Args: { p_family_id: string }; Returns: undefined };
 			extract_mentions_from_comment: {
 				Args: { comment_text: string };
 				Returns: string[];
 			};
 			generate_join_code: { Args: never; Returns: string };
+			get_expense_balances: {
+				Args: { p_collection_id: string; p_from: string; p_to: string };
+				Returns: {
+					balance: number;
+					owed: number;
+					paid: number;
+					user_id: string;
+				}[];
+			};
 			get_expense_collection_invitations: {
 				Args: never;
 				Returns: {
@@ -1683,6 +1913,10 @@ export type Database = {
 				Args: { p_collection_id: string };
 				Returns: undefined;
 			};
+			process_due_recurring_expenses: {
+				Args: { p_as_of?: string };
+				Returns: number;
+			};
 			purchase_gift_item: {
 				Args: { p_item_id: string; p_quantity?: number };
 				Returns: string;
@@ -1707,12 +1941,32 @@ export type Database = {
 				Args: { p_collection_id: string; p_user_id: string };
 				Returns: undefined;
 			};
+			set_recurring_expense_rule_active: {
+				Args: { p_active: boolean; p_collection_id: string; p_rule_id: string };
+				Returns: undefined;
+			};
 			transfer_expense_collection_ownership: {
 				Args: { p_collection_id: string; p_new_owner_id: string };
 				Returns: undefined;
 			};
 			transfer_family_ownership: {
 				Args: { p_family_id: string; p_target_user_id: string };
+				Returns: undefined;
+			};
+			update_expense_with_splits: {
+				Args: {
+					p_amount: number;
+					p_category_id: string;
+					p_collection_id: string;
+					p_description: string;
+					p_expense_id: string;
+					p_notes: string;
+					p_occurred_on: string;
+					p_paid_by: string;
+					p_receipt_path: string;
+					p_splits: Json;
+					p_version: number;
+				};
 				Returns: undefined;
 			};
 		};

@@ -5,6 +5,7 @@
 		ExpenseMember,
 		ExpenseRecord
 	} from '$lib/server/expenses/queries';
+	import ExpenseSplitEditor from './ExpenseSplitEditor.svelte';
 
 	interface Props {
 		expenses: ExpenseRecord[];
@@ -16,6 +17,7 @@
 	}
 
 	let { expenses, categories, members, collection, currentUserId, canManage }: Props = $props();
+	let editAmounts = $state<Record<string, string>>({});
 	const activeMembers = $derived(members.filter((member) => member.status === 'active'));
 
 	function money(value: number | string): string {
@@ -34,6 +36,14 @@
 
 	function canEdit(createdBy: string): boolean {
 		return canManage || (collection.role === 'contributor' && createdBy === currentUserId);
+	}
+
+	function editAmount(expenseId: string, fallback: number | string): string {
+		return editAmounts[expenseId] ?? String(fallback);
+	}
+
+	function setEditAmount(expenseId: string, value: string): void {
+		editAmounts = { ...editAmounts, [expenseId]: value };
 	}
 </script>
 
@@ -74,7 +84,15 @@
 									></span>{expense.category.name}</span
 								>{:else}<span class="text-sm text-base-content/40">Sin categoría</span>{/if}
 						</td>
-						<td class="text-right font-mono font-semibold">{money(expense.amount)}</td>
+						<td class="text-right">
+							<p class="font-mono font-semibold">{money(expense.amount)}</p>
+							{#if expense.splits.length > 0}
+								<p class="mt-1 text-xs text-base-content/45">
+									{expense.splits.length}
+									{expense.splits.length === 1 ? 'parte' : 'partes'}
+								</p>
+							{/if}
+						</td>
 						<td class="text-right">
 							<div class="flex justify-end gap-1">
 								{#if expense.receiptUrl}<a
@@ -127,7 +145,12 @@
 													type="number"
 													min="0.01"
 													step="0.01"
-													value={expense.amount}
+													value={editAmount(expense.id, expense.amount)}
+													oninput={(event) =>
+														setEditAmount(
+															expense.id,
+															(event.currentTarget as HTMLInputElement).value
+														)}
 													required
 												/></label
 											>
@@ -190,6 +213,16 @@
 													value="true"
 												/><span class="label-text">Quitar recibo</span></label
 											>
+											<div class="md:col-span-6">
+												<ExpenseSplitEditor
+													{members}
+													amount={editAmount(expense.id, expense.amount)}
+													currency={collection.currency}
+													inputId={`expense-${expense.id}`}
+													initialSplits={expense.splits}
+													compact
+												/>
+											</div>
 											<div class="flex justify-end md:col-span-6">
 												<button class="btn btn-sm btn-primary" type="submit">Guardar cambios</button
 												>

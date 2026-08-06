@@ -3,10 +3,13 @@
 	import type { ActionData, PageData } from './$types';
 	import ExpenseBreakdown from '$lib/components/expenses/ExpenseBreakdown.svelte';
 	import ExpenseFilters from '$lib/components/expenses/ExpenseFilters.svelte';
+	import ExpenseSplitEditor from '$lib/components/expenses/ExpenseSplitEditor.svelte';
 	import ExpenseSummary from '$lib/components/expenses/ExpenseSummary.svelte';
 	import ExpenseTable from '$lib/components/expenses/ExpenseTable.svelte';
+	import RecurringExpenseForm from '$lib/components/expenses/RecurringExpenseForm.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let createAmount = $state('');
 	const activeMembers = $derived(data.members.filter((member) => member.status === 'active'));
 	const expenseDate = $derived(
 		data.filters.period.preset === 'custom' ? data.filters.to : data.filters.period.anchor
@@ -28,6 +31,26 @@
 	const exportHref = $derived(
 		`/family/${data.family.id}/expenses/${data.collection.id}/export?${filterParams()}`
 	);
+
+	function money(value: number | string): string {
+		return new Intl.NumberFormat('es-ES', {
+			style: 'currency',
+			currency: data.collection.currency
+		}).format(Number(value));
+	}
+
+	function localDate(value: string): string {
+		const [year, month, day] = value.split('-').map(Number);
+		return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(
+			new Date(year, month - 1, day)
+		);
+	}
+
+	function memberName(userId: string): string {
+		return (
+			data.members.find((member) => member.userId === userId)?.profile.displayName ?? 'Participante'
+		);
+	}
 </script>
 
 <svelte:head>
@@ -89,6 +112,38 @@
 		currency={data.collection.currency}
 		granularity={data.filters.granularity}
 	/>
+
+	<section aria-labelledby="balances" class="space-y-3">
+		<div>
+			<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">Reparto</p>
+			<h2 id="balances" class="mt-1 text-xl font-semibold">Balance informativo</h2>
+			<p class="mt-1 text-sm text-base-content/55">
+				Calculado para el periodo seleccionado; no representa pagos ni liquidaciones.
+			</p>
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+			{#each data.balances as balance (balance.userId)}
+				<article class="rounded-box border border-base-300 bg-base-100 p-4">
+					<div class="flex items-start justify-between gap-3">
+						<h3 class="truncate font-semibold">{balance.label}</h3>
+						<span
+							class="badge badge-sm {balance.balance > 0
+								? 'badge-success'
+								: balance.balance < 0
+									? 'badge-warning'
+									: 'badge-ghost'}"
+						>
+							{balance.balance > 0 ? 'A favor' : balance.balance < 0 ? 'Debe' : 'Cuadrado'}
+						</span>
+					</div>
+					<p class="mt-3 font-mono text-xl font-semibold">{money(Math.abs(balance.balance))}</p>
+					<p class="mt-2 text-xs text-base-content/50">
+						Pagó {money(balance.paid)} · Le corresponde {money(balance.owed)}
+					</p>
+				</article>
+			{/each}
+		</div>
+	</section>
 
 	<section aria-labelledby="movimientos" class="space-y-3">
 		<div class="flex items-end justify-between gap-4">
@@ -153,6 +208,7 @@
 							min="0.01"
 							step="0.01"
 							required
+							bind:value={createAmount}
 							placeholder="0,00"
 						/></label
 					>
@@ -212,13 +268,74 @@
 							placeholder="Contexto útil para el resto de participantes"
 						></textarea></label
 					>
+					<div class="md:col-span-6">
+						<ExpenseSplitEditor
+							members={data.members}
+							amount={createAmount}
+							currency={data.collection.currency}
+							inputId="new-expense"
+						/>
+					</div>
 					<div class="md:col-span-6 md:justify-self-end">
 						<button class="btn btn-primary" type="submit">Añadir gasto</button>
 					</div>
 				</form>
 			</div>
 		</section>
-	{:else if data.collection.role === 'viewer'}
+	{/if}
+
+	<section aria-labelledby="recurring-expenses" class="space-y-4">
+		<div>
+			<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">
+				Automatización
+			</p>
+			<h2 id="recurring-expenses" class="mt-1 text-xl font-semibold">Gastos recurrentes</h2>
+		</div>
+		{#if data.recurringRules.length > 0}
+			<div class="grid gap-3 lg:grid-cols-2">
+				{#each data.recurringRules as rule (rule.id)}
+					<article class="rounded-box border border-base-300 bg-base-100 p-4">
+						<div class="flex items-start justify-between gap-3">
+							<div class="min-w-0">
+								<h3 class="truncate font-semibold">{rule.description}</h3>
+								<p class="mt-1 text-sm text-base-content/55">
+									{rule.frequency === 'weekly' ? 'Semanal' : 'Mensual'} · Próximo
+									{localDate(rule.next_run)}
+								</p>
+							</div>
+							<span class="badge {rule.active ? 'badge-success' : 'badge-ghost'}">
+								{rule.active ? 'Activa' : 'Pausada'}
+							</span>
+						</div>
+						<p class="mt-3 font-mono text-lg font-semibold">{money(rule.amount)}</p>
+						<p class="mt-1 text-xs text-base-content/50">
+							Pagará {rule.payer.displayName} · {rule.splits
+								.map((split) => `${memberName(split.userId)} ${money(split.amount)}`)
+								.join(' · ')}
+						</p>
+						{#if rule.canMutate}
+							<form method="POST" action="?/setRecurringActive" class="mt-4 flex justify-end">
+								<input type="hidden" name="rule_id" value={rule.id} />
+								<input type="hidden" name="active" value={rule.active ? 'false' : 'true'} />
+								<button class="btn btn-ghost btn-sm" type="submit">
+									{rule.active ? 'Pausar' : 'Reactivar'}
+								</button>
+							</form>
+						{/if}
+					</article>
+				{/each}
+			</div>
+		{/if}
+		{#if data.canCreate}<RecurringExpenseForm
+				members={data.members}
+				categories={data.categories}
+				currency={data.collection.currency}
+				currentUserId={data.currentUserId}
+				defaultDate={expenseDate}
+			/>{/if}
+	</section>
+
+	{#if data.collection.role === 'viewer'}
 		<div class="alert" role="status">
 			<span>Tienes acceso de solo lectura a esta colección.</span>
 		</div>

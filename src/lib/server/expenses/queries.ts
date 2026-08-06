@@ -51,6 +51,27 @@ export interface ExpenseRecord extends Tables<'expenses'> {
 	creator: ExpenseProfile;
 	payer: ExpenseProfile;
 	receiptUrl: string | null;
+	splits: ExpenseSplit[];
+}
+
+export interface ExpenseSplit {
+	userId: string;
+	amount: number;
+}
+
+export interface RecurringExpenseRule extends Tables<'recurring_expense_rules'> {
+	category: Tables<'expense_categories'> | null;
+	payer: ExpenseProfile;
+	splits: ExpenseSplit[];
+	canMutate: boolean;
+}
+
+export interface ExpenseBalance {
+	userId: string;
+	label: string;
+	paid: number;
+	owed: number;
+	balance: number;
 }
 
 export interface ExpensePageData {
@@ -63,6 +84,8 @@ export interface ExpensePageData {
 	canManage: boolean;
 	filters: ExpenseFilterState;
 	dashboard: ExpenseDashboard;
+	balances: ExpenseBalance[];
+	recurringRules: RecurringExpenseRule[];
 }
 
 export interface ExpenseDashboardBreakdown {
@@ -256,6 +279,7 @@ async function loadMembers(
 export async function loadExpenseCollectionPage(
 	supabase: SupabaseClient<Database>,
 	collection: ExpenseCollectionSummary,
+	userId: string,
 	filters: ExpenseFilterState,
 	cursorValue?: string | null,
 	pageSize = 25
@@ -277,7 +301,15 @@ export async function loadExpenseCollectionPage(
 	if (filters.paidBy) expenseQuery = expenseQuery.eq('paid_by', filters.paidBy);
 	if (filters.categoryId) expenseQuery = expenseQuery.eq('category_id', filters.categoryId);
 
-	const [members, categoriesResult, expensesResult, dashboardResult] = await Promise.all([
+	const [
+		members,
+		categoriesResult,
+		expensesResult,
+		dashboardResult,
+		balancesResult,
+		recurringRulesResult,
+		recurringSplitsResult
+	] = await Promise.all([
 		loadMembers(supabase, collection.id),
 		supabase
 			.from('expense_categories')
@@ -294,11 +326,29 @@ export async function loadExpenseCollectionPage(
 			p_paid_by: filters.paidBy ?? undefined,
 			p_category_id: filters.categoryId ?? undefined,
 			p_granularity: filters.granularity
-		})
+		}),
+		supabase.rpc('get_expense_balances', {
+			p_collection_id: collection.id,
+			p_from: filters.from,
+			p_to: filters.to
+		}),
+		supabase
+			.from('recurring_expense_rules')
+			.select('*')
+			.eq('collection_id', collection.id)
+			.order('active', { ascending: false })
+			.order('next_run'),
+		supabase
+			.from('recurring_expense_splits')
+			.select('rule_id, user_id, amount')
+			.eq('collection_id', collection.id)
 	]);
 	assertQuery(categoriesResult.error, 'No se pudieron cargar las categorías');
 	assertQuery(expensesResult.error, 'No se pudieron cargar los gastos');
 	assertQuery(dashboardResult.error, 'No se pudo calcular el resumen');
+	assertQuery(balancesResult.error, 'No se pudieron calcular los balances');
+	assertQuery(recurringRulesResult.error, 'No se pudieron cargar los gastos recurrentes');
+	assertQuery(recurringSplitsResult.error, 'No se pudieron cargar los repartos recurrentes');
 	const categories = categoriesResult.data ?? [];
 	const rows = expensesResult.data ?? [];
 	const hasMore = rows.length > pageSize;
@@ -308,6 +358,23 @@ export async function loadExpenseCollectionPage(
 		pageRows.flatMap((expense) => [expense.created_by, expense.paid_by])
 	);
 	const categoriesById = new Map(categories.map((category) => [category.id, category]));
+	const expenseSplitsResult =
+		pageRows.length === 0
+			? { data: [], error: null }
+			: await supabase
+					.from('expense_splits')
+					.select('expense_id, user_id, amount')
+					.in(
+						'expense_id',
+						pageRows.map((expense) => expense.id)
+					);
+	assertQuery(expenseSplitsResult.error, 'No se pudieron cargar los repartos');
+	const splitsByExpense = new Map<string, ExpenseSplit[]>();
+	for (const split of expenseSplitsResult.data ?? []) {
+		const current = splitsByExpense.get(split.expense_id) ?? [];
+		current.push({ userId: split.user_id, amount: Number(split.amount) });
+		splitsByExpense.set(split.expense_id, current);
+	}
 	const receiptUrls = await signExpenseReceiptUrls(
 		supabase,
 		pageRows.flatMap((expense) => (expense.receipt_path ? [expense.receipt_path] : []))
@@ -317,10 +384,35 @@ export async function loadExpenseCollectionPage(
 		category: expense.category_id ? (categoriesById.get(expense.category_id) ?? null) : null,
 		creator: profiles.get(expense.created_by) ?? profileFallback(expense.created_by),
 		payer: profiles.get(expense.paid_by) ?? profileFallback(expense.paid_by),
-		receiptUrl: expense.receipt_path ? (receiptUrls.get(expense.receipt_path) ?? null) : null
+		receiptUrl: expense.receipt_path ? (receiptUrls.get(expense.receipt_path) ?? null) : null,
+		splits: splitsByExpense.get(expense.id) ?? []
 	}));
 	const last = hasMore ? pageRows.at(-1) : null;
 	const dashboard = presentExpenseDashboard(dashboardResult.data, categories, members);
+	const memberMap = new Map(members.map((member) => [member.userId, member]));
+	const recurringSplits = new Map<string, ExpenseSplit[]>();
+	for (const split of recurringSplitsResult.data ?? []) {
+		const current = recurringSplits.get(split.rule_id) ?? [];
+		current.push({ userId: split.user_id, amount: Number(split.amount) });
+		recurringSplits.set(split.rule_id, current);
+	}
+	const recurringRules: RecurringExpenseRule[] = (recurringRulesResult.data ?? []).map((rule) => ({
+		...rule,
+		category: rule.category_id ? (categoriesById.get(rule.category_id) ?? null) : null,
+		payer: memberMap.get(rule.paid_by)?.profile ?? profileFallback(rule.paid_by),
+		splits: recurringSplits.get(rule.id) ?? [],
+		canMutate:
+			collection.role === 'owner' ||
+			collection.role === 'manager' ||
+			(collection.role === 'contributor' && rule.created_by === userId)
+	}));
+	const balances: ExpenseBalance[] = (balancesResult.data ?? []).map((balance) => ({
+		userId: balance.user_id,
+		label: memberMap.get(balance.user_id)?.profile.displayName ?? 'Participante',
+		paid: Number(balance.paid),
+		owed: Number(balance.owed),
+		balance: Number(balance.balance)
+	}));
 	return {
 		collection,
 		members,
@@ -330,7 +422,9 @@ export async function loadExpenseCollectionPage(
 		canCreate: collection.role !== 'viewer' && !collection.archivedAt,
 		canManage: collection.role === 'owner' || collection.role === 'manager',
 		filters,
-		dashboard
+		dashboard,
+		balances,
+		recurringRules
 	};
 }
 

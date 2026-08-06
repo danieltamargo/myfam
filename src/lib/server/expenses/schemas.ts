@@ -1,3 +1,5 @@
+import { moneyToCents, splitTotalInCents, type ExpenseSplitValue } from '$lib/expenses/splits';
+
 export const EXPENSE_LIMITS = {
 	collectionName: 80,
 	collectionDescription: 2_000,
@@ -41,6 +43,16 @@ export interface ExpenseFormContext {
 export interface ExpenseCategoryInput {
 	name: string;
 	color: string | null;
+}
+
+export interface RecurringExpenseInput {
+	categoryId: string | null;
+	paidBy: string;
+	description: string;
+	amount: number;
+	nextRun: string;
+	notes: string | null;
+	frequency: 'weekly' | 'monthly';
 }
 
 function textValue(formData: FormData, field: string): string {
@@ -214,6 +226,85 @@ export function parseExpenseForm(
 			occurredOn,
 			notes: notes || null,
 			receiptPath: receiptPath || null
+		}
+	};
+}
+
+export function parseExpenseSplits(
+	formData: FormData,
+	amount: number,
+	activeUserIds: ReadonlySet<string>
+): ExpenseValidationResult<ExpenseSplitValue[]> {
+	const raw = textValue(formData, 'splits_json');
+	let value: unknown;
+	try {
+		value = JSON.parse(raw);
+	} catch {
+		return { success: false, errors: { splits_json: 'El reparto enviado no es válido.' } };
+	}
+	if (!Array.isArray(value) || value.length === 0 || value.length > activeUserIds.size) {
+		return {
+			success: false,
+			errors: { splits_json: 'Selecciona al menos un participante activo para el reparto.' }
+		};
+	}
+
+	const splits: ExpenseSplitValue[] = [];
+	const userIds = new Set<string>();
+	for (const item of value) {
+		if (!item || typeof item !== 'object') {
+			return { success: false, errors: { splits_json: 'El reparto enviado no es válido.' } };
+		}
+		const record = item as Record<string, unknown>;
+		const userId = typeof record.userId === 'string' ? record.userId : '';
+		const cents =
+			typeof record.amount === 'string' || typeof record.amount === 'number'
+				? moneyToCents(record.amount)
+				: null;
+		if (!activeUserIds.has(userId) || userIds.has(userId) || cents === null) {
+			return {
+				success: false,
+				errors: {
+					splits_json: 'Cada participante del reparto debe estar activo y aparecer una sola vez.'
+				}
+			};
+		}
+		userIds.add(userId);
+		splits.push({ userId, amount: cents / 100 });
+	}
+
+	if (splitTotalInCents(splits) !== moneyToCents(amount)) {
+		return {
+			success: false,
+			errors: { splits_json: 'La suma del reparto debe coincidir exactamente con el importe.' }
+		};
+	}
+	return { success: true, data: splits };
+}
+
+export function parseRecurringExpenseForm(
+	formData: FormData,
+	context: ExpenseFormContext
+): ExpenseValidationResult<RecurringExpenseInput> {
+	const expense = parseExpenseForm(formData, context);
+	if (!expense.success) return expense;
+	const frequency = textValue(formData, 'frequency');
+	if (frequency !== 'weekly' && frequency !== 'monthly') {
+		return {
+			success: false,
+			errors: { frequency: 'La frecuencia debe ser semanal o mensual.' }
+		};
+	}
+	return {
+		success: true,
+		data: {
+			categoryId: expense.data.categoryId,
+			paidBy: expense.data.paidBy,
+			description: expense.data.description,
+			amount: expense.data.amount,
+			nextRun: expense.data.occurredOn,
+			notes: expense.data.notes,
+			frequency
 		}
 	};
 }

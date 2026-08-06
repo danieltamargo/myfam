@@ -4,7 +4,9 @@ import {
 	canManageExpenseCollection,
 	canMutateExpense,
 	parseExpenseCollectionForm,
-	parseExpenseForm
+	parseExpenseForm,
+	parseExpenseSplits,
+	parseRecurringExpenseForm
 } from './schemas';
 
 const collectionId = '30000000-0000-4000-8000-000000000001';
@@ -70,6 +72,50 @@ describe('expense validation', () => {
 		});
 		expect(result.success).toBe(false);
 		if (!result.success) expect(result.errors.paid_by).toBeDefined();
+	});
+
+	it('accepts an exact split between active participants', () => {
+		const form = validExpenseForm();
+		form.set(
+			'splits_json',
+			JSON.stringify([
+				{ userId: payerId, amount: 21.38 },
+				{ userId: collectionId, amount: 21.37 }
+			])
+		);
+		expect(parseExpenseSplits(form, 42.75, new Set([payerId, collectionId]))).toEqual({
+			success: true,
+			data: [
+				{ userId: payerId, amount: 21.38 },
+				{ userId: collectionId, amount: 21.37 }
+			]
+		});
+	});
+
+	it('rejects duplicate, inactive, or inexact splits', () => {
+		const form = validExpenseForm();
+		form.set(
+			'splits_json',
+			JSON.stringify([
+				{ userId: payerId, amount: 21.37 },
+				{ userId: payerId, amount: 21.37 }
+			])
+		);
+		expect(parseExpenseSplits(form, 42.75, new Set([payerId])).success).toBe(false);
+	});
+
+	it('parses weekly and monthly recurring forms', () => {
+		const form = validExpenseForm();
+		form.set('frequency', 'monthly');
+		expect(
+			parseRecurringExpenseForm(form, {
+				collectionId,
+				activeUserIds: new Set([payerId])
+			})
+		).toMatchObject({
+			success: true,
+			data: { frequency: 'monthly', nextRun: '2026-08-06' }
+		});
 	});
 });
 
