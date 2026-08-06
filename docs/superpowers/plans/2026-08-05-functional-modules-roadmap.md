@@ -550,16 +550,16 @@ El dashboard mostrará:
 - Test: `supabase/tests/database/021_expenses_aggregates.test.sql`
 - Test: `tests/e2e/expenses.spec.ts`
 
-- [ ] **Step 1: Escribir tests de límites de mes, trimestre, año, bisiesto y rango personalizado**
-- [ ] **Step 2: Implementar cálculo UTC/fecha local sin convertir `DATE` a instantes ambiguos**
-- [ ] **Step 3: Crear funciones agregadas `SECURITY INVOKER` que respeten RLS**
-- [ ] **Step 4: Implementar total, comparación, categoría, pagador y serie temporal**
-- [ ] **Step 5: Sincronizar filtros con query string**
-- [ ] **Step 6: Implementar CSV con las mismas reglas de acceso y filtros**
-- [ ] **Step 7: Probar que viewer puede consultar/exportar y no puede mutar**
-- [ ] **Step 8: Probar 1.000+ gastos y revisar `EXPLAIN (ANALYZE, BUFFERS)` de consultas críticas**
-- [ ] **Step 9: Ejecutar test DB, unitario, E2E, check, lint y build**
-- [ ] **Step 10: Commit: `feat: add expense analytics and period filters`**
+- [x] **Step 1: Escribir tests de límites de mes, trimestre, año, bisiesto y rango personalizado**
+- [x] **Step 2: Implementar cálculo UTC/fecha local sin convertir `DATE` a instantes ambiguos**
+- [x] **Step 3: Crear funciones agregadas `SECURITY INVOKER` que respeten RLS**
+- [x] **Step 4: Implementar total, comparación, categoría, pagador y serie temporal**
+- [x] **Step 5: Sincronizar filtros con query string**
+- [x] **Step 6: Implementar CSV con las mismas reglas de acceso y filtros**
+- [x] **Step 7: Probar que viewer puede consultar/exportar y no puede mutar**
+- [x] **Step 8: Probar 1.000+ gastos y revisar `EXPLAIN (ANALYZE, BUFFERS)` de consultas críticas**
+- [x] **Step 9: Ejecutar test DB, unitario, E2E, check, lint y build**
+- [x] **Step 10: Commit: `feat: add expense analytics and period filters`**
 
 ### Task 12: Añadir reparto y recurrencia a Gastos
 

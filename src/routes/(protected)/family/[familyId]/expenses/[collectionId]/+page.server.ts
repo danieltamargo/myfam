@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Actions, PageServerLoad } from './$types';
 import type { Database } from '$lib/types/database';
+import { parseExpenseFilters } from '$lib/server/expenses/filters';
 import {
 	createExpense,
 	deleteExpense,
@@ -58,12 +59,13 @@ async function rollbackAfterFailure(
 async function loadActionContext(
 	supabase: SupabaseClient<Database>,
 	familyId: string,
-	collectionId: string
+	collectionId: string,
+	userId: string
 ): Promise<{
 	collection: ExpenseCollectionSummary;
 	activeUserIds: Set<string>;
 }> {
-	const collection = await loadExpenseCollectionShell(supabase, familyId, collectionId);
+	const collection = await loadExpenseCollectionShell(supabase, familyId, collectionId, userId);
 	if (!collection) throw new ExpenseCommandError(404, 'La colección no está disponible.');
 	const { data, error: membersError } = await supabase
 		.from('expense_collection_members')
@@ -82,10 +84,17 @@ export const load: PageServerLoad = async ({
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	const { expenseCollection } = await parent();
+	let filters;
+	try {
+		filters = parseExpenseFilters(url.searchParams);
+	} catch {
+		throw error(400, 'El intervalo de gastos no es válido.');
+	}
 	try {
 		return await loadExpenseCollectionPage(
 			supabase,
 			expenseCollection,
+			filters,
 			url.searchParams.get('cursor')
 		);
 	} catch (caught) {
@@ -102,7 +111,7 @@ export const actions: Actions = {
 		if (!user) return fail(401, { error: 'Unauthorized' });
 		let context;
 		try {
-			context = await loadActionContext(supabase, params.familyId, params.collectionId);
+			context = await loadActionContext(supabase, params.familyId, params.collectionId, user.id);
 			if (!canCreateExpense(context.collection.role) || context.collection.archivedAt)
 				throw new ExpenseCommandError(403, 'No puedes añadir gastos a esta colección.');
 		} catch (caught) {
@@ -140,7 +149,7 @@ export const actions: Actions = {
 		let context;
 		let previousPath: string | null;
 		try {
-			context = await loadActionContext(supabase, params.familyId, params.collectionId);
+			context = await loadActionContext(supabase, params.familyId, params.collectionId, user.id);
 			if (context.collection.archivedAt)
 				throw new ExpenseCommandError(403, 'La colección está archivada.');
 			const { data: current, error: currentError } = await supabase
@@ -191,7 +200,12 @@ export const actions: Actions = {
 		const identity = parseExpenseMutationIdentity(await request.formData());
 		if (!identity.success) return invalidForm(identity.errors);
 		try {
-			const context = await loadActionContext(supabase, params.familyId, params.collectionId);
+			const context = await loadActionContext(
+				supabase,
+				params.familyId,
+				params.collectionId,
+				user.id
+			);
 			if (context.collection.archivedAt)
 				throw new ExpenseCommandError(403, 'La colección está archivada.');
 			const { data: current, error: currentError } = await supabase

@@ -1599,6 +1599,19 @@ export type Database = {
 					role: string;
 				}[];
 			};
+			get_expense_dashboard: {
+				Args: {
+					p_category_id?: string;
+					p_collection_id: string;
+					p_from: string;
+					p_granularity?: string;
+					p_paid_by?: string;
+					p_previous_from: string;
+					p_previous_to: string;
+					p_to: string;
+				};
+				Returns: Json;
+			};
 			get_game_leaderboard: {
 				Args: {
 					p_family_id: string;

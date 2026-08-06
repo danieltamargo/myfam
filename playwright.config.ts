@@ -5,7 +5,8 @@ export default defineConfig({
 	fullyParallel: false,
 	forbidOnly: Boolean(process.env.CI),
 	retries: process.env.CI ? 2 : 0,
-	workers: process.env.CI ? 1 : undefined,
+	// The local Supabase Auth service rate-limits concurrent login bursts across projects.
+	workers: 1,
 	reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
 	use: {
 		baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:5173',

@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database, Tables } from '$lib/types/database';
+import type { Database, Json, Tables } from '$lib/types/database';
+import type { ExpenseFilterState } from './filters';
 import type { ExpenseCollectionRole } from './schemas';
 import { signExpenseReceiptUrls } from './receipts';
 
@@ -60,6 +61,40 @@ export interface ExpensePageData {
 	nextCursor: string | null;
 	canCreate: boolean;
 	canManage: boolean;
+	filters: ExpenseFilterState;
+	dashboard: ExpenseDashboard;
+}
+
+export interface ExpenseDashboardBreakdown {
+	id: string | null;
+	label: string;
+	color: string | null;
+	total: number;
+}
+
+export interface ExpenseSeriesPoint {
+	period: string;
+	total: number;
+}
+
+export interface ExpenseDashboard {
+	currentTotal: number;
+	previousTotal: number;
+	changePercent: number | null;
+	byCategory: ExpenseDashboardBreakdown[];
+	byPayer: ExpenseDashboardBreakdown[];
+	series: ExpenseSeriesPoint[];
+}
+
+export interface ExpenseExportRow {
+	occurredOn: string;
+	description: string;
+	amount: number;
+	currency: string;
+	category: string;
+	payer: string;
+	notes: string;
+	hasReceipt: boolean;
 }
 
 function assertQuery(error: { message: string } | null, message: string): void {
@@ -170,7 +205,8 @@ export async function loadExpenseCollections(
 export async function loadExpenseCollectionShell(
 	supabase: SupabaseClient<Database>,
 	familyId: string,
-	collectionId: string
+	collectionId: string,
+	userId: string
 ): Promise<ExpenseCollectionSummary | null> {
 	const { data, error } = await supabase
 		.from('expense_collection_members')
@@ -178,6 +214,7 @@ export async function loadExpenseCollectionShell(
 			'role, status, collection:expense_collections(id, family_id, name, description, currency, archived_at)'
 		)
 		.eq('collection_id', collectionId)
+		.eq('user_id', userId)
 		.eq('status', 'active')
 		.maybeSingle();
 	assertQuery(error, 'No se pudo cargar la colección');
@@ -219,6 +256,7 @@ async function loadMembers(
 export async function loadExpenseCollectionPage(
 	supabase: SupabaseClient<Database>,
 	collection: ExpenseCollectionSummary,
+	filters: ExpenseFilterState,
 	cursorValue?: string | null,
 	pageSize = 25
 ): Promise<ExpensePageData> {
@@ -227,6 +265,8 @@ export async function loadExpenseCollectionPage(
 		.from('expenses')
 		.select('*')
 		.eq('collection_id', collection.id)
+		.gte('occurred_on', filters.from)
+		.lte('occurred_on', filters.to)
 		.order('occurred_on', { ascending: false })
 		.order('id', { ascending: false })
 		.limit(pageSize + 1);
@@ -234,18 +274,31 @@ export async function loadExpenseCollectionPage(
 		expenseQuery = expenseQuery.or(
 			`occurred_on.lt.${cursor.occurredOn},and(occurred_on.eq.${cursor.occurredOn},id.lt.${cursor.id})`
 		);
+	if (filters.paidBy) expenseQuery = expenseQuery.eq('paid_by', filters.paidBy);
+	if (filters.categoryId) expenseQuery = expenseQuery.eq('category_id', filters.categoryId);
 
-	const [members, categoriesResult, expensesResult] = await Promise.all([
+	const [members, categoriesResult, expensesResult, dashboardResult] = await Promise.all([
 		loadMembers(supabase, collection.id),
 		supabase
 			.from('expense_categories')
 			.select('*')
 			.eq('collection_id', collection.id)
 			.order('name'),
-		expenseQuery
+		expenseQuery,
+		supabase.rpc('get_expense_dashboard', {
+			p_collection_id: collection.id,
+			p_from: filters.from,
+			p_to: filters.to,
+			p_previous_from: filters.previousFrom,
+			p_previous_to: filters.previousTo,
+			p_paid_by: filters.paidBy ?? undefined,
+			p_category_id: filters.categoryId ?? undefined,
+			p_granularity: filters.granularity
+		})
 	]);
 	assertQuery(categoriesResult.error, 'No se pudieron cargar las categorías');
 	assertQuery(expensesResult.error, 'No se pudieron cargar los gastos');
+	assertQuery(dashboardResult.error, 'No se pudo calcular el resumen');
 	const categories = categoriesResult.data ?? [];
 	const rows = expensesResult.data ?? [];
 	const hasMore = rows.length > pageSize;
@@ -267,6 +320,7 @@ export async function loadExpenseCollectionPage(
 		receiptUrl: expense.receipt_path ? (receiptUrls.get(expense.receipt_path) ?? null) : null
 	}));
 	const last = hasMore ? pageRows.at(-1) : null;
+	const dashboard = presentExpenseDashboard(dashboardResult.data, categories, members);
 	return {
 		collection,
 		members,
@@ -274,8 +328,118 @@ export async function loadExpenseCollectionPage(
 		expenses,
 		nextCursor: last ? encodeExpenseCursor(last.occurred_on, last.id) : null,
 		canCreate: collection.role !== 'viewer' && !collection.archivedAt,
-		canManage: collection.role === 'owner' || collection.role === 'manager'
+		canManage: collection.role === 'owner' || collection.role === 'manager',
+		filters,
+		dashboard
 	};
+}
+
+function jsonRecord(value: Json | undefined): Record<string, Json | undefined> {
+	return value && typeof value === 'object' && !Array.isArray(value)
+		? (value as Record<string, Json | undefined>)
+		: {};
+}
+
+function jsonArray(value: Json | undefined): Json[] {
+	return Array.isArray(value) ? value : [];
+}
+
+function presentExpenseDashboard(
+	value: Json | undefined,
+	categories: Tables<'expense_categories'>[],
+	members: ExpenseMember[]
+): ExpenseDashboard {
+	const root = jsonRecord(value);
+	const currentTotal = Number(root.current_total ?? 0);
+	const previousTotal = Number(root.previous_total ?? 0);
+	const categoryMap = new Map(categories.map((category) => [category.id, category]));
+	const memberMap = new Map(members.map((member) => [member.userId, member]));
+	const byCategory = jsonArray(root.by_category).map((item) => {
+		const record = jsonRecord(item);
+		const id = typeof record.category_id === 'string' ? record.category_id : null;
+		const category = id ? categoryMap.get(id) : null;
+		return {
+			id,
+			label: category?.name ?? 'Sin categoría',
+			color: category?.color ?? null,
+			total: Number(record.total ?? 0)
+		};
+	});
+	const byPayer = jsonArray(root.by_payer).map((item) => {
+		const record = jsonRecord(item);
+		const id = typeof record.paid_by === 'string' ? record.paid_by : null;
+		return {
+			id,
+			label: (id ? memberMap.get(id)?.profile.displayName : null) ?? 'Participante',
+			color: null,
+			total: Number(record.total ?? 0)
+		};
+	});
+	const series = jsonArray(root.series).flatMap((item) => {
+		const record = jsonRecord(item);
+		return typeof record.period === 'string'
+			? [{ period: record.period, total: Number(record.total ?? 0) }]
+			: [];
+	});
+	return {
+		currentTotal,
+		previousTotal,
+		changePercent:
+			previousTotal === 0 ? null : ((currentTotal - previousTotal) / previousTotal) * 100,
+		byCategory,
+		byPayer,
+		series
+	};
+}
+
+export async function loadExpenseExportRows(
+	supabase: SupabaseClient<Database>,
+	collection: ExpenseCollectionSummary,
+	filters: ExpenseFilterState
+): Promise<ExpenseExportRow[]> {
+	const pageSize = 1_000;
+	const maximumRows = 50_000;
+	const rows: Tables<'expenses'>[] = [];
+	for (let offset = 0; offset < maximumRows; offset += pageSize) {
+		let query = supabase
+			.from('expenses')
+			.select('*')
+			.eq('collection_id', collection.id)
+			.gte('occurred_on', filters.from)
+			.lte('occurred_on', filters.to)
+			.order('occurred_on', { ascending: false })
+			.order('id', { ascending: false })
+			.range(offset, offset + pageSize - 1);
+		if (filters.paidBy) query = query.eq('paid_by', filters.paidBy);
+		if (filters.categoryId) query = query.eq('category_id', filters.categoryId);
+		const { data, error } = await query;
+		assertQuery(error, 'No se pudieron exportar los gastos');
+		rows.push(...(data ?? []));
+		if ((data?.length ?? 0) < pageSize) break;
+	}
+	const [profiles, categoriesResult] = await Promise.all([
+		loadProfiles(
+			supabase,
+			rows.map((row) => row.paid_by)
+		),
+		supabase.from('expense_categories').select('id, name').eq('collection_id', collection.id)
+	]);
+	assertQuery(categoriesResult.error, 'No se pudieron cargar las categorías para la exportación');
+	const categories = new Map(
+		(categoriesResult.data ?? []).map((category) => [category.id, category.name])
+	);
+	return rows.map((row) => ({
+		occurredOn: row.occurred_on,
+		description: row.description,
+		amount: Number(row.amount),
+		currency: collection.currency,
+		category: row.category_id
+			? (categories.get(row.category_id) ?? 'Sin categoría')
+			: 'Sin categoría',
+		payer: profiles.get(row.paid_by)?.displayName ?? 'Participante',
+		notes: row.notes ?? '',
+		hasReceipt: Boolean(row.receipt_path)
+	}));
 }
 
 export async function loadExpenseSettings(

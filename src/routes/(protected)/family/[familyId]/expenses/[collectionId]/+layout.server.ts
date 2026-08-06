@@ -9,7 +9,8 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 		const expenseCollection = await loadExpenseCollectionShell(
 			supabase,
 			params.familyId,
-			params.collectionId
+			params.collectionId,
+			user.id
 		);
 		if (!expenseCollection) throw error(404, 'Colección de gastos no encontrada.');
 		return { expenseCollection, currentUserId: user.id };
