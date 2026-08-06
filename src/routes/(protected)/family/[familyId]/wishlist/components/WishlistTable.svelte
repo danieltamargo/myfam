@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-
-	type GiftItem = any;
+	import type { WishlistItemDto } from '$lib/server/wishlist/presenters';
 
 	let {
 		items,
@@ -15,7 +14,7 @@
 		onOpenDetail,
 		onOpenEdit
 	}: {
-		items: GiftItem[];
+		items: WishlistItemDto[];
 		currentUserId: string;
 		isMyItem: (itemId: string) => boolean;
 		isPurchased: (itemId: string) => boolean;
@@ -23,8 +22,8 @@
 		getPriorityLabel: (priority: number) => string;
 		getPriorityColor: (priority: number) => string;
 		formatPrice: (price: number | null) => string;
-		onOpenDetail: (item: any) => void;
-		onOpenEdit: (item: any) => void;
+		onOpenDetail: (item: WishlistItemDto) => void;
+		onOpenEdit: (item: WishlistItemDto) => void;
 	} = $props();
 
 	let togglingItemId = $state<string | null>(null);
@@ -110,7 +109,7 @@
 						</td>
 						<td>
 							<div class="flex flex-wrap gap-1">
-								{#each item.gift_item_events || [] as eventLink}
+								{#each item.gift_item_events || [] as eventLink (eventLink.event_category_id)}
 									{#if eventLink.gift_event_categories}
 										<span class="text-sm">
 											{eventLink.gift_event_categories.icon}

@@ -4,6 +4,11 @@
 	import { page } from '$app/stores';
 	import { invalidateAll } from '$app/navigation';
 	import type { PageData } from './$types';
+	import type {
+		WishlistCommentDto,
+		WishlistItemDto,
+		WishlistReservationDto
+	} from '$lib/server/wishlist/presenters';
 
 	// Import components
 	import WishlistHeader from './components/WishlistHeader.svelte';
@@ -22,7 +27,7 @@
 	let selectedPurchaseStatus = $state<'all' | 'purchased' | 'not_purchased'>('all');
 	let showDetailModal = $state(false);
 	let showEditModal = $state(false);
-	let selectedItem = $state<any>(null);
+	let selectedItem = $state<WishlistItemDto | null>(null);
 
 	// Form state for create/edit
 	let formData = $state({
@@ -47,7 +52,7 @@
 	}
 
 	// Computed: filtered items
-	let filteredItems = $derived(() => {
+	let filteredItems = $derived.by(() => {
 		let items = data.items;
 
 		// Filter by member
@@ -58,7 +63,7 @@
 		// Filter by event
 		if (selectedEventId !== 'all') {
 			items = items.filter((item) =>
-				item.gift_item_events?.some((e: any) => e.event_category_id === selectedEventId)
+				item.gift_item_events.some((event) => event.event_category_id === selectedEventId)
 			);
 		}
 
@@ -74,7 +79,7 @@
 	});
 
 	// Get "Todos" event ID
-	let todosEventId = $derived(() => {
+	let todosEventId = $derived.by(() => {
 		return data.eventCategories.find((e) => e.name === 'Todos')?.id || '';
 	});
 
@@ -89,7 +94,7 @@
 	}
 
 	// Get all reservations for an item
-	function getReservations(itemId: string): any[] {
+	function getReservations(itemId: string): WishlistReservationDto[] {
 		return data.allReservations.filter((r) => r.item_id === itemId);
 	}
 
@@ -100,12 +105,12 @@
 	}
 
 	// Get comments for an item
-	function getComments(itemId: string): any[] {
+	function getComments(itemId: string): WishlistCommentDto[] {
 		return data.comments.filter((c) => c.item_id === itemId);
 	}
 
 	// Open detail modal
-	function openDetailModal(item: any) {
+	function openDetailModal(item: WishlistItemDto) {
 		selectedItem = item;
 		showDetailModal = true;
 	}
@@ -124,12 +129,13 @@
 	});
 
 	// Open edit modal
-	function openEditModal(item?: any) {
+	function openEditModal(item?: WishlistItemDto) {
 		if (item) {
 			// Edit existing item
 			selectedItem = item;
 			const itemLinks = item.links || [];
 			const itemImages = item.image_url ? [item.image_url] : [];
+			const selectedEventIds = item.gift_item_events.map((event) => event.event_category_id);
 
 			formData = {
 				name: item.name,
@@ -139,7 +145,7 @@
 				image_url: item.image_url || '',
 				images: itemImages,
 				links: itemLinks,
-				event_ids: item.gift_item_events?.map((e: any) => e.event_category_id) || [todosEventId()]
+				event_ids: selectedEventIds.length > 0 ? selectedEventIds : [todosEventId]
 			};
 
 			// Show sections if there's data
@@ -156,7 +162,7 @@
 				image_url: '',
 				images: [],
 				links: [],
-				event_ids: [todosEventId()]
+				event_ids: [todosEventId]
 			};
 
 			// Reset section visibility
@@ -262,7 +268,7 @@
 
 	// Toggle event selection
 	function toggleEvent(eventId: string) {
-		const todos = todosEventId();
+		const todos = todosEventId;
 		const isTodos = eventId === todos;
 
 		if (isTodos) {
@@ -357,7 +363,7 @@
 		<div class="min-w-0 flex-1">
 			{#if viewMode === 'cards'}
 				<WishlistCards
-					items={filteredItems()}
+					items={filteredItems}
 					currentUserId={data.currentUserId}
 					{isMyItem}
 					{isPurchased}
@@ -371,7 +377,7 @@
 				/>
 			{:else}
 				<WishlistTable
-					items={filteredItems()}
+					items={filteredItems}
 					currentUserId={data.currentUserId}
 					{isMyItem}
 					{isPurchased}
@@ -410,7 +416,7 @@
 	<WishlistEditModal
 		item={selectedItem}
 		eventCategories={data.eventCategories}
-		todosEventId={todosEventId()}
+		{todosEventId}
 		bind:formData
 		bind:showLinksSection
 		bind:showImagesSection

@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import GiftComments from '$lib/components/wishlist/GiftComments.svelte';
-
-	type GiftItem = any;
-	type Member = any;
+	import type {
+		WishlistCommentDto,
+		WishlistItemDto,
+		WishlistMemberDto,
+		WishlistReservationDto
+	} from '$lib/server/wishlist/presenters';
 
 	let {
 		item,
@@ -19,14 +22,14 @@
 		formatPrice,
 		onClose
 	}: {
-		item: GiftItem | null;
-		members: Member[];
+		item: WishlistItemDto | null;
+		members: WishlistMemberDto[];
 		currentUserId: string;
 		isMyItem: (itemId: string) => boolean;
 		isPurchasedByMe: (itemId: string) => boolean;
 		isReservedByMe: (itemId: string) => boolean;
-		getReservations: (itemId: string) => any[];
-		getComments: (itemId: string) => any[];
+		getReservations: (itemId: string) => WishlistReservationDto[];
+		getComments: (itemId: string) => WishlistCommentDto[];
 		getPriorityLabel: (priority: number) => string;
 		getPriorityColor: (priority: number) => string;
 		formatPrice: (price: number | null) => string;
@@ -99,7 +102,7 @@
 							<div>
 								<span class="font-semibold">Enlaces:</span>
 								<ul class="mt-1 list-inside list-disc">
-									{#each item.links as link}
+									{#each item.links as link (link)}
 										<li>
 											<a
 												href={link}
@@ -118,7 +121,7 @@
 						<div>
 							<span class="font-semibold">Eventos:</span>
 							<div class="mt-1 flex flex-wrap gap-1">
-								{#each item.gift_item_events || [] as eventLink}
+								{#each item.gift_item_events || [] as eventLink (eventLink.event_category_id)}
 									{#if eventLink.gift_event_categories}
 										<span
 											class="badge"
@@ -325,6 +328,11 @@
 				<button class="btn" onclick={onClose}>Cerrar</button>
 			</div>
 		</div>
-		<div class="modal-backdrop" onclick={onClose}></div>
+		<button
+			type="button"
+			class="modal-backdrop cursor-default"
+			aria-label="Cerrar"
+			onclick={onClose}
+		></button>
 	</div>
 {/if}

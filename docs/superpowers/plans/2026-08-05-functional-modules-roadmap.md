@@ -347,14 +347,14 @@ Wishlist se considera terminada cuando:
 - Test: `src/lib/server/wishlist/schemas.test.ts`
 - Test: `src/lib/server/wishlist/presenters.test.ts`
 
-- [ ] **Step 1: Escribir tests para nombres vacíos, precios negativos, monedas inválidas, URLs inseguras y cantidades**
-- [ ] **Step 2: Definir esquemas que acepten únicamente `https:` para enlaces externos y límites explícitos de longitud**
-- [ ] **Step 3: Mover lecturas a `queries.ts` y devolver DTOs sin datos anti-spoiler al owner**
-- [ ] **Step 4: Mover mutaciones a `commands.ts` y usar las RPC atómicas**
-- [ ] **Step 5: Reducir `+page.server.ts` a carga, parseo, autorización y delegación**
-- [ ] **Step 6: Eliminar `any` relacionados con Wishlist**
-- [ ] **Step 7: Ejecutar tests unitarios y `npm run check`**
-- [ ] **Step 8: Commit: `refactor: isolate wishlist domain logic`**
+- [x] **Step 1: Escribir tests para nombres vacíos, precios negativos, monedas inválidas, URLs inseguras y cantidades**
+- [x] **Step 2: Definir esquemas que acepten únicamente `https:` para enlaces externos y límites explícitos de longitud**
+- [x] **Step 3: Mover lecturas a `queries.ts` y devolver DTOs sin datos anti-spoiler al owner**
+- [x] **Step 4: Mover mutaciones a `commands.ts` y usar las RPC atómicas**
+- [x] **Step 5: Reducir `+page.server.ts` a carga, parseo, autorización y delegación**
+- [x] **Step 6: Eliminar `any` relacionados con Wishlist**
+- [x] **Step 7: Ejecutar tests unitarios y `npm run check`**
+- [x] **Step 8: Commit: `refactor: isolate wishlist domain logic`**
 
 ### Task 7: Unificar create/edit y eliminar XSS
 
