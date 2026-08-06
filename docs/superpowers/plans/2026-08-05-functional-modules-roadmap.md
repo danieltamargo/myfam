@@ -502,17 +502,17 @@ El dashboard mostrará:
 - Create: `src/lib/server/expenses/schemas.ts`
 - Create: `src/lib/server/expenses/commands.ts`
 
-- [ ] **Step 1: Escribir pgTAP para owner/manager/contributor/viewer, invitado y miembro no invitado**
-- [ ] **Step 2: Crear las cuatro tablas y todos los índices/FK descritos**
-- [ ] **Step 3: Crear RPC transaccional `create_expense_collection` que active al creador como owner**
-- [ ] **Step 4: Crear RPC `invite_expense_collection_member` y `accept_expense_collection_invitation`**
-- [ ] **Step 5: Crear RPC `change_expense_collection_role` y `transfer_expense_collection_ownership`**
-- [ ] **Step 6: Aplicar RLS: solo miembros activos leen; los cambios de membresía/rol pasan exclusivamente por RPC; contributor muta solo gastos propios; viewer solo lee**
-- [ ] **Step 7: Revocar o abandonar mediante cambio de estado para conservar referencias históricas y retirar acceso inmediatamente**
-- [ ] **Step 8: Validar que family owner sin membresía no puede ver la colección**
-- [ ] **Step 9: Fijar `search_path`, revocar ejecución no necesaria y regenerar tipos**
-- [ ] **Step 10: Ejecutar `npm run test:db`**
-- [ ] **Step 11: Commit: `feat: add private expense collections and acl`**
+- [x] **Step 1: Escribir pgTAP para owner/manager/contributor/viewer, invitado y miembro no invitado**
+- [x] **Step 2: Crear las cuatro tablas y todos los índices/FK descritos**
+- [x] **Step 3: Crear RPC transaccional `create_expense_collection` que active al creador como owner**
+- [x] **Step 4: Crear RPC `invite_expense_collection_member` y `accept_expense_collection_invitation`**
+- [x] **Step 5: Crear RPC `change_expense_collection_role` y `transfer_expense_collection_ownership`**
+- [x] **Step 6: Aplicar RLS: solo miembros activos leen; los cambios de membresía/rol pasan exclusivamente por RPC; contributor muta solo gastos propios; viewer solo lee**
+- [x] **Step 7: Revocar o abandonar mediante cambio de estado para conservar referencias históricas y retirar acceso inmediatamente**
+- [x] **Step 8: Validar que family owner sin membresía no puede ver la colección**
+- [x] **Step 9: Fijar `search_path`, revocar ejecución no necesaria y regenerar tipos**
+- [x] **Step 10: Ejecutar `npm run test:db`**
+- [x] **Step 11: Commit: `feat: add private expense collections and acl`**
 
 ### Task 10: Implementar gestión de colecciones y gastos
 

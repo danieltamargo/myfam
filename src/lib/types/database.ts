@@ -86,6 +86,267 @@ export type Database = {
 					}
 				];
 			};
+			expense_categories: {
+				Row: {
+					collection_id: string;
+					color: string | null;
+					icon: string | null;
+					id: string;
+					name: string;
+				};
+				Insert: {
+					collection_id: string;
+					color?: string | null;
+					icon?: string | null;
+					id?: string;
+					name: string;
+				};
+				Update: {
+					collection_id?: string;
+					color?: string | null;
+					icon?: string | null;
+					id?: string;
+					name?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'expense_categories_collection_id_fkey';
+						columns: ['collection_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collections';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			expense_collection_members: {
+				Row: {
+					collection_id: string;
+					invited_by: string | null;
+					joined_at: string | null;
+					removed_at: string | null;
+					role: string;
+					status: string;
+					user_id: string;
+				};
+				Insert: {
+					collection_id: string;
+					invited_by?: string | null;
+					joined_at?: string | null;
+					removed_at?: string | null;
+					role: string;
+					status?: string;
+					user_id: string;
+				};
+				Update: {
+					collection_id?: string;
+					invited_by?: string | null;
+					joined_at?: string | null;
+					removed_at?: string | null;
+					role?: string;
+					status?: string;
+					user_id?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'expense_collection_members_collection_id_fkey';
+						columns: ['collection_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collections';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expense_collection_members_invited_by_fkey';
+						columns: ['invited_by'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expense_collection_members_invited_by_fkey';
+						columns: ['invited_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expense_collection_members_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expense_collection_members_user_id_fkey';
+						columns: ['user_id'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			expense_collections: {
+				Row: {
+					archived_at: string | null;
+					created_at: string;
+					created_by: string;
+					currency: string;
+					description: string | null;
+					family_id: string;
+					id: string;
+					name: string;
+					updated_at: string;
+				};
+				Insert: {
+					archived_at?: string | null;
+					created_at?: string;
+					created_by: string;
+					currency?: string;
+					description?: string | null;
+					family_id: string;
+					id?: string;
+					name: string;
+					updated_at?: string;
+				};
+				Update: {
+					archived_at?: string | null;
+					created_at?: string;
+					created_by?: string;
+					currency?: string;
+					description?: string | null;
+					family_id?: string;
+					id?: string;
+					name?: string;
+					updated_at?: string;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'expense_collections_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expense_collections_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expense_collections_family_id_fkey';
+						columns: ['family_id'];
+						isOneToOne: false;
+						referencedRelation: 'families';
+						referencedColumns: ['id'];
+					}
+				];
+			};
+			expenses: {
+				Row: {
+					amount: number;
+					category_id: string | null;
+					collection_id: string;
+					created_at: string;
+					created_by: string;
+					description: string;
+					id: string;
+					notes: string | null;
+					occurred_on: string;
+					paid_by: string;
+					receipt_path: string | null;
+					updated_at: string;
+					version: number;
+				};
+				Insert: {
+					amount: number;
+					category_id?: string | null;
+					collection_id: string;
+					created_at?: string;
+					created_by: string;
+					description: string;
+					id?: string;
+					notes?: string | null;
+					occurred_on: string;
+					paid_by: string;
+					receipt_path?: string | null;
+					updated_at?: string;
+					version?: number;
+				};
+				Update: {
+					amount?: number;
+					category_id?: string | null;
+					collection_id?: string;
+					created_at?: string;
+					created_by?: string;
+					description?: string;
+					id?: string;
+					notes?: string | null;
+					occurred_on?: string;
+					paid_by?: string;
+					receipt_path?: string | null;
+					updated_at?: string;
+					version?: number;
+				};
+				Relationships: [
+					{
+						foreignKeyName: 'expenses_collection_id_category_id_fkey';
+						columns: ['collection_id', 'category_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_categories';
+						referencedColumns: ['collection_id', 'id'];
+					},
+					{
+						foreignKeyName: 'expenses_collection_id_created_by_fkey';
+						columns: ['collection_id', 'created_by'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collection_members';
+						referencedColumns: ['collection_id', 'user_id'];
+					},
+					{
+						foreignKeyName: 'expenses_collection_id_fkey';
+						columns: ['collection_id'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collections';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expenses_collection_id_paid_by_fkey';
+						columns: ['collection_id', 'paid_by'];
+						isOneToOne: false;
+						referencedRelation: 'expense_collection_members';
+						referencedColumns: ['collection_id', 'user_id'];
+					},
+					{
+						foreignKeyName: 'expenses_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expenses_created_by_fkey';
+						columns: ['created_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expenses_paid_by_fkey';
+						columns: ['paid_by'];
+						isOneToOne: false;
+						referencedRelation: 'profiles';
+						referencedColumns: ['id'];
+					},
+					{
+						foreignKeyName: 'expenses_paid_by_fkey';
+						columns: ['paid_by'];
+						isOneToOne: false;
+						referencedRelation: 'public_profiles';
+						referencedColumns: ['id'];
+					}
+				];
+			};
 			external_connections: {
 				Row: {
 					access_token: string | null;
@@ -1294,12 +1555,29 @@ export type Database = {
 			};
 		};
 		Functions: {
+			accept_expense_collection_invitation: {
+				Args: { p_collection_id: string };
+				Returns: undefined;
+			};
 			accept_family_invitation: {
 				Args: { p_invitation_id: string };
 				Returns: string;
 			};
 			add_bot_to_room: {
 				Args: { p_difficulty?: string; p_room_id: string };
+				Returns: string;
+			};
+			change_expense_collection_role: {
+				Args: { p_collection_id: string; p_role: string; p_user_id: string };
+				Returns: undefined;
+			};
+			create_expense_collection: {
+				Args: {
+					p_currency?: string;
+					p_description?: string;
+					p_family_id: string;
+					p_name: string;
+				};
 				Returns: string;
 			};
 			create_family: { Args: { p_name: string }; Returns: string };
@@ -1364,6 +1642,10 @@ export type Database = {
 				Args: { item_uuid: string; user_uuid: string };
 				Returns: boolean;
 			};
+			invite_expense_collection_member: {
+				Args: { p_collection_id: string; p_role?: string; p_user_id: string };
+				Returns: undefined;
+			};
 			invite_family_member: {
 				Args: { p_email: string; p_family_id: string };
 				Returns: string;
@@ -1371,6 +1653,10 @@ export type Database = {
 			is_room_owner: {
 				Args: { p_room_id: string; p_user_id: string };
 				Returns: boolean;
+			};
+			leave_expense_collection: {
+				Args: { p_collection_id: string };
+				Returns: undefined;
 			};
 			purchase_gift_item: {
 				Args: { p_item_id: string; p_quantity?: number };
@@ -1391,6 +1677,14 @@ export type Database = {
 			reserve_gift_item: {
 				Args: { p_item_id: string; p_quantity?: number; p_status?: string };
 				Returns: string;
+			};
+			revoke_expense_collection_member: {
+				Args: { p_collection_id: string; p_user_id: string };
+				Returns: undefined;
+			};
+			transfer_expense_collection_ownership: {
+				Args: { p_collection_id: string; p_new_owner_id: string };
+				Returns: undefined;
 			};
 			transfer_family_ownership: {
 				Args: { p_family_id: string; p_target_user_id: string };
