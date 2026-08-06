@@ -11,8 +11,10 @@ describe('project test baseline', () => {
 		expect(cn('px-2', optionalClass ? 'hidden' : undefined, 'px-4')).toBe('px-4');
 	});
 
-	it('keeps Wishlist core and Games globally disabled', () => {
+	it('keeps Wishlist core, exposes Expenses and disables Games globally', () => {
 		expect(MODULE_CATALOG.wishlist.availability).toBe('core');
+		expect(MODULE_CATALOG.expenses.availability).toBe('available');
+		expect(getNavigationModules().some((module) => module.id === 'expenses')).toBe(true);
 		expect(MODULE_CATALOG.games.availability).toBe('disabled');
 		expect(getNavigationModules().some((module) => module.id === 'games')).toBe(false);
 		expect(() => requireModuleAvailable('games')).toThrowError(

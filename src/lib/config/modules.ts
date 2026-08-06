@@ -47,7 +47,7 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 		id: 'expenses',
 		label: 'Gastos',
 		icon: '💶',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'expenses')
 	},

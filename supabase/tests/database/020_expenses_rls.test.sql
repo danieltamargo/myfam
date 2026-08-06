@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(53);
+select plan(57);
 
 insert into auth.users (id, role, email, raw_user_meta_data, created_at, updated_at)
 values
@@ -62,7 +62,7 @@ insert into public.expense_categories (id, collection_id, name, color, icon)
 values (
   '20000000-3000-4000-8000-000000000001',
   '20000000-2000-4000-8000-000000000001',
-  'Hogar',
+  'Vivienda',
   '#336699',
   'home'
 );
@@ -109,6 +109,8 @@ select has_function('public', 'change_expense_collection_role', array['uuid', 'u
 select has_function('public', 'transfer_expense_collection_ownership', array['uuid', 'uuid'], 'ownership transfer RPC exists');
 select has_function('public', 'revoke_expense_collection_member', array['uuid', 'uuid'], 'revocation RPC exists');
 select has_function('public', 'leave_expense_collection', array['uuid'], 'leave RPC exists');
+select has_function('public', 'get_expense_collection_invitations', array[]::text[], 'pending invitation RPC exists');
+select is((select public from storage.buckets where id = 'expense-receipts'), false, 'expense receipt bucket is private');
 select ok(not has_table_privilege('authenticated', 'public.expense_collection_members', 'insert'), 'membership cannot be inserted directly');
 select ok(not has_table_privilege('authenticated', 'public.expense_collection_members', 'update'), 'membership cannot be updated directly');
 select ok(not has_table_privilege('authenticated', 'public.expense_collection_members', 'delete'), 'membership cannot be deleted directly');
@@ -212,6 +214,7 @@ set local role authenticated;
 select is((select count(*)::integer from public.expense_collections), 0, 'invited member cannot read collection data before accepting');
 select is((select count(*)::integer from public.expenses), 0, 'invited member cannot read expenses before accepting');
 select is((select count(*)::integer from public.expense_collection_members), 1, 'invited member sees only their invitation row');
+select is((select count(*)::integer from public.get_expense_collection_invitations()), 1, 'invited member can read minimal invitation details');
 select lives_ok(
   $$select public.accept_expense_collection_invitation('20000000-2000-4000-8000-000000000001')$$,
   'invited member can accept atomically'
@@ -239,6 +242,7 @@ select is(
   1,
   'collection creation activates exactly one owner'
 );
+select is((select count(*)::integer from public.expense_categories), 7, 'new collection receives domestic default categories');
 
 reset role;
 select set_config('request.jwt.claims', '{"sub":"20000000-0000-4000-8000-000000000007","role":"authenticated","aal":"aal1"}', true);

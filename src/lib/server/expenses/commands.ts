@@ -1,6 +1,10 @@
 import type { PostgrestError, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
-import type { AssignableExpenseCollectionRole, ExpenseCollectionInput } from './schemas';
+import type {
+	AssignableExpenseCollectionRole,
+	ExpenseCollectionInput,
+	ExpenseInput
+} from './schemas';
 
 export class ExpenseCommandError extends Error {
 	constructor(
@@ -112,4 +116,134 @@ export async function leaveExpenseCollection(
 		p_collection_id: collectionId
 	});
 	if (error) throwExpenseCommandError(error, 'No se pudo abandonar la colección.');
+}
+
+export async function updateExpenseCollection(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	input: ExpenseCollectionInput
+): Promise<void> {
+	const { data, error } = await supabase
+		.from('expense_collections')
+		.update({ name: input.name, description: input.description, currency: input.currency })
+		.eq('id', collectionId)
+		.select('id')
+		.maybeSingle();
+	if (error) throwExpenseCommandError(error, 'No se pudo actualizar la colección.');
+	if (!data) throw new ExpenseCommandError(404, 'La colección no existe o no puedes editarla.');
+}
+
+export async function setExpenseCollectionArchived(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	archived: boolean
+): Promise<void> {
+	const { data, error } = await supabase
+		.from('expense_collections')
+		.update({ archived_at: archived ? new Date().toISOString() : null })
+		.eq('id', collectionId)
+		.select('id')
+		.maybeSingle();
+	if (error) throwExpenseCommandError(error, 'No se pudo cambiar el estado de la colección.');
+	if (!data) throw new ExpenseCommandError(404, 'La colección no existe o no puedes editarla.');
+}
+
+export async function createExpenseCategory(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	name: string,
+	color: string | null
+): Promise<void> {
+	const { error } = await supabase
+		.from('expense_categories')
+		.insert({ collection_id: collectionId, name, color });
+	if (error) throwExpenseCommandError(error, 'No se pudo crear la categoría.');
+}
+
+export async function deleteExpenseCategory(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	categoryId: string
+): Promise<void> {
+	const { error } = await supabase
+		.from('expense_categories')
+		.delete()
+		.eq('collection_id', collectionId)
+		.eq('id', categoryId);
+	if (error) throwExpenseCommandError(error, 'No se pudo eliminar la categoría.');
+}
+
+export async function createExpense(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	createdBy: string,
+	input: ExpenseInput
+): Promise<string> {
+	const { data, error } = await supabase
+		.from('expenses')
+		.insert({
+			collection_id: collectionId,
+			category_id: input.categoryId,
+			created_by: createdBy,
+			paid_by: input.paidBy,
+			description: input.description,
+			amount: input.amount,
+			occurred_on: input.occurredOn,
+			notes: input.notes,
+			receipt_path: input.receiptPath
+		})
+		.select('id')
+		.single();
+	if (error) throwExpenseCommandError(error, 'No se pudo crear el gasto.');
+	return data.id;
+}
+
+export async function updateExpense(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	expenseId: string,
+	version: number,
+	input: ExpenseInput
+): Promise<void> {
+	const { data, error } = await supabase
+		.from('expenses')
+		.update({
+			category_id: input.categoryId,
+			paid_by: input.paidBy,
+			description: input.description,
+			amount: input.amount,
+			occurred_on: input.occurredOn,
+			notes: input.notes,
+			receipt_path: input.receiptPath
+		})
+		.eq('collection_id', collectionId)
+		.eq('id', expenseId)
+		.eq('version', version)
+		.select('id')
+		.maybeSingle();
+	if (error) throwExpenseCommandError(error, 'No se pudo actualizar el gasto.');
+	if (!data)
+		throw new ExpenseCommandError(
+			409,
+			'El gasto cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'
+		);
+}
+
+export async function deleteExpense(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	expenseId: string,
+	version: number
+): Promise<string | null> {
+	const { data, error } = await supabase
+		.from('expenses')
+		.delete()
+		.eq('collection_id', collectionId)
+		.eq('id', expenseId)
+		.eq('version', version)
+		.select('receipt_path')
+		.maybeSingle();
+	if (error) throwExpenseCommandError(error, 'No se pudo eliminar el gasto.');
+	if (!data) throw new ExpenseCommandError(409, 'El gasto ya cambió o dejó de estar disponible.');
+	return data.receipt_path;
 }

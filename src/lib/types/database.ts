@@ -1587,6 +1587,18 @@ export type Database = {
 				Returns: string[];
 			};
 			generate_join_code: { Args: never; Returns: string };
+			get_expense_collection_invitations: {
+				Args: never;
+				Returns: {
+					collection_id: string;
+					collection_name: string;
+					currency: string;
+					description: string;
+					family_id: string;
+					invited_by: string;
+					role: string;
+				}[];
+			};
 			get_game_leaderboard: {
 				Args: {
 					p_family_id: string;

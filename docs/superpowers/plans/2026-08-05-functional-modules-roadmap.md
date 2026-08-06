@@ -527,16 +527,16 @@ El dashboard mostrará:
 - Create: `src/routes/(protected)/family/[familyId]/expenses/[collectionId]/settings/+page.server.ts`
 - Create: `src/routes/(protected)/family/[familyId]/expenses/[collectionId]/settings/+page.svelte`
 
-- [ ] **Step 1: Escribir tests unitarios de moneda, importe, fecha, participante y permisos**
-- [ ] **Step 2: Implementar listado de colecciones accesibles con invitaciones pendientes**
-- [ ] **Step 3: Implementar alta, edición y archivo de colección**
-- [ ] **Step 4: Implementar gestión de participantes y roles según la matriz**
-- [ ] **Step 5: Implementar categorías personalizadas con un conjunto inicial doméstico**
-- [ ] **Step 6: Implementar CRUD de gastos con control optimista por `version`**
-- [ ] **Step 7: Subir recibos a bucket privado y entregar URLs firmadas de corta duración**
-- [ ] **Step 8: Añadir paginación cursor `(occurred_on, id)`**
-- [ ] **Step 9: Ejecutar `svelte-autofixer` y tests**
-- [ ] **Step 10: Commit: `feat: implement expense collection management`**
+- [x] **Step 1: Escribir tests unitarios de moneda, importe, fecha, participante y permisos**
+- [x] **Step 2: Implementar listado de colecciones accesibles con invitaciones pendientes**
+- [x] **Step 3: Implementar alta, edición y archivo de colección**
+- [x] **Step 4: Implementar gestión de participantes y roles según la matriz**
+- [x] **Step 5: Implementar categorías personalizadas con un conjunto inicial doméstico**
+- [x] **Step 6: Implementar CRUD de gastos con control optimista por `version`**
+- [x] **Step 7: Subir recibos a bucket privado y entregar URLs firmadas de corta duración**
+- [x] **Step 8: Añadir paginación cursor `(occurred_on, id)`**
+- [x] **Step 9: Ejecutar `svelte-autofixer` y tests**
+- [x] **Step 10: Commit: `feat: implement expense collection management`**
 
 ### Task 11: Implementar dashboard temporal de Gastos
 
