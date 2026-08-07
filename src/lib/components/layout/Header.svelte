@@ -39,10 +39,10 @@
 	// Initialize active family from server data
 	$effect(() => {
 		if (initialActiveFamily && !$activeFamily) {
-			activeFamily.set(initialActiveFamily);
+			$activeFamily = initialActiveFamily;
 		} else if (families.length > 0 && !$activeFamily) {
 			// Fallback: select first family if no active family
-			activeFamily.set(families[0]);
+			$activeFamily = families[0];
 		}
 	});
 
@@ -76,20 +76,26 @@
 	}
 </script>
 
-<header class="navbar bg-base-200 px-4 shadow-md">
-	<div class="navbar-start">
-		<a href="/dashboard" class="btn text-xl font-bold btn-ghost"> MyFamily </a>
+<header class="navbar min-w-0 bg-base-200 px-2 shadow-md sm:px-4">
+	<div class="navbar-start w-auto shrink-0">
+		<a href="/dashboard" class="btn px-2 text-lg font-bold btn-ghost sm:px-4 sm:text-xl">
+			MyFamily
+		</a>
 	</div>
 
-	<div class="navbar-center">
+	<div class="navbar-center min-w-0 flex-1">
 		{#if $activeFamily}
-			<div class="dropdown">
-				<div tabindex="0" role="button" class="btn gap-2 btn-ghost">
-					<span class="text-lg">👨‍👩‍👧‍👦</span>
-					<span class="font-semibold">{$activeFamily.name}</span>
+			<div class="dropdown max-w-full min-w-0">
+				<div
+					tabindex="0"
+					role="button"
+					class="btn max-w-full min-w-0 gap-1 px-2 btn-ghost sm:gap-2 sm:px-4"
+				>
+					<span class="shrink-0 text-lg">👨‍👩‍👧‍👦</span>
+					<span class="max-w-20 truncate font-semibold sm:max-w-48">{$activeFamily.name}</span>
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
-						class="h-4 w-4"
+						class="hidden h-4 w-4 shrink-0 sm:block"
 						fill="none"
 						viewBox="0 0 24 24"
 						stroke="currentColor"
@@ -103,13 +109,13 @@
 					</svg>
 				</div>
 				<ul
-					tabindex="0"
-					class="dropdown-content menu z-[1] mt-2 w-64 rounded-box bg-base-200 p-2 shadow"
+					tabindex="-1"
+					class="dropdown-content menu left-1/2 z-[1] mt-2 w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-box bg-base-200 p-2 shadow"
 				>
 					<li class="menu-title">
 						<span>Switch Family</span>
 					</li>
-					{#each families as family}
+					{#each families as family (family.id)}
 						<li>
 							<button
 								onclick={() => selectFamily(family.id)}
@@ -144,7 +150,7 @@
 		{/if}
 	</div>
 
-	<div class="navbar-end gap-2">
+	<div class="navbar-end w-auto shrink-0 gap-1 sm:gap-2">
 		{#if user}
 			<!-- Notifications Bell -->
 			{#if user.id}
@@ -178,7 +184,7 @@
 						<span>{user.user_metadata?.full_name || user.email}</span>
 					</li>
 					<div class="divider my-1"></div>
-					{#each navItems as item}
+					{#each navItems as item (item.href)}
 						<li>
 							<a href={item.href} class={isActive(item.href) ? 'active' : ''}>
 								<span>{item.icon}</span>

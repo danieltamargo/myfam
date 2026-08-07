@@ -599,14 +599,14 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Test: `supabase/tests/database/030_calendar_rls.test.sql`
 - Test: `tests/e2e/calendar.spec.ts`
 
-- [ ] **Step 1: Modelar eventos con inicio/fin `timestamptz`, zona horaria IANA, all-day y participantes**
-- [ ] **Step 2: Implementar visibilidad `family` o `selected_members`**
-- [ ] **Step 3: Implementar repetición diaria/semanal/mensual con horizonte acotado**
-- [ ] **Step 4: Crear vistas mensual y agenda, más filtros por participante**
-- [ ] **Step 5: Añadir recordatorios internos y deep links seguros**
-- [ ] **Step 6: Permitir vínculo opcional entre categoría Wishlist y evento sin fusionar ambos conceptos**
-- [ ] **Step 7: Probar DST, eventos cruzando medianoche, RLS y recurrencia**
-- [ ] **Step 8: Commit: `feat: add shared family calendar`**
+- [x] **Step 1: Modelar eventos con inicio/fin `timestamptz`, zona horaria IANA, all-day y participantes**
+- [x] **Step 2: Implementar visibilidad `family` o `selected_members`**
+- [x] **Step 3: Implementar repetición diaria/semanal/mensual con horizonte acotado**
+- [x] **Step 4: Crear vistas mensual y agenda, más filtros por participante**
+- [x] **Step 5: Añadir recordatorios internos y deep links seguros**
+- [x] **Step 6: Permitir vínculo opcional entre categoría Wishlist y evento sin fusionar ambos conceptos**
+- [x] **Step 7: Probar DST, eventos cruzando medianoche, RLS y recurrencia**
+- [x] **Step 8: Commit: `feat: add shared family calendar`**
 
 ### Task 14: Tareas y listas de compra
 
