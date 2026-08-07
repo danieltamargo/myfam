@@ -702,6 +702,149 @@ export type Database = {
           },
         ]
       }
+      family_document_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          document_id: string
+          family_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          document_id: string
+          family_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          document_id?: string
+          family_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_document_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_document_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_document_members_family_id_document_id_fkey"
+            columns: ["family_id", "document_id"]
+            isOneToOne: false
+            referencedRelation: "family_documents"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "family_document_members_family_id_user_id_fkey"
+            columns: ["family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "family_document_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_document_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_documents: {
+        Row: {
+          created_at: string
+          display_name: string
+          expires_at: string | null
+          family_id: string
+          folder_name: string | null
+          id: string
+          mime_type: string
+          original_name: string
+          owner_id: string
+          size_bytes: number
+          status: string
+          storage_path: string
+          updated_at: string
+          version: number
+          visibility: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          expires_at?: string | null
+          family_id: string
+          folder_name?: string | null
+          id?: string
+          mime_type: string
+          original_name: string
+          owner_id: string
+          size_bytes: number
+          status?: string
+          storage_path: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          expires_at?: string | null
+          family_id?: string
+          folder_name?: string | null
+          id?: string
+          mime_type?: string
+          original_name?: string
+          owner_id?: string
+          size_bytes?: number
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_documents_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_documents_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_habit_members: {
         Row: {
           added_at: string
@@ -3071,9 +3214,35 @@ export type Database = {
         Returns: string
       }
       archive_family_habit: { Args: { p_habit_id: string }; Returns: undefined }
+      begin_family_document_upload: {
+        Args: {
+          p_display_name: string
+          p_expires_at?: string
+          p_family_id: string
+          p_folder_name?: string
+          p_member_ids?: string[]
+          p_mime_type: string
+          p_original_name: string
+          p_size_bytes: number
+          p_visibility?: string
+        }
+        Returns: Json
+      }
+      cancel_family_document_upload: {
+        Args: { p_document_id: string }
+        Returns: undefined
+      }
       change_expense_collection_role: {
         Args: { p_collection_id: string; p_role: string; p_user_id: string }
         Returns: undefined
+      }
+      complete_family_document_delete: {
+        Args: { p_document_id: string }
+        Returns: undefined
+      }
+      complete_family_document_upload: {
+        Args: { p_document_id: string }
+        Returns: number
       }
       copy_recipe_ingredients_to_list: {
         Args: { p_list_id: string; p_recipe_id: string }
@@ -3342,6 +3511,14 @@ export type Database = {
         Args: { p_collection_id: string }
         Returns: undefined
       }
+      prepare_family_document_delete: {
+        Args: { p_document_id: string; p_version: number }
+        Returns: string
+      }
+      prepare_family_document_download: {
+        Args: { p_document_id: string }
+        Returns: string
+      }
       process_calendar_reminders: {
         Args: { p_limit?: number; p_now?: string }
         Returns: number
@@ -3374,6 +3551,10 @@ export type Database = {
       reserve_gift_item: {
         Args: { p_item_id: string; p_quantity?: number; p_status?: string }
         Returns: string
+      }
+      restore_family_document_delete: {
+        Args: { p_document_id: string }
+        Returns: number
       }
       revoke_expense_collection_member: {
         Args: { p_collection_id: string; p_user_id: string }
@@ -3457,6 +3638,17 @@ export type Database = {
           p_version: number
         }
         Returns: undefined
+      }
+      update_family_document_access: {
+        Args: {
+          p_document_id: string
+          p_expires_at: string
+          p_folder_name: string
+          p_member_ids: string[]
+          p_version: number
+          p_visibility: string
+        }
+        Returns: number
       }
       update_family_note: {
         Args: {

@@ -708,13 +708,13 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Create: `src/routes/(protected)/family/[familyId]/documents/+page.svelte`
 - Test: `supabase/tests/database/060_documents_rls.test.sql`
 
-- [ ] **Step 1: Crear bucket privado y tabla de metadatos con propietario, miembros autorizados y caducidad opcional**
-- [ ] **Step 2: Validar tamaño, MIME permitido y nombre; no confiar en extensión**
-- [ ] **Step 3: Entregar descargas mediante URL firmada de corta duración**
-- [ ] **Step 4: Registrar subida, descarga sensible, cambio de permiso y borrado**
-- [ ] **Step 5: Implementar carpetas lógicas sin rutas proporcionadas directamente por el usuario**
-- [ ] **Step 6: Probar que un owner de familia no puede abrir documentos privados sin permiso explícito**
-- [ ] **Step 7: Commit: `feat: add private family documents`**
+- [x] **Step 1: Crear bucket privado y tabla de metadatos con propietario, miembros autorizados y caducidad opcional**
+- [x] **Step 2: Validar tamaño, MIME permitido y nombre; no confiar en extensión**
+- [x] **Step 3: Entregar descargas mediante URL firmada de corta duración**
+- [x] **Step 4: Registrar subida, descarga sensible, cambio de permiso y borrado**
+- [x] **Step 5: Implementar carpetas lógicas sin rutas proporcionadas directamente por el usuario**
+- [x] **Step 6: Probar que un owner de familia no puede abrir documentos privados sin permiso explícito**
+- [x] **Step 7: Commit: `feat: add private family documents`**
 
 ---
 
