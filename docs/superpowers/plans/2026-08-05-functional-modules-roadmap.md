@@ -689,12 +689,12 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Create: `src/routes/(protected)/family/[familyId]/habits/+page.server.ts`
 - Create: `src/routes/(protected)/family/[familyId]/habits/+page.svelte`
 
-- [ ] **Step 1: Modelar plan semanal de comidas y recetas sencillas**
-- [ ] **Step 2: Permitir copiar ingredientes a una lista de compra seleccionada**
-- [ ] **Step 3: Modelar hábitos como privados por defecto y compartibles con miembros seleccionados**
-- [ ] **Step 4: Registrar cumplimiento diario sin puntos, rachas públicas ni rankings**
-- [ ] **Step 5: Probar privacidad, límites de fecha e integración con listas**
-- [ ] **Step 6: Commit: `feat: add meal planning and private habits`**
+- [x] **Step 1: Modelar plan semanal de comidas y recetas sencillas**
+- [x] **Step 2: Permitir copiar ingredientes a una lista de compra seleccionada**
+- [x] **Step 3: Modelar hábitos como privados por defecto y compartibles con miembros seleccionados**
+- [x] **Step 4: Registrar cumplimiento diario sin puntos, rachas públicas ni rankings**
+- [x] **Step 5: Probar privacidad, límites de fecha e integración con listas**
+- [x] **Step 6: Commit: `feat: add meal planning and private habits`**
 
 ### Task 18: Documentos familiares
 

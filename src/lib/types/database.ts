@@ -702,6 +702,137 @@ export type Database = {
           },
         ]
       }
+      family_habit_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          family_id: string
+          habit_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          family_id: string
+          habit_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          family_id?: string
+          habit_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_habit_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_habit_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_habit_members_family_id_habit_id_fkey"
+            columns: ["family_id", "habit_id"]
+            isOneToOne: false
+            referencedRelation: "family_habits"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "family_habit_members_family_id_user_id_fkey"
+            columns: ["family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "family_habit_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_habit_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_habits: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          family_id: string
+          id: string
+          start_on: string
+          title: string
+          updated_at: string
+          version: number
+          visibility: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          family_id: string
+          id?: string
+          start_on?: string
+          title: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          family_id?: string
+          id?: string
+          start_on?: string
+          title?: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_habits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_habits_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_habits_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_invitations: {
         Row: {
           created_at: string | null
@@ -1202,6 +1333,70 @@ export type Database = {
           },
           {
             foreignKeyName: "family_notes_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_recipes: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          family_id: string
+          id: string
+          instructions: string | null
+          servings: number
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          family_id: string
+          id?: string
+          instructions?: string | null
+          servings?: number
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          family_id?: string
+          id?: string
+          instructions?: string | null
+          servings?: number
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_recipes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_recipes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_recipes_family_id_fkey"
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
@@ -2017,6 +2212,127 @@ export type Database = {
           },
         ]
       }
+      habit_completions: {
+        Row: {
+          completed_by: string
+          completed_on: string
+          created_at: string
+          family_id: string
+          habit_id: string
+        }
+        Insert: {
+          completed_by: string
+          completed_on: string
+          created_at?: string
+          family_id: string
+          habit_id: string
+        }
+        Update: {
+          completed_by?: string
+          completed_on?: string
+          created_at?: string
+          family_id?: string
+          habit_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habit_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "habit_completions_family_id_completed_by_fkey"
+            columns: ["family_id", "completed_by"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "habit_completions_family_id_habit_id_fkey"
+            columns: ["family_id", "habit_id"]
+            isOneToOne: false
+            referencedRelation: "family_habits"
+            referencedColumns: ["family_id", "id"]
+          },
+        ]
+      }
+      meal_plan_entries: {
+        Row: {
+          created_at: string
+          created_by: string
+          family_id: string
+          id: string
+          meal_type: string
+          notes: string | null
+          planned_on: string
+          recipe_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          family_id: string
+          id?: string
+          meal_type: string
+          notes?: string | null
+          planned_on: string
+          recipe_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          family_id?: string
+          id?: string
+          meal_type?: string
+          notes?: string | null
+          planned_on?: string
+          recipe_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plan_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_entries_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_entries_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meal_plan_entries_family_id_recipe_id_fkey"
+            columns: ["family_id", "recipe_id"]
+            isOneToOne: false
+            referencedRelation: "family_recipes"
+            referencedColumns: ["family_id", "id"]
+          },
+        ]
+      }
       notes: {
         Row: {
           content: string
@@ -2164,6 +2480,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "families"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      recipe_ingredients: {
+        Row: {
+          created_at: string
+          family_id: string
+          id: string
+          name: string
+          quantity: number | null
+          recipe_id: string
+          sort_order: number
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string
+          family_id: string
+          id?: string
+          name: string
+          quantity?: number | null
+          recipe_id: string
+          sort_order: number
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string
+          family_id?: string
+          id?: string
+          name?: string
+          quantity?: number | null
+          recipe_id?: string
+          sort_order?: number
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipe_ingredients_family_id_recipe_id_fkey"
+            columns: ["family_id", "recipe_id"]
+            isOneToOne: false
+            referencedRelation: "family_recipes"
+            referencedColumns: ["family_id", "id"]
           },
         ]
       }
@@ -2713,9 +3070,14 @@ export type Database = {
         }
         Returns: string
       }
+      archive_family_habit: { Args: { p_habit_id: string }; Returns: undefined }
       change_expense_collection_role: {
         Args: { p_collection_id: string; p_role: string; p_user_id: string }
         Returns: undefined
+      }
+      copy_recipe_ingredients_to_list: {
+        Args: { p_list_id: string; p_recipe_id: string }
+        Returns: number
       }
       create_calendar_event: {
         Args: {
@@ -2761,6 +3123,17 @@ export type Database = {
         Returns: string
       }
       create_family: { Args: { p_name: string }; Returns: string }
+      create_family_habit: {
+        Args: {
+          p_description: string
+          p_family_id: string
+          p_member_ids?: string[]
+          p_start_on?: string
+          p_title: string
+          p_visibility?: string
+        }
+        Returns: string
+      }
       create_family_list: {
         Args: {
           p_description: string
@@ -2778,6 +3151,17 @@ export type Database = {
           p_member_ids?: string[]
           p_title: string
           p_visibility?: string
+        }
+        Returns: string
+      }
+      create_family_recipe: {
+        Args: {
+          p_description: string
+          p_family_id: string
+          p_ingredients: Json
+          p_instructions: string
+          p_servings: number
+          p_title: string
         }
         Returns: string
       }
@@ -2982,6 +3366,7 @@ export type Database = {
         Args: { p_coordination_type?: string; p_item_id: string }
         Returns: undefined
       }
+      remove_family_meal: { Args: { p_entry_id: string }; Returns: undefined }
       remove_family_member: {
         Args: { p_family_id: string; p_target_user_id: string }
         Returns: undefined
@@ -2993,6 +3378,24 @@ export type Database = {
       revoke_expense_collection_member: {
         Args: { p_collection_id: string; p_user_id: string }
         Returns: undefined
+      }
+      schedule_family_meal: {
+        Args: {
+          p_family_id: string
+          p_meal_type: string
+          p_notes?: string
+          p_planned_on: string
+          p_recipe_id: string
+        }
+        Returns: string
+      }
+      set_family_habit_completion: {
+        Args: {
+          p_completed: boolean
+          p_completed_on: string
+          p_habit_id: string
+        }
+        Returns: boolean
       }
       set_family_list_item_completed: {
         Args: { p_completed: boolean; p_item_id: string; p_version: number }
