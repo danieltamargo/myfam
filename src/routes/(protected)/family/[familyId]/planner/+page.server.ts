@@ -4,7 +4,7 @@ import { requireModuleAvailable } from '$lib/server/modules/availability';
 import { loadPlannerSnapshot, PlannerQueryError } from '$lib/server/planner/queries';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
-	requireModuleAvailable('planner');
+	await requireModuleAvailable(supabase, params.familyId, 'planner');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	try {

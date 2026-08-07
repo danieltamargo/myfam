@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { requireModuleAvailable } from '$lib/server/modules/availability';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import {
 	createFamilyNote,
 	NoteCommandError,
@@ -34,7 +34,7 @@ export const load: PageServerLoad = async ({
 	params,
 	locals: { supabase, safeGetSession }
 }) => {
-	requireModuleAvailable('notes');
+	await requireModuleAvailable(supabase, params.familyId, 'notes');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	const { filter, search, noteId } = parseNoteFilter(url.searchParams);
@@ -67,7 +67,7 @@ async function parseNoteRequest(
 	};
 }
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createNote: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -119,3 +119,5 @@ export const actions: Actions = {
 		}
 	}
 };
+
+export const actions: Actions = guardModuleActions('notes', moduleActions);

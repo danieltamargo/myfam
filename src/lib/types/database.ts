@@ -1302,31 +1302,31 @@ export type Database = {
       }
       family_modules: {
         Row: {
-          enabled: boolean | null
+          enabled: boolean
           enabled_at: string | null
           enabled_by: string | null
-          family_id: string | null
+          family_id: string
           id: string
           module_name: string
-          settings: Json | null
+          settings: Json
         }
         Insert: {
-          enabled?: boolean | null
+          enabled?: boolean
           enabled_at?: string | null
           enabled_by?: string | null
-          family_id?: string | null
+          family_id: string
           id?: string
           module_name: string
-          settings?: Json | null
+          settings?: Json
         }
         Update: {
-          enabled?: boolean | null
+          enabled?: boolean
           enabled_at?: string | null
           enabled_by?: string | null
-          family_id?: string | null
+          family_id?: string
           id?: string
           module_name?: string
-          settings?: Json | null
+          settings?: Json
         }
         Relationships: [
           {
@@ -3581,6 +3581,24 @@ export type Database = {
       set_family_list_item_completed: {
         Args: { p_completed: boolean; p_item_id: string; p_version: number }
         Returns: number
+      }
+      set_family_module_preference: {
+        Args: { p_enabled: boolean; p_family_id: string; p_module_name: string }
+        Returns: {
+          enabled: boolean
+          enabled_at: string | null
+          enabled_by: string | null
+          family_id: string
+          id: string
+          module_name: string
+          settings: Json
+        }
+        SetofOptions: {
+          from: "*"
+          to: "family_modules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       set_family_note_archived: {
         Args: { p_archived: boolean; p_note_id: string; p_version: number }

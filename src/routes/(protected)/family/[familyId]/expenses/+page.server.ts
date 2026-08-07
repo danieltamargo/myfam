@@ -1,5 +1,6 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import {
 	acceptExpenseCollectionInvitation,
 	createExpenseCollection,
@@ -26,6 +27,7 @@ function commandFailure(caught: unknown, fallback: string) {
 }
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	await requireModuleAvailable(supabase, params.familyId, 'expenses');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	try {
@@ -37,7 +39,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	}
 };
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createCollection: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -65,3 +67,5 @@ export const actions: Actions = {
 		throw redirect(303, `/family/${params.familyId}/expenses/${parsed.data}`);
 	}
 };
+
+export const actions: Actions = guardModuleActions('expenses', moduleActions);

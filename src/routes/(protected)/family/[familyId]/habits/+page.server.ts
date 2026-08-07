@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { requireModuleAvailable } from '$lib/server/modules/availability';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import {
 	archiveFamilyHabit,
 	createFamilyHabit,
@@ -30,7 +30,7 @@ function commandFailure(caught: unknown, fallback: string) {
 }
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
-	requireModuleAvailable('habits');
+	await requireModuleAvailable(supabase, params.familyId, 'habits');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	try {
@@ -46,7 +46,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	}
 };
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createHabit: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -98,3 +98,5 @@ export const actions: Actions = {
 		}
 	}
 };
+
+export const actions: Actions = guardModuleActions('habits', moduleActions);

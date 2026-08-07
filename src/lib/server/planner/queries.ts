@@ -1,9 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { MODULE_CATALOG } from '$lib/config/modules';
+import { resolveModuleAccess } from '$lib/server/modules/availability';
 import type { Database } from '$lib/types/database';
 
 const PLANNER_MODULE_IDS = ['wishlist', 'expenses', 'calendar', 'tasks', 'lists'] as const;
-const PLANNER_PREFERENCE_NAMES = ['expenses', 'calendar', 'events', 'tasks', 'lists'] as const;
+const PLANNER_PREFERENCE_NAMES = ['expenses', 'calendar', 'tasks', 'lists'] as const;
 
 type PlannerModuleId = (typeof PLANNER_MODULE_IDS)[number];
 
@@ -77,17 +77,11 @@ function isoDate(date: Date): string {
 export function resolvePlannerModules(
 	preferences: ReadonlyArray<{ module_name: string; enabled: boolean | null }>
 ): PlannerModuleState {
-	const preferencesById = new Map(preferences.map((row) => [row.module_name, row.enabled]));
 	return Object.fromEntries(
-		PLANNER_MODULE_IDS.map((moduleId) => {
-			const definition = MODULE_CATALOG[moduleId];
-			const enabled =
-				definition.availability === 'core' ||
-				(definition.availability !== 'disabled' &&
-					(preferencesById.get(moduleId) === true ||
-						(moduleId === 'calendar' && preferencesById.get('events') === true)));
-			return [moduleId, enabled];
-		})
+		PLANNER_MODULE_IDS.map((moduleId) => [
+			moduleId,
+			resolveModuleAccess(moduleId, preferences).enabled
+		])
 	) as PlannerModuleState;
 }
 

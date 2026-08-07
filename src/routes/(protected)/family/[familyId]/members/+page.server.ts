@@ -1,8 +1,10 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
 import { requireAal2 } from '$lib/server/auth/authorization';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	requireModuleAvailable('members');
 	const { user } = await safeGetSession();
 	const { familyId } = params;
 
@@ -46,7 +48,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	};
 };
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	inviteMember: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { message: 'Unauthorized' });
@@ -252,3 +254,5 @@ export const actions: Actions = {
 		return { success: true, message: 'Family deleted', redirect: '/families' };
 	}
 };
+
+export const actions: Actions = guardModuleActions('members', moduleActions);

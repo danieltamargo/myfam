@@ -28,7 +28,7 @@ describe('resolvePlannerModules', () => {
 		});
 	});
 
-	it('reconoce la preferencia legacy events hasta su migración de catálogo', () => {
-		expect(resolvePlannerModules([{ module_name: 'events', enabled: true }]).calendar).toBe(true);
+	it('ignora nombres legacy después de migrar el catálogo', () => {
+		expect(resolvePlannerModules([{ module_name: 'events', enabled: true }]).calendar).toBe(false);
 	});
 });

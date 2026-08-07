@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Actions, PageServerLoad } from './$types';
 import type { Database } from '$lib/types/database';
+import { guardModuleActions } from '$lib/server/modules/availability';
 import { parseExpenseFilters } from '$lib/server/expenses/filters';
 import {
 	createExpense,
@@ -111,7 +112,7 @@ export const load: PageServerLoad = async ({
 	}
 };
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createExpense: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -294,3 +295,5 @@ export const actions: Actions = {
 		}
 	}
 };
+
+export const actions: Actions = guardModuleActions('expenses', moduleActions);

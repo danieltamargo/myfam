@@ -7,12 +7,14 @@ import {
 	loadExpenseCollectionShell,
 	loadExpenseExportRows
 } from '$lib/server/expenses/queries';
+import { requireModuleAvailable } from '$lib/server/modules/availability';
 
 export const GET: RequestHandler = async ({
 	params,
 	url,
 	locals: { supabase, safeGetSession }
 }) => {
+	await requireModuleAvailable(supabase, params.familyId, 'expenses');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	let filters;

@@ -729,14 +729,14 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Create: `src/routes/(protected)/family/[familyId]/settings/modules/+page.svelte`
 - Test: `supabase/tests/database/070_module_preferences_rls.test.sql`
 
-- [ ] **Step 1: Migrar `family_modules.module_name` al catálogo objetivo sin usarlo como entitlement**
-- [ ] **Step 2: Marcar Wishlist/Members como core y no deshabilitables**
-- [ ] **Step 3: Permitir a owner/admin habilitar módulos `available`**
-- [ ] **Step 4: Mantener Juegos `disabled` aunque exista una fila familiar habilitada**
-- [ ] **Step 5: Aplicar guardas servidor a todas las rutas de módulo**
-- [ ] **Step 6: Probar matriz global/preferencia familiar y acceso por URL directa**
-- [ ] **Step 7: Documentar la futura interfaz `module entitlement provider` sin implementar pagos**
-- [ ] **Step 8: Commit: `feat: centralize module availability and preferences`**
+- [x] **Step 1: Migrar `family_modules.module_name` al catálogo objetivo sin usarlo como entitlement**
+- [x] **Step 2: Marcar Wishlist/Members como core y no deshabilitables**
+- [x] **Step 3: Permitir a owner/admin habilitar módulos `available`**
+- [x] **Step 4: Mantener Juegos `disabled` aunque exista una fila familiar habilitada**
+- [x] **Step 5: Aplicar guardas servidor a todas las rutas de módulo**
+- [x] **Step 6: Probar matriz global/preferencia familiar y acceso por URL directa**
+- [x] **Step 7: Documentar la futura interfaz `module entitlement provider` sin implementar pagos**
+- [x] **Step 8: Commit: `feat: centralize module availability and preferences`**
 
 ### Task 20: Cierre de producto
 

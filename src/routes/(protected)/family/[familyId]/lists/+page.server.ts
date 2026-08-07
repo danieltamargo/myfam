@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { requireModuleAvailable } from '$lib/server/modules/availability';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import {
 	addFamilyListItem,
 	createFamilyList,
@@ -35,7 +35,7 @@ export const load: PageServerLoad = async ({
 	params,
 	locals: { supabase, safeGetSession }
 }) => {
-	requireModuleAvailable('lists');
+	await requireModuleAvailable(supabase, params.familyId, 'lists');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	try {
@@ -50,7 +50,7 @@ export const load: PageServerLoad = async ({
 	}
 };
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createList: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -113,3 +113,5 @@ export const actions: Actions = {
 		}
 	}
 };
+
+export const actions: Actions = guardModuleActions('lists', moduleActions);

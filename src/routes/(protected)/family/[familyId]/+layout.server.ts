@@ -1,5 +1,6 @@
 import type { LayoutServerLoad } from './$types';
 import { error, redirect } from '@sveltejs/kit';
+import { loadFamilyModuleAccess } from '$lib/server/modules/availability';
 
 export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -23,6 +24,7 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 	}
 
 	const family = membership.family as any;
+	const moduleAccess = await loadFamilyModuleAccess(supabase, familyId);
 
 	return {
 		family: {
@@ -31,6 +33,7 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 			createdAt: family.created_at,
 			createdBy: family.created_by
 		},
-		userRole: membership.role
+		userRole: membership.role,
+		moduleAccess
 	};
 };

@@ -1,6 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { requireModuleAvailable } from '$lib/server/modules/availability';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import {
 	createCalendarEvent,
 	deleteCalendarEvent,
@@ -39,7 +39,7 @@ export const load: PageServerLoad = async ({
 	params,
 	locals: { supabase, safeGetSession }
 }) => {
-	requireModuleAvailable('calendar');
+	await requireModuleAvailable(supabase, params.familyId, 'calendar');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	const { userRole } = await parent();
@@ -73,7 +73,7 @@ async function parseEventRequest(
 	};
 }
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createEvent: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -120,3 +120,5 @@ export const actions: Actions = {
 		}
 	}
 };
+
+export const actions: Actions = guardModuleActions('calendar', moduleActions);

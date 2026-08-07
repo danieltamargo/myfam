@@ -14,12 +14,35 @@ describe('project test baseline', () => {
 	it('keeps Wishlist core, exposes Expenses and disables Games globally', () => {
 		expect(MODULE_CATALOG.wishlist.availability).toBe('core');
 		expect(MODULE_CATALOG.expenses.availability).toBe('available');
-		expect(getNavigationModules().some((module) => module.id === 'expenses')).toBe(true);
+		expect(getNavigationModules([]).some((module) => module.id === 'expenses')).toBe(false);
+		expect(getNavigationModules(['expenses']).some((module) => module.id === 'expenses')).toBe(
+			true
+		);
+		expect(getNavigationModules([]).map((module) => module.id)).toEqual(['members', 'wishlist']);
 		expect(MODULE_CATALOG.games.availability).toBe('disabled');
-		expect(getNavigationModules().some((module) => module.id === 'games')).toBe(false);
+		expect(getNavigationModules(['games']).some((module) => module.id === 'games')).toBe(false);
 		expect(() => requireModuleAvailable('games')).toThrowError(
 			expect.objectContaining({ status: 404 })
 		);
+	});
+
+	it('publishes every completed organizational module as available', () => {
+		for (const moduleId of [
+			'expenses',
+			'calendar',
+			'tasks',
+			'lists',
+			'notes',
+			'planner',
+			'meals',
+			'habits',
+			'documents'
+		] as const) {
+			expect(MODULE_CATALOG[moduleId]).toMatchObject({
+				availability: 'available',
+				familyCanDisable: true
+			});
+		}
 	});
 
 	it.each([

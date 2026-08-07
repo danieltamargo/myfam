@@ -1,8 +1,10 @@
 import { error } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 import { loadExpenseCollectionShell, ExpenseQueryError } from '$lib/server/expenses/queries';
+import { requireModuleAvailable } from '$lib/server/modules/availability';
 
 export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	await requireModuleAvailable(supabase, params.familyId, 'expenses');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	try {

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import type { Snippet } from 'svelte';
 	import { getNavigationModules } from '$lib/config/modules';
 	import type { LayoutData } from './$types';
@@ -12,11 +13,14 @@
 	let { data, children }: Props = $props();
 
 	const modules = $derived(
-		getNavigationModules().map((module) => ({
+		getNavigationModules(
+			data.moduleAccess.filter((access) => access.enabled).map((access) => access.moduleId)
+		).map((module) => ({
 			...module,
 			href: module.href(data.family.id)
 		}))
 	);
+	const settingsHref = $derived(`/family/${encodeURIComponent(data.family.id)}/settings/modules`);
 
 	function isActive(href: string) {
 		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
@@ -29,7 +33,7 @@
 			{#each modules as module (module.id)}
 				<a
 					role="tab"
-					href={module.href}
+					href={resolve(...([module.href] as unknown as ['/']))}
 					aria-current={isActive(module.href) ? 'page' : undefined}
 					aria-selected={isActive(module.href)}
 					class="tab gap-2 whitespace-nowrap"
@@ -39,6 +43,17 @@
 					{module.label}
 				</a>
 			{/each}
+			<a
+				role="tab"
+				href={resolve(...([settingsHref] as unknown as ['/']))}
+				aria-current={isActive(settingsHref) ? 'page' : undefined}
+				aria-selected={isActive(settingsHref)}
+				class="tab gap-2 whitespace-nowrap"
+				class:tab-active={isActive(settingsHref)}
+			>
+				<span aria-hidden="true" class="text-lg">⚙️</span>
+				Módulos
+			</a>
 		</div>
 	</nav>
 

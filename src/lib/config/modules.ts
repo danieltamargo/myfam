@@ -17,6 +17,7 @@ export type ModuleAvailability = 'core' | 'available' | 'preview' | 'disabled';
 export interface ModuleDefinition {
 	id: ModuleId;
 	label: string;
+	description: string;
 	icon: string;
 	availability: ModuleAvailability;
 	familyCanDisable: boolean;
@@ -30,6 +31,7 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 	members: {
 		id: 'members',
 		label: 'Miembros',
+		description: 'Personas, invitaciones y roles de la familia.',
 		icon: '👥',
 		availability: 'core',
 		familyCanDisable: false,
@@ -38,6 +40,7 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 	wishlist: {
 		id: 'wishlist',
 		label: 'Wishlist',
+		description: 'Regalos, reservas y coordinación sin spoilers.',
 		icon: '🎁',
 		availability: 'core',
 		familyCanDisable: false,
@@ -46,6 +49,7 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 	expenses: {
 		id: 'expenses',
 		label: 'Gastos',
+		description: 'Colecciones privadas, repartos y análisis de gastos.',
 		icon: '💶',
 		availability: 'available',
 		familyCanDisable: true,
@@ -54,70 +58,79 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 	calendar: {
 		id: 'calendar',
 		label: 'Calendario',
+		description: 'Eventos compartidos, recurrencias y recordatorios.',
 		icon: '📅',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'calendar')
 	},
 	tasks: {
 		id: 'tasks',
 		label: 'Tareas',
+		description: 'Tareas familiares con responsables y fechas.',
 		icon: '✅',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'tasks')
 	},
 	lists: {
 		id: 'lists',
 		label: 'Listas',
+		description: 'Listas de compra compartidas y privadas.',
 		icon: '🛒',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'lists')
 	},
 	notes: {
 		id: 'notes',
 		label: 'Notas',
+		description: 'Notas seguras con visibilidad seleccionable.',
 		icon: '📝',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'notes')
 	},
 	planner: {
 		id: 'planner',
 		label: 'Planner',
+		description: 'Vista unificada de la actividad familiar próxima.',
 		icon: '🗓️',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'planner')
 	},
 	meals: {
 		id: 'meals',
 		label: 'Comidas',
+		description: 'Plan semanal, recetas e ingredientes para comprar.',
 		icon: '🍽️',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'meals')
 	},
 	habits: {
 		id: 'habits',
 		label: 'Hábitos',
+		description: 'Rutinas privadas o compartidas sin gamificación.',
 		icon: '🌱',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'habits')
 	},
 	documents: {
 		id: 'documents',
 		label: 'Documentos',
+		description: 'Archivos privados con permisos y caducidad.',
 		icon: '📁',
-		availability: 'preview',
+		availability: 'available',
 		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'documents')
 	},
 	games: {
 		id: 'games',
 		label: 'Juegos',
+		description: 'Conservado para una fase futura; no está disponible.',
 		icon: '🎮',
 		availability: 'disabled',
 		familyCanDisable: false,
@@ -125,7 +138,7 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 	}
 };
 
-const MODULE_ORDER: ModuleId[] = [
+export const MODULE_ORDER: readonly ModuleId[] = [
 	'members',
 	'wishlist',
 	'expenses',
@@ -140,8 +153,23 @@ const MODULE_ORDER: ModuleId[] = [
 	'games'
 ];
 
-export function getNavigationModules(): ModuleDefinition[] {
-	return MODULE_ORDER.map((moduleId) => MODULE_CATALOG[moduleId]).filter(
-		(module) => module.availability === 'core' || module.availability === 'available'
+export const FAMILY_CONFIGURABLE_MODULE_IDS = MODULE_ORDER.filter(
+	(moduleId) => MODULE_CATALOG[moduleId].familyCanDisable
+);
+
+export function getModuleDefinitions(): ModuleDefinition[] {
+	return MODULE_ORDER.map((moduleId) => MODULE_CATALOG[moduleId]);
+}
+
+export function isModuleId(value: unknown): value is ModuleId {
+	return typeof value === 'string' && Object.hasOwn(MODULE_CATALOG, value);
+}
+
+export function getNavigationModules(enabledModuleIds: readonly ModuleId[]): ModuleDefinition[] {
+	const enabled = new Set(enabledModuleIds);
+	return getModuleDefinitions().filter(
+		(module) =>
+			module.availability === 'core' ||
+			(module.availability === 'available' && enabled.has(module.id))
 	);
 }

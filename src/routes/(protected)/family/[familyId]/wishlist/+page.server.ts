@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import {
 	createWishlistComment,
 	createWishlistItem,
@@ -64,6 +65,7 @@ async function rollbackAfterFailure(
 }
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+	requireModuleAvailable('wishlist');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 
@@ -77,7 +79,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 	}
 };
 
-export const actions: Actions = {
+const moduleActions: Actions = {
 	createItem: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -237,3 +239,5 @@ export const actions: Actions = {
 		}
 	}
 };
+
+export const actions: Actions = guardModuleActions('wishlist', moduleActions);
