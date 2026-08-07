@@ -751,16 +751,16 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Modify: `messages/en.json`
 - Modify: `src/routes/+page.svelte`
 
-- [ ] **Step 1: Eliminar de la portada promesas de módulos aún no terminados**
-- [ ] **Step 2: Documentar arquitectura, roles familiares, ACL de Gastos y privacidad anti-spoiler**
-- [ ] **Step 3: Completar traducciones y evitar cadenas mezcladas**
-- [ ] **Step 4: Ejecutar auditoría de accesibilidad, rendimiento, SEO y mejores prácticas**
-- [ ] **Step 5: Ejecutar `npm run verify`, `npm run test:db` y `npm run test:e2e`**
-- [ ] **Step 6: Reiniciar Supabase desde cero y aplicar todas las migraciones**
-- [ ] **Step 7: Verificar backup/restore, exportación y borrado de cuenta**
-- [ ] **Step 8: Realizar prueba manual con tres usuarios, dos familias y dos colecciones privadas**
-- [ ] **Step 9: Publicar una auditoría final con riesgos residuales explícitos**
-- [ ] **Step 10: Commit: `docs: close functional product roadmap`**
+- [x] **Step 1: Eliminar de la portada promesas de módulos aún no terminados**
+- [x] **Step 2: Documentar arquitectura, roles familiares, ACL de Gastos y privacidad anti-spoiler**
+- [x] **Step 3: Completar traducciones y evitar cadenas mezcladas**
+- [x] **Step 4: Ejecutar auditoría de accesibilidad, rendimiento, SEO y mejores prácticas**
+- [x] **Step 5: Ejecutar `npm run verify`, `npm run test:db` y `npm run test:e2e`**
+- [x] **Step 6: Reiniciar Supabase desde cero y aplicar todas las migraciones**
+- [x] **Step 7: Verificar backup/restore, exportación y borrado de cuenta**
+- [x] **Step 8: Realizar prueba manual con tres usuarios, dos familias y dos colecciones privadas**
+- [x] **Step 9: Publicar una auditoría final con riesgos residuales explícitos**
+- [x] **Step 10: Commit: `docs: close functional product roadmap`**
 
 ## 9. Definition of Done para cualquier módulo
 

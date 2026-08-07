@@ -18,6 +18,10 @@ additional_redirect_urls = [
   "http://localhost:5173/*"
 ]
 
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
+
 [auth.external.google]
 enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"

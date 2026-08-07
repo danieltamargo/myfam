@@ -1,4 +1,90 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hello, {name} from en!"
+	"hello_world": "Hello, {name} from MyFamily",
+	"meta": {
+		"title": "MyFamily — Private family organization",
+		"description": "Coordinate calendars, tasks, expenses, lists, gifts, and family documents with clear permissions and private spaces."
+	},
+	"nav": {
+		"skip": "Skip to content",
+		"modules": "Modules",
+		"privacy": "Privacy",
+		"login": "Sign in",
+		"create_account": "Create account"
+	},
+	"hero": {
+		"eyebrow": "Family organization, without the noise",
+		"title": "One shared place for everything that keeps your family moving.",
+		"subtitle": "Calendars, tasks, expenses, lists, gifts, and documents with permissions that respect every private space.",
+		"cta_primary": "Create my family space",
+		"cta_secondary": "Explore modules",
+		"trust_private": "Privacy by design",
+		"trust_modular": "Configurable modules",
+		"trust_control": "Clear roles and permissions"
+	},
+	"preview": {
+		"aria_label": "Family planner example",
+		"label": "This week",
+		"title": "Everything important, in view",
+		"event_time": "6:30 PM",
+		"event_title": "Dentist check-up",
+		"task_label": "Task",
+		"task_title": "Pack the school bag",
+		"expense_label": "Expenses",
+		"expense_title": "Shared grocery run",
+		"wishlist_label": "Wishlist",
+		"wishlist_title": "Spoiler-free coordination"
+	},
+	"modules": {
+		"eyebrow": "Available now",
+		"title": "Practical tools for everyday family life",
+		"description": "Members and Wishlist are always on. Family administrators enable the rest according to each household's needs.",
+		"wishlist": {
+			"title": "Spoiler-free Wishlist",
+			"description": "Share wishes and coordinate reservations, purchases, and comments without revealing the surprise to the recipient."
+		},
+		"planning": {
+			"title": "Calendar, tasks, and lists",
+			"description": "Organize events, assignees, due dates, and shopping with family or selected-member visibility."
+		},
+		"expenses": {
+			"title": "Collection-based expenses",
+			"description": "Create private spaces with their own roles, splits, recurring entries, filters, analytics, and CSV export."
+		},
+		"private": {
+			"title": "Private notes and documents",
+			"description": "Choose who can read each note or file and download documents through temporary links."
+		},
+		"wellbeing": {
+			"title": "Meals and habits",
+			"description": "Plan meals and recipes, and track personal or shared routines without public leaderboards."
+		},
+		"planner": {
+			"title": "Family planner",
+			"description": "Bring together upcoming activity you are already allowed to see without weakening each module's privacy."
+		}
+	},
+	"privacy": {
+		"eyebrow": "Privacy is not a final setting",
+		"title": "Every piece of data keeps its context and permissions.",
+		"description": "MyFamily checks access in the application and again in PostgreSQL. Knowing a URL does not grant access.",
+		"family_title": "Family",
+		"family_description": "Owner, admin, and member roles define household administration.",
+		"collection_title": "Collection",
+		"collection_description": "Expenses have their own ACL; family membership alone is not enough.",
+		"item_title": "Content",
+		"item_description": "Notes, lists, habits, and documents can be limited to specific people."
+	},
+	"cta": {
+		"title": "Start with what your family needs today.",
+		"description": "Create a family, invite its members, and enable only the modules your household will use.",
+		"button_primary": "Create account",
+		"button_secondary": "I already have an account"
+	},
+	"footer": {
+		"tagline": "Family coordination with shared and private spaces.",
+		"architecture": "Architecture",
+		"permissions": "Permissions",
+		"login": "Sign in"
+	}
 }

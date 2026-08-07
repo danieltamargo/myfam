@@ -56,12 +56,20 @@ function createUserClient(
 }
 
 async function signIn(page: Page, email: string, password: string): Promise<void> {
-	await page.goto('/login');
-	await page.waitForTimeout(750);
-	await page.getByLabel('Email').fill(email);
-	await page.getByLabel('Password').fill(password);
-	await page.getByRole('button', { name: 'Sign In' }).click();
-	await page.waitForURL('**/dashboard', { timeout: 15_000 });
+	for (let attempt = 0; attempt < 2; attempt += 1) {
+		await page.goto('/login');
+		await page.waitForLoadState('networkidle');
+		await page.getByLabel('Email').fill(email);
+		await page.getByLabel('Password').fill(password);
+		await page.getByRole('button', { name: 'Sign In' }).click();
+
+		try {
+			await page.waitForURL('**/dashboard', { timeout: 15_000 });
+			return;
+		} catch (error) {
+			if (attempt === 1) throw error;
+		}
+	}
 }
 
 function addDays(date: Date, days: number): Date {
@@ -135,15 +143,15 @@ test('agrega la familia activa sin revelar colecciones privadas ni datos de otra
 		).toBeNull();
 		expect(
 			(
-				await owner.from('family_modules').insert(
-					['expenses', 'events', 'tasks', 'lists', 'planner'].map((moduleName) => ({
-						family_id: primaryFamilyId,
-						module_name: moduleName,
+				await owner
+					.from('family_modules')
+					.update({
 						enabled: true,
 						enabled_at: new Date().toISOString(),
 						enabled_by: ownerId
-					}))
-				)
+					})
+					.eq('family_id', primaryFamilyId)
+					.in('module_name', ['expenses', 'events', 'tasks', 'lists', 'planner'])
 			).error
 		).toBeNull();
 

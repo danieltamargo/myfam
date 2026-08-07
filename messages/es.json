@@ -1,95 +1,90 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"hello_world": "Hola, {name} desde es!",
+	"hello_world": "Hola, {name} desde MyFamily",
+	"meta": {
+		"title": "MyFamily — Organización familiar privada",
+		"description": "Coordina calendario, tareas, gastos, listas, regalos y documentos familiares con permisos claros y espacios privados."
+	},
+	"nav": {
+		"skip": "Saltar al contenido",
+		"modules": "Módulos",
+		"privacy": "Privacidad",
+		"login": "Iniciar sesión",
+		"create_account": "Crear cuenta"
+	},
 	"hero": {
-		"title": "MyFamKit",
-		"subtitle": "El Centro de Control de tu Familia",
-		"description": {
-			"text": "Todo lo que tu familia necesita en un solo lugar.",
-			"qualities": {
-				"0": "Conecta a todos no importa dónde estén.",
-				"1": "Fácil de usar.",
-				"2": "Modular, solo lo que necesites.",
-				"3": "Seguro y Privado."
-			}
-		},
-		"cta_primary": "Comenzar",
-		"cta_secondary": "Ver Funcionalidades"
+		"eyebrow": "Organización familiar, sin ruido",
+		"title": "Un lugar común para todo lo que mueve a tu familia.",
+		"subtitle": "Calendario, tareas, gastos, listas, regalos y documentos con permisos que respetan cada espacio privado.",
+		"cta_primary": "Crear mi espacio familiar",
+		"cta_secondary": "Explorar módulos",
+		"trust_private": "Privacidad por diseño",
+		"trust_modular": "Módulos configurables",
+		"trust_control": "Roles y permisos claros"
 	},
-	"services": {
-		"title": "Todo lo que Necesitas",
-		"description": "MyFamKit reúne todas las herramientas que tu familia necesita para mantenerse organizada, conectada y sin estrés. Activa solo los módulos que necesites.",
-		"benefits": {
-			"modular": {
-				"title": "Diseño Modular",
-				"description": "Activa solo lo que necesites"
-			},
-			"easy": {
-				"title": "Fácil de usar",
-				"description": "Interfaz intuitiva para todas las edades"
-			},
-			"synced": {
-				"title": "Siempre Sincronizado",
-				"description": "Actualizaciones en tiempo real en todos los dispositivos"
-			}
+	"preview": {
+		"aria_label": "Ejemplo del planner familiar",
+		"label": "Esta semana",
+		"title": "Todo lo importante, a la vista",
+		"event_time": "18:30",
+		"event_title": "Revisión del dentista",
+		"task_label": "Tarea",
+		"task_title": "Preparar mochila",
+		"expense_label": "Gastos",
+		"expense_title": "Compra compartida",
+		"wishlist_label": "Wishlist",
+		"wishlist_title": "Coordinación sin spoilers"
+	},
+	"modules": {
+		"eyebrow": "Lo que ya puedes usar",
+		"title": "Herramientas concretas para el día a día",
+		"description": "Miembros y Wishlist forman el núcleo. La administración familiar activa el resto según lo que necesite cada hogar.",
+		"wishlist": {
+			"title": "Wishlist anti-spoiler",
+			"description": "Comparte deseos y coordina reservas, compras y comentarios sin revelar la sorpresa a quien recibirá el regalo."
 		},
-		"modules": {
-			"calendar": {
-				"title": "Calendario",
-				"description": "Calendario compartido para eventos y citas"
-			},
-			"finances": {
-				"title": "Finanzas",
-				"description": "Gestiona gastos y presupuesto familiar"
-			},
-			"tasks": {
-				"title": "Tareas",
-				"description": "Organiza tareas del hogar y responsabilidades"
-			},
-			"meals": {
-				"title": "Planificación de Comidas",
-				"description": "Planifica menús semanales y comparte recetas"
-			},
-			"goals": {
-				"title": "Objetivos",
-				"description": "Establece y sigue objetivos familiares"
-			},
-			"documents": {
-				"title": "Documentos",
-				"description": "Almacenamiento seguro de documentos importantes"
-			}
+		"planning": {
+			"title": "Calendario, tareas y listas",
+			"description": "Ordena eventos, responsables, vencimientos y compras con visibilidad familiar o seleccionada."
+		},
+		"expenses": {
+			"title": "Gastos por colección",
+			"description": "Crea espacios privados con roles propios, repartos, recurrencias, filtros, análisis y exportación CSV."
+		},
+		"private": {
+			"title": "Notas y documentos privados",
+			"description": "Decide quién puede leer cada nota o archivo y descarga documentos mediante enlaces temporales."
+		},
+		"wellbeing": {
+			"title": "Comidas y hábitos",
+			"description": "Planifica menús y recetas, y sigue rutinas personales o compartidas sin clasificaciones públicas."
+		},
+		"planner": {
+			"title": "Planner familiar",
+			"description": "Reúne la actividad próxima que ya tienes permiso para ver, sin romper la privacidad de cada módulo."
 		}
 	},
-	"features": {
-		"title": "Diseñado para Familias",
-		"subtitle": "Pensado para familias reales. Simple, potente y seguro.",
-		"items": {
-			"multi_family": {
-				"title": "Soporte Multi-Familia",
-				"description": "Gestiona múltiples grupos familiares desde una cuenta. Perfecto para familias extendidas o hogares compartidos."
-			},
-			"real_time": {
-				"title": "Colaboración en Tiempo Real",
-				"description": "Todos permanecen sincronizados. Los cambios aparecen instantáneamente para todos los miembros."
-			},
-			"privacy": {
-				"title": "Privacidad Primero",
-				"description": "Los datos de tu familia están encriptados y seguros. Tú controlas quién ve qué."
-			}
-		}
+	"privacy": {
+		"eyebrow": "La privacidad no es un ajuste final",
+		"title": "Cada dato conserva su contexto y sus permisos.",
+		"description": "MyFamily comprueba el acceso en la aplicación y de nuevo en PostgreSQL. Conocer una URL no concede acceso.",
+		"family_title": "Familia",
+		"family_description": "Owner, admin y member delimitan la administración del hogar.",
+		"collection_title": "Colección",
+		"collection_description": "Los gastos tienen una ACL propia; pertenecer a la familia no basta.",
+		"item_title": "Contenido",
+		"item_description": "Notas, listas, hábitos y documentos pueden limitarse a personas concretas."
 	},
 	"cta": {
-		"title": "¿Listo para Organizarte?",
-		"description": "Únete a las familias que han simplificado sus vidas con MyFamKit. Comienza tu prueba gratuita hoy.",
-		"button_primary": "Iniciar Prueba Gratuita",
-		"button_secondary": "Contáctanos"
+		"title": "Empieza con lo que tu familia necesita hoy.",
+		"description": "Crea una familia, invita a sus miembros y activa solo los módulos que vayáis a utilizar.",
+		"button_primary": "Crear cuenta",
+		"button_secondary": "Ya tengo cuenta"
 	},
 	"footer": {
-		"tagline": "El centro de control de tu familia desde 2024",
-		"links": {
-			"features": "Funcionalidades",
-			"contact": "Contacto",
-			"login": "Iniciar Sesión"
-		}
+		"tagline": "Coordinación familiar con espacios compartidos y privados.",
+		"architecture": "Arquitectura",
+		"permissions": "Permisos",
+		"login": "Iniciar sesión"
 	}
 }
