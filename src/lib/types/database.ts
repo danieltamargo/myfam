@@ -1078,6 +1078,137 @@ export type Database = {
           },
         ]
       }
+      family_note_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          family_id: string
+          note_id: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          family_id: string
+          note_id: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          family_id?: string
+          note_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_note_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_note_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_note_members_family_id_note_id_fkey"
+            columns: ["family_id", "note_id"]
+            isOneToOne: false
+            referencedRelation: "family_notes"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "family_note_members_family_id_user_id_fkey"
+            columns: ["family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "family_note_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_note_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_notes: {
+        Row: {
+          archived_at: string | null
+          content: string
+          created_at: string
+          created_by: string
+          family_id: string
+          id: string
+          search_vector: unknown
+          title: string
+          updated_at: string
+          version: number
+          visibility: string
+        }
+        Insert: {
+          archived_at?: string | null
+          content?: string
+          created_at?: string
+          created_by: string
+          family_id: string
+          id?: string
+          search_vector?: unknown
+          title: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Update: {
+          archived_at?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string
+          family_id?: string
+          id?: string
+          search_vector?: unknown
+          title?: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_notes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_notes_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_tasks: {
         Row: {
           completed_at: string | null
@@ -2640,6 +2771,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_family_note: {
+        Args: {
+          p_content: string
+          p_family_id: string
+          p_member_ids?: string[]
+          p_title: string
+          p_visibility?: string
+        }
+        Returns: string
+      }
       create_family_task: {
         Args: {
           p_assignee_ids: string[]
@@ -2857,6 +2998,10 @@ export type Database = {
         Args: { p_completed: boolean; p_item_id: string; p_version: number }
         Returns: number
       }
+      set_family_note_archived: {
+        Args: { p_archived: boolean; p_note_id: string; p_version: number }
+        Returns: number
+      }
       set_family_task_status: {
         Args: { p_status: string; p_task_id: string; p_version: number }
         Returns: number
@@ -2909,6 +3054,17 @@ export type Database = {
           p_version: number
         }
         Returns: undefined
+      }
+      update_family_note: {
+        Args: {
+          p_content: string
+          p_member_ids?: string[]
+          p_note_id: string
+          p_title: string
+          p_version: number
+          p_visibility: string
+        }
+        Returns: number
       }
       update_family_task: {
         Args: {

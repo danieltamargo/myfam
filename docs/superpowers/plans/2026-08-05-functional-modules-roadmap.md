@@ -647,13 +647,13 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Create: `src/routes/(protected)/family/[familyId]/notes/+page.svelte`
 - Test: `supabase/tests/database/050_notes_rls.test.sql`
 
-- [ ] **Step 1: Crear `family_notes` con título, contenido de texto/Markdown seguro, autor y visibilidad**
-- [ ] **Step 2: Mantener la tabla polimórfica antigua solo como legado hasta confirmar que no contiene datos**
-- [ ] **Step 3: Renderizar Markdown con parser configurado sin HTML o mostrar texto plano**
-- [ ] **Step 4: Añadir búsqueda Postgres sobre título/contenido con `tsvector` generado e índice GIN**
-- [ ] **Step 5: Implementar archivo, edición optimista y filtros**
-- [ ] **Step 6: Probar XSS, RLS, búsqueda y conflictos de versión**
-- [ ] **Step 7: Commit: `feat: add secure family notes`**
+- [x] **Step 1: Crear `family_notes` con título, contenido de texto/Markdown seguro, autor y visibilidad**
+- [x] **Step 2: Mantener la tabla polimórfica antigua solo como legado hasta confirmar que no contiene datos**
+- [x] **Step 3: Renderizar Markdown con parser configurado sin HTML o mostrar texto plano**
+- [x] **Step 4: Añadir búsqueda Postgres sobre título/contenido con `tsvector` generado e índice GIN**
+- [x] **Step 5: Implementar archivo, edición optimista y filtros**
+- [x] **Step 6: Probar XSS, RLS, búsqueda y conflictos de versión**
+- [x] **Step 7: Commit: `feat: add secure family notes`**
 
 ### Task 16: Planner e inicio familiar
 
