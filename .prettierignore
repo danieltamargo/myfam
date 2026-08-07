@@ -20,3 +20,4 @@ bun.lockb
 
 # Generated artifacts and local tooling metadata
 skills-lock.json
+src/lib/types/database.ts

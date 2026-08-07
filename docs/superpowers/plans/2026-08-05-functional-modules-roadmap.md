@@ -626,14 +626,14 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Test: `supabase/tests/database/040_tasks_lists_rls.test.sql`
 - Test: `tests/e2e/tasks-lists.spec.ts`
 
-- [ ] **Step 1: Modelar grupos de tareas, responsables, vencimiento, prioridad, estado y recurrencia**
-- [ ] **Step 2: Modelar listas compartidas con items, cantidad, unidad, orden y completado por**
-- [ ] **Step 3: Permitir listas privadas o seleccionadas mediante membresía explícita**
-- [ ] **Step 4: Implementar vistas `mías`, `familia`, vencidas y próximas**
-- [ ] **Step 5: Implementar lista de compra móvil con actualización optimista y reconciliación Realtime**
-- [ ] **Step 6: Enviar notificaciones al asignar, vencer o mencionar, nunca mediante inserción arbitraria cliente**
-- [ ] **Step 7: Probar recurrencia, concurrencia al marcar y aislamiento**
-- [ ] **Step 8: Commit: `feat: add family tasks and shared lists`**
+- [x] **Step 1: Modelar grupos de tareas, responsables, vencimiento, prioridad, estado y recurrencia**
+- [x] **Step 2: Modelar listas compartidas con items, cantidad, unidad, orden y completado por**
+- [x] **Step 3: Permitir listas privadas o seleccionadas mediante membresía explícita**
+- [x] **Step 4: Implementar vistas `mías`, `familia`, vencidas y próximas**
+- [x] **Step 5: Implementar lista de compra móvil con actualización optimista y reconciliación Realtime**
+- [x] **Step 6: Enviar notificaciones al asignar, vencer o mencionar, nunca mediante inserción arbitraria cliente**
+- [x] **Step 7: Probar recurrencia, concurrencia al marcar y aislamiento**
+- [x] **Step 8: Commit: `feat: add family tasks and shared lists`**
 
 ### Task 15: Notas seguras
 

@@ -768,6 +768,218 @@ export type Database = {
           },
         ]
       }
+      family_list_items: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          id: string
+          list_id: string
+          quantity: number
+          sort_order: number
+          title: string
+          unit: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          list_id: string
+          quantity?: number
+          sort_order: number
+          title: string
+          unit?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          list_id?: string
+          quantity?: number
+          sort_order?: number
+          title?: string
+          unit?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_list_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_items_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_items_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "family_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_list_members: {
+        Row: {
+          added_at: string
+          added_by: string
+          family_id: string
+          list_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          family_id: string
+          list_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          family_id?: string
+          list_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_list_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_members_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_members_family_id_list_id_fkey"
+            columns: ["family_id", "list_id"]
+            isOneToOne: false
+            referencedRelation: "family_lists"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "family_list_members_family_id_user_id_fkey"
+            columns: ["family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "family_list_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_list_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_lists: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          family_id: string
+          id: string
+          title: string
+          updated_at: string
+          version: number
+          visibility: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          family_id: string
+          id?: string
+          title: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          family_id?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          version?: number
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_lists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_lists_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_lists_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       family_members: {
         Row: {
           family_id: string | null
@@ -863,6 +1075,109 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "families"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      family_tasks: {
+        Row: {
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_on: string | null
+          family_id: string
+          group_id: string | null
+          id: string
+          priority: string
+          recurrence_frequency: string
+          recurrence_interval: number
+          recurrence_until: string | null
+          status: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_on?: string | null
+          family_id: string
+          group_id?: string | null
+          id?: string
+          priority?: string
+          recurrence_frequency?: string
+          recurrence_interval?: number
+          recurrence_until?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_on?: string | null
+          family_id?: string
+          group_id?: string | null
+          id?: string
+          priority?: string
+          recurrence_frequency?: string
+          recurrence_interval?: number
+          recurrence_until?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "family_tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_tasks_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_tasks_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "family_tasks_family_id_group_id_fkey"
+            columns: ["family_id", "group_id"]
+            isOneToOne: false
+            referencedRelation: "task_groups"
+            referencedColumns: ["family_id", "id"]
           },
         ]
       }
@@ -1932,6 +2247,298 @@ export type Database = {
           },
         ]
       }
+      task_assignees: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          family_id: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          family_id: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          family_id?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_assignees_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_assignees_assigned_by_fkey"
+            columns: ["assigned_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_assignees_family_id_task_id_fkey"
+            columns: ["family_id", "task_id"]
+            isOneToOne: false
+            referencedRelation: "family_tasks"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "task_assignees_family_id_user_id_fkey"
+            columns: ["family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "task_assignees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_assignees_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_completions: {
+        Row: {
+          completed_at: string
+          completed_by: string
+          family_id: string
+          id: string
+          occurrence_due_on: string | null
+          task_id: string
+        }
+        Insert: {
+          completed_at?: string
+          completed_by: string
+          family_id: string
+          id?: string
+          occurrence_due_on?: string | null
+          task_id: string
+        }
+        Update: {
+          completed_at?: string
+          completed_by?: string
+          family_id?: string
+          id?: string
+          occurrence_due_on?: string | null
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_completions_completed_by_fkey"
+            columns: ["completed_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_completions_family_id_completed_by_fkey"
+            columns: ["family_id", "completed_by"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "task_completions_family_id_task_id_fkey"
+            columns: ["family_id", "task_id"]
+            isOneToOne: false
+            referencedRelation: "family_tasks"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "task_completions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "family_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_due_deliveries: {
+        Row: {
+          delivered_at: string
+          due_on: string
+          recipient_id: string
+          task_id: string
+        }
+        Insert: {
+          delivered_at?: string
+          due_on: string
+          recipient_id: string
+          task_id: string
+        }
+        Update: {
+          delivered_at?: string
+          due_on?: string
+          recipient_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_due_deliveries_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_due_deliveries_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_due_deliveries_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "family_tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_groups: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          created_by: string
+          family_id: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          created_by: string
+          family_id: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          created_by?: string
+          family_id?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_groups_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_groups_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      task_mentions: {
+        Row: {
+          created_at: string
+          family_id: string
+          mentioned_by: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          family_id: string
+          mentioned_by: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          family_id?: string
+          mentioned_by?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_mentions_family_id_task_id_fkey"
+            columns: ["family_id", "task_id"]
+            isOneToOne: false
+            referencedRelation: "family_tasks"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "task_mentions_family_id_user_id_fkey"
+            columns: ["family_id", "user_id"]
+            isOneToOne: false
+            referencedRelation: "family_members"
+            referencedColumns: ["family_id", "user_id"]
+          },
+          {
+            foreignKeyName: "task_mentions_mentioned_by_fkey"
+            columns: ["mentioned_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_mentions_mentioned_by_fkey"
+            columns: ["mentioned_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_mentions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       public_profiles: {
@@ -1964,6 +2571,15 @@ export type Database = {
       }
       add_bot_to_room: {
         Args: { p_difficulty?: string; p_room_id: string }
+        Returns: string
+      }
+      add_family_list_item: {
+        Args: {
+          p_list_id: string
+          p_quantity: number
+          p_title: string
+          p_unit: string
+        }
         Returns: string
       }
       change_expense_collection_role: {
@@ -2014,6 +2630,32 @@ export type Database = {
         Returns: string
       }
       create_family: { Args: { p_name: string }; Returns: string }
+      create_family_list: {
+        Args: {
+          p_description: string
+          p_family_id: string
+          p_member_ids: string[]
+          p_title: string
+          p_visibility: string
+        }
+        Returns: string
+      }
+      create_family_task: {
+        Args: {
+          p_assignee_ids: string[]
+          p_description: string
+          p_due_on: string
+          p_family_id: string
+          p_group_id: string
+          p_mention_ids: string[]
+          p_priority: string
+          p_recurrence_frequency?: string
+          p_recurrence_interval?: number
+          p_recurrence_until?: string
+          p_title: string
+        }
+        Returns: string
+      }
       create_recurring_expense_rule: {
         Args: {
           p_amount: number
@@ -2028,11 +2670,19 @@ export type Database = {
         }
         Returns: string
       }
+      create_task_group: {
+        Args: { p_family_id: string; p_name: string }
+        Returns: string
+      }
       delete_calendar_event: {
         Args: { p_event_id: string; p_version: number }
         Returns: undefined
       }
       delete_family: { Args: { p_family_id: string }; Returns: undefined }
+      delete_family_list_item: {
+        Args: { p_item_id: string; p_version: number }
+        Returns: undefined
+      }
       extract_mentions_from_comment: {
         Args: { comment_text: string }
         Returns: string[]
@@ -2175,6 +2825,10 @@ export type Database = {
         Args: { p_as_of?: string }
         Returns: number
       }
+      process_task_due_notifications: {
+        Args: { p_limit?: number; p_today?: string }
+        Returns: number
+      }
       purchase_gift_item: {
         Args: { p_item_id: string; p_quantity?: number }
         Returns: string
@@ -2198,6 +2852,14 @@ export type Database = {
       revoke_expense_collection_member: {
         Args: { p_collection_id: string; p_user_id: string }
         Returns: undefined
+      }
+      set_family_list_item_completed: {
+        Args: { p_completed: boolean; p_item_id: string; p_version: number }
+        Returns: number
+      }
+      set_family_task_status: {
+        Args: { p_status: string; p_task_id: string; p_version: number }
+        Returns: number
       }
       set_recurring_expense_rule_active: {
         Args: { p_active: boolean; p_collection_id: string; p_rule_id: string }
@@ -2244,6 +2906,23 @@ export type Database = {
           p_paid_by: string
           p_receipt_path: string
           p_splits: Json
+          p_version: number
+        }
+        Returns: undefined
+      }
+      update_family_task: {
+        Args: {
+          p_assignee_ids: string[]
+          p_description: string
+          p_due_on: string
+          p_group_id: string
+          p_mention_ids: string[]
+          p_priority: string
+          p_recurrence_frequency?: string
+          p_recurrence_interval?: number
+          p_recurrence_until?: string
+          p_task_id: string
+          p_title: string
           p_version: number
         }
         Returns: undefined
