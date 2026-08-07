@@ -665,13 +665,13 @@ Cada módulo reutiliza autorización familiar, validación, auditoría, notifica
 - Modify: `src/routes/(protected)/dashboard/+page.svelte`
 - Test: `tests/e2e/planner.spec.ts`
 
-- [ ] **Step 1: Definir el planner como read model, sin crear otra fuente de verdad**
-- [ ] **Step 2: Agregar próximos eventos, tareas vencidas/próximas, listas activas y resumen de gastos accesibles**
-- [ ] **Step 3: Mostrar solo bloques cuyos módulos estén disponibles y habilitados**
-- [ ] **Step 4: Añadir acciones rápidas para regalo, gasto, tarea, evento y lista**
-- [ ] **Step 5: Evitar N+1 mediante consultas agrupadas/RPC específicas**
-- [ ] **Step 6: Probar usuario con varias familias y colecciones privadas**
-- [ ] **Step 7: Commit: `feat: add unified family planner dashboard`**
+- [x] **Step 1: Definir el planner como read model, sin crear otra fuente de verdad**
+- [x] **Step 2: Agregar próximos eventos, tareas vencidas/próximas, listas activas y resumen de gastos accesibles**
+- [x] **Step 3: Mostrar solo bloques cuyos módulos estén disponibles y habilitados**
+- [x] **Step 4: Añadir acciones rápidas para regalo, gasto, tarea, evento y lista**
+- [x] **Step 5: Evitar N+1 mediante consultas agrupadas/RPC específicas**
+- [x] **Step 6: Probar usuario con varias familias y colecciones privadas**
+- [x] **Step 7: Commit: `feat: add unified family planner dashboard`**
 
 ### Task 17: Comidas y hábitos
 

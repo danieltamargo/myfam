@@ -1,94 +1,66 @@
-import type { PageServerLoad, Actions } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
+import { loadPlannerSnapshot, PlannerQueryError } from '$lib/server/planner/queries';
 
-export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
-	const { user } = await safeGetSession();
+export const load: PageServerLoad = async ({ parent, locals: { supabase, safeGetSession } }) => {
+	const [parentData, sessionData] = await Promise.all([parent(), safeGetSession()]);
+	const { user } = sessionData;
+	if (!user) return { invitations: [], planner: null, plannerError: false };
 
-	if (!user) {
-		return { invitations: [] };
-	}
-
-	// Get pending invitations for this user
-	const { data: invitations } = await supabase
+	const { data: invitations, error: invitationError } = await supabase
 		.from('family_invitations')
-		.select('*')
+		.select(
+			'id, family_id, invited_by, created_at, family:families(id, name), invitedBy:public_profiles!family_invitations_invited_by_fkey(display_name)'
+		)
 		.eq('invited_user_id', user.id)
 		.eq('status', 'pending')
 		.order('created_at', { ascending: false });
+	if (invitationError) console.error('Could not load dashboard invitations', invitationError);
 
-	// Enrich with family and user data
-	const enrichedInvitations = await Promise.all(
-		(invitations || []).map(async (inv) => {
-			// Get family data
-			const { data: family, error: familyError } = inv.family_id
-				? await supabase.from('families').select('id, name').eq('id', inv.family_id).single()
-				: { data: null, error: null };
+	if (!parentData.activeFamily) {
+		return { invitations: invitations ?? [], planner: null, plannerError: false };
+	}
 
-			if (familyError) {
-				console.error('Error fetching family:', familyError);
-			}
-
-			// Get invited_by user data
-			const { data: invitedBy, error: invitedByError } = inv.invited_by
-				? await supabase.from('profiles').select('display_name').eq('id', inv.invited_by).single()
-				: { data: null, error: null };
-
-			if (invitedByError) {
-				console.error('Error fetching invited_by:', invitedByError);
-			}
-
-			return {
-				...inv,
-				family,
-				invited_by: invitedBy
-			};
-		})
-	);
-
-	return {
-		invitations: enrichedInvitations
-	};
+	try {
+		return {
+			invitations: invitations ?? [],
+			planner: await loadPlannerSnapshot(supabase, parentData.activeFamily.id, user.id),
+			plannerError: false
+		};
+	} catch (caught) {
+		if (caught instanceof PlannerQueryError) console.error(caught.message);
+		else console.error('Unexpected dashboard planner failure', caught);
+		return { invitations: invitations ?? [], planner: null, plannerError: true };
+	}
 };
 
 export const actions: Actions = {
 	acceptInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
-		if (!user) return fail(401, { message: 'Unauthorized' });
-
-		const formData = await request.formData();
-		const invitationId = formData.get('invitation_id') as string;
-
+		if (!user) return fail(401, { message: 'No tienes una sesión activa.' });
+		const invitationId = String((await request.formData()).get('invitation_id') ?? '');
+		if (!invitationId) return fail(400, { message: 'La invitación no es válida.' });
 		const { error: invitationError } = await supabase.rpc('accept_family_invitation', {
 			p_invitation_id: invitationId
 		});
-
 		if (invitationError) {
 			console.error('Invitation error:', invitationError);
 			return fail(invitationError.code === 'P0002' ? 404 : 500, {
-				message: invitationError.message
+				message: 'No se pudo aceptar la invitación.'
 			});
 		}
-
-		// Redirect to families page with success message
 		throw redirect(303, '/families?invitation_accepted=true');
 	},
 
 	rejectInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
-		if (!user) return fail(401, { message: 'Unauthorized' });
-
-		const formData = await request.formData();
-		const invitationId = formData.get('invitation_id') as string;
-
-		// Update invitation status
+		if (!user) return fail(401, { message: 'No tienes una sesión activa.' });
+		const invitationId = String((await request.formData()).get('invitation_id') ?? '');
+		if (!invitationId) return fail(400, { message: 'La invitación no es válida.' });
 		const { error } = await supabase.rpc('reject_family_invitation', {
 			p_invitation_id: invitationId
 		});
-
-		if (error) {
-			return fail(500, { message: 'Failed to reject invitation' });
-		}
-
-		return { success: true, message: 'Invitation rejected' };
+		if (error) return fail(500, { message: 'No se pudo rechazar la invitación.' });
+		return { success: true, message: 'Invitación rechazada.' };
 	}
 };

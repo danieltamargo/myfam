@@ -1,182 +1,114 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
+	import PlannerOverview from '$lib/components/planner/PlannerOverview.svelte';
+	import type { ActionData, PageData } from './$types';
 
 	interface Props {
-		data: {
-			user: any;
-			invitations: Array<any>;
-		};
-		form: any;
+		data: PageData;
+		form: ActionData;
 	}
 
 	let { data, form }: Props = $props();
 </script>
 
-<div class="container mx-auto max-w-6xl p-8">
-	<div class="mb-8">
-		<h1 class="text-4xl font-bold">Welcome back!</h1>
-		<p class="mt-2 text-base-content/70">
-			Hi {data.user?.email}, this is your dashboard
-		</p>
-	</div>
+<svelte:head>
+	<title>Inicio familiar · MyFamily</title>
+	<meta name="description" content="Agenda y actividad de tu familia en un único lugar." />
+</svelte:head>
 
-	<!-- Success/Error Messages -->
-	{#if form?.success}
-		<div class="mb-6 alert alert-success">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-6 w-6 shrink-0 stroke-current"
-				fill="none"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-				/>
-			</svg>
+<div class="container mx-auto max-w-6xl space-y-7 p-4 py-6 sm:p-8">
+	<header class="flex flex-wrap items-end justify-between gap-4">
+		<div>
+			<p class="text-sm font-semibold text-primary">Tu día en familia</p>
+			<h1 class="mt-1 text-3xl font-bold sm:text-4xl">Hola de nuevo</h1>
+			<p class="mt-2 text-base-content/65">Lo importante de hoy, sin cambiar de contexto.</p>
+		</div>
+		<a class="btn btn-ghost btn-sm" href={resolve('/families')}>Gestionar familias</a>
+	</header>
+
+	{#if form?.message}
+		<div class={`alert ${form.success ? 'alert-success' : 'alert-error'}`} role="status">
 			<span>{form.message}</span>
 		</div>
 	{/if}
 
-	{#if form?.message && !form?.success}
-		<div class="mb-6 alert alert-error">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-6 w-6 shrink-0 stroke-current"
-				fill="none"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-				/>
-			</svg>
-			<span>{form.message}</span>
-		</div>
-	{/if}
-
-	<!-- Pending Invitations -->
 	{#if data.invitations.length > 0}
-		<div class="mb-8">
-			<h2 class="mb-4 flex items-center gap-2 text-2xl font-bold">
-				<span>📨</span>
-				Pending Invitations
+		<section aria-labelledby="pending-invitations-title" class="space-y-3">
+			<div class="flex items-center gap-2">
+				<h2 id="pending-invitations-title" class="text-xl font-bold">Invitaciones pendientes</h2>
 				<span class="badge badge-primary">{data.invitations.length}</span>
-			</h2>
-			<div class="space-y-3">
-				{#each data.invitations as invitation}
-					<div class="card border-2 border-primary bg-base-100 shadow-xl">
-						<div class="card-body">
-							<div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-								<div class="flex-1">
-									<h3 class="text-lg font-semibold">
-										Invitation to join <span class="text-primary"
-											>{invitation.family?.name || 'Unknown Family'}</span
-										>
-									</h3>
-									<p class="mt-1 text-sm text-base-content/70">
-										Invited by {invitation.invited_by?.display_name ||
-											invitation.invited_by?.email ||
-											'Unknown'} •
-										{new Date(invitation.created_at).toLocaleDateString()}
-									</p>
-								</div>
-								<div class="flex gap-2">
-									<form method="POST" action="?/acceptInvitation" use:enhance>
-										<input type="hidden" name="invitation_id" value={invitation.id} />
-										<button type="submit" class="btn gap-2 btn-sm btn-success">
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												class="h-4 w-4"
-												viewBox="0 0 20 20"
-												fill="currentColor"
-											>
-												<path
-													fill-rule="evenodd"
-													d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-													clip-rule="evenodd"
-												/>
-											</svg>
-											Accept
-										</button>
-									</form>
-									<form method="POST" action="?/rejectInvitation" use:enhance>
-										<input type="hidden" name="invitation_id" value={invitation.id} />
-										<button type="submit" class="btn gap-2 btn-ghost btn-sm">
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												class="h-4 w-4"
-												viewBox="0 0 20 20"
-												fill="currentColor"
-											>
-												<path
-													fill-rule="evenodd"
-													d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-													clip-rule="evenodd"
-												/>
-											</svg>
-											Decline
-										</button>
-									</form>
-								</div>
+			</div>
+			<div class="grid gap-3 md:grid-cols-2">
+				{#each data.invitations as invitation (invitation.id)}
+					<article class="card border border-primary/30 bg-primary/5">
+						<div class="card-body gap-3 p-4">
+							<div>
+								<h3 class="font-semibold">{invitation.family?.name ?? 'Familia'}</h3>
+								<p class="text-sm text-base-content/65">
+									Invitación de {invitation.invitedBy?.display_name?.trim() || 'un familiar'}
+								</p>
+							</div>
+							<div class="card-actions justify-end">
+								<form method="POST" action="?/rejectInvitation" use:enhance>
+									<input type="hidden" name="invitation_id" value={invitation.id} />
+									<button type="submit" class="btn btn-ghost btn-sm">Rechazar</button>
+								</form>
+								<form method="POST" action="?/acceptInvitation" use:enhance>
+									<input type="hidden" name="invitation_id" value={invitation.id} />
+									<button type="submit" class="btn btn-sm btn-primary">Aceptar</button>
+								</form>
 							</div>
 						</div>
-					</div>
+					</article>
 				{/each}
 			</div>
-		</div>
+		</section>
 	{/if}
 
-	<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-		<!-- Families Card -->
-		<div class="card bg-base-100 shadow-xl transition-shadow hover:shadow-2xl">
-			<div class="card-body">
-				<h2 class="card-title">
-					<span class="text-3xl">👨‍👩‍👧‍👦</span>
-					Families
-				</h2>
-				<p class="text-base-content/70">Manage your family groups and members</p>
-				<div class="mt-4 card-actions justify-end">
-					<a href="/families" class="btn btn-sm btn-primary">View Families</a>
-				</div>
-			</div>
+	{#if data.activeFamily && data.planner}
+		<section class="rounded-box border border-base-300 bg-base-200/50 p-4 sm:p-6">
+			{#if data.families.length > 1}
+				<nav aria-label="Tus familias" class="mb-5 flex gap-2 overflow-x-auto pb-1">
+					{#each data.families as family (family.id)}
+						<a
+							class={`btn shrink-0 btn-sm ${family.id === data.activeFamily.id ? 'btn-primary' : 'btn-ghost'}`}
+							href={resolve(`/family/${encodeURIComponent(family.id)}/planner`)}
+							aria-current={family.id === data.activeFamily.id ? 'page' : undefined}
+						>
+							{family.name}
+						</a>
+					{/each}
+				</nav>
+			{/if}
+			<PlannerOverview
+				familyId={data.activeFamily.id}
+				familyName={data.activeFamily.name}
+				planner={data.planner}
+				showFamilyName
+			/>
+		</section>
+	{:else if data.plannerError}
+		<div class="alert alert-error" role="alert">
+			<span>No se pudo cargar el resumen familiar.</span>
+			<a class="btn btn-sm" href={resolve('/dashboard')}>Reintentar</a>
 		</div>
+	{:else}
+		<section class="card border border-base-300 bg-base-100">
+			<div class="card-body items-center py-12 text-center">
+				<span aria-hidden="true" class="text-5xl">🏡</span>
+				<h2 class="mt-2 card-title text-2xl">Crea tu primera familia</h2>
+				<p class="max-w-md text-base-content/65">
+					El planner se completará con los módulos y la información que decidáis compartir.
+				</p>
+				<a class="btn mt-3 btn-primary" href={resolve('/families')}>Empezar</a>
+			</div>
+		</section>
+	{/if}
 
-		<!-- Profile Card -->
-		<div class="card bg-base-100 shadow-xl transition-shadow hover:shadow-2xl">
-			<div class="card-body">
-				<h2 class="card-title">
-					<span class="text-3xl">⚙️</span>
-					Profile
-				</h2>
-				<p class="text-base-content/70">Manage your account settings</p>
-				<div class="mt-4 card-actions justify-end">
-					<a href="/profile" class="btn btn-sm btn-primary">View Profile</a>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<!-- Recent Activity -->
-	<div class="mt-8">
-		<h2 class="mb-4 text-2xl font-bold">Recent Activity</h2>
-		<div class="card bg-base-100 shadow-xl">
-			<div class="card-body">
-				<div class="flex flex-col gap-4">
-					<div class="flex items-center gap-4 rounded-lg bg-base-200 p-4">
-						<div class="text-2xl">👋</div>
-						<div class="flex-1">
-							<p class="font-semibold">Welcome to MyFamily!</p>
-							<p class="text-sm text-base-content/70">Get started by creating your first family</p>
-						</div>
-						<div class="text-xs text-base-content/50">Just now</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+	<footer class="flex flex-wrap gap-2 border-t border-base-300 pt-5 text-sm">
+		<a class="link link-hover" href={resolve('/families')}>Todas las familias</a>
+		<span aria-hidden="true" class="text-base-content/30">·</span>
+		<a class="link link-hover" href={resolve('/profile')}>Preferencias de perfil</a>
+	</footer>
 </div>
