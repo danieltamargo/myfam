@@ -24,6 +24,19 @@ vite.config.ts.timestamp-*
 
 # Paraglide
 src/lib/paraglide
+project.inlang/cache/
+
+# Local Supabase state (may contain local credentials)
+supabase/.temp/
+
+# Local agent and browser tooling
+.claude/skills/
+.lazyweb/
+.playwright-cli/
+
+# Generated reports and test artifacts
+output/
+test-results/
 
 *storybook.log
 storybook-static
