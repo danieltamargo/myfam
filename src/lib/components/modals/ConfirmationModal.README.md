@@ -1,217 +1,99 @@
-# ConfirmationModal Component
+# ConfirmationModal
 
-Componente reutilizable de confirmación con soporte para 2FA, estilos personalizables y callbacks.
+Componente visual de confirmación con estilos normal/crítico, contenido seguro y un paso opcional de challenge TOTP.
 
-## Características
+## Límites de seguridad
 
-- ✅ **Dos estilos**: `normal` (azul/primary) y `critical` (rojo/error)
-- ✅ **Soporte 2FA**: Verificación automática con Supabase Auth
-- ✅ **Callbacks personalizables**: `onConfirm` y `onCancel`
-- ✅ **Responsive**: Se adapta a diferentes tamaños de pantalla
-- ✅ **Accesible**: Cierre con backdrop, ESC key, y botones claros
-- ✅ **Loading states**: Indicadores visuales durante la verificación
-- ✅ **Mensajes HTML**: Soporta HTML en mensajes para texto enriquecido
+Este componente **no es una frontera de autorización**.
 
-## Props
+- `require2FA` solo controla un flujo del cliente. La acción o endpoint que muta datos debe volver a validar identidad, permisos y AAL2 cuando corresponda.
+- `message` se renderiza como texto escapado por Svelte; no interpreta HTML.
+- `messageContent` admite un `Snippet` de Svelte para estructura controlada. Los valores dinámicos interpolados dentro del snippet siguen escapándose por defecto.
+- No uses `{@html}` con contenido de usuario dentro del snippet.
+- Un cliente modificado puede omitir el modal y llamar directamente a una acción; servidor, RPC y RLS deben conservar la autorización definitiva.
 
-| Prop | Tipo | Default | Descripción |
-|------|------|---------|-------------|
-| `show` | `boolean` (bindable) | - | Controla la visibilidad del modal |
-| `title` | `string` | - | Título del modal |
-| `message` | `string` | - | Mensaje principal (soporta HTML) |
-| `details` | `string?` | - | Detalles adicionales opcionales |
-| `style` | `'normal' \| 'critical'` | `'normal'` | Estilo del modal |
-| `icon` | `'warning' \| 'info' \| 'trash' \| 'send' \| 'logout' \| 'transfer' \| 'shield'` | Auto | Icono a mostrar (auto según style) |
-| `confirmText` | `string` | `'Confirm'` | Texto del botón de confirmación |
-| `cancelText` | `string` | `'Cancel'` | Texto del botón de cancelación |
-| `require2FA` | `boolean` | `false` | Si requiere verificación 2FA |
-| `onConfirm` | `() => void \| Promise<void>` | - | Callback al confirmar |
-| `onCancel` | `() => void?` | - | Callback al cancelar (opcional) |
+## Props actuales
 
-## Uso Básico (Estilo Normal)
+| Prop | Tipo | Valor por defecto | Descripción |
+| --- | --- | --- | --- |
+| `show` | `boolean` bindable | — | Visibilidad |
+| `title` | `string` | — | Título renderizado como texto |
+| `message` | `string?` | — | Mensaje renderizado como texto escapado |
+| `messageContent` | `Snippet?` | — | Contenido estructurado controlado |
+| `details` | `string?` | — | Texto adicional escapado |
+| `style` | `'normal' \| 'critical'` | `'normal'` | Apariencia |
+| `icon` | `warning`, `info`, `trash`, `send`, `logout`, `transfer`, `shield` | Automático | Icono interno |
+| `confirmText` | `string` | `'Confirm'` | Etiqueta del botón |
+| `cancelText` | `string` | `'Cancel'` | Etiqueta del botón |
+| `require2FA` | `boolean` | `false` | Activa el challenge cliente si hay factor TOTP |
+| `onConfirm` | función sync/async | — | Callback tras confirmar/verificar |
+| `onCancel` | función opcional | — | Callback de cancelación |
+
+## Uso básico
 
 ```svelte
 <script lang="ts">
-  import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
+  import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 
   let showModal = $state(false);
 
-  async function handleSave() {
-    // Tu lógica aquí
-    await saveData();
+  async function handleConfirm() {
+    // La acción de servidor debe validar identidad y permisos.
   }
 </script>
-
-<button onclick={() => showModal = true}>Save Changes</button>
 
 <ConfirmationModal
   bind:show={showModal}
-  title="Save Changes"
-  message="Are you sure you want to save these changes?"
-  details="This will update your profile information."
-  style="normal"
-  confirmText="Save"
-  onConfirm={handleSave}
+  title="Guardar cambios"
+  message="¿Quieres guardar estos cambios?"
+  details="Revisa la información antes de continuar."
+  confirmText="Guardar"
+  onConfirm={handleConfirm}
 />
 ```
 
-## Uso Crítico (con 2FA)
+## Datos dinámicos y snippets
+
+Para añadir estructura, usa un snippet; `member.displayName` se mantiene como nodo de texto escapado:
 
 ```svelte
-<script lang="ts">
-  import ConfirmationModal from '$lib/components/ui/ConfirmationModal.svelte';
+{#snippet removeMemberMessage()}
+  ¿Quieres eliminar a <strong>{member.displayName}</strong> de la familia?
+{/snippet}
 
-  let showDeleteModal = $state(false);
-  let userToDelete = $state<{id: string; name: string} | null>(null);
-  let deleteFormRef = $state<HTMLFormElement | null>(null);
-
-  function openDelete(user: any) {
-    userToDelete = user;
-    showDeleteModal = true;
-  }
-
-  async function handleDeleteConfirm() {
-    if (deleteFormRef) {
-      deleteFormRef.requestSubmit();
-    }
-  }
-</script>
-
-<!-- Hidden form -->
-{#if userToDelete}
-  <form
-    bind:this={deleteFormRef}
-    method="POST"
-    action="?/deleteUser"
-    use:enhance={() => {
-      return async ({ result, update }) => {
-        await update();
-        showDeleteModal = false;
-        userToDelete = null;
-      };
-    }}
-    style="display: none;"
-  >
-    <input type="hidden" name="userId" value={userToDelete.id} />
-  </form>
-{/if}
-
-<!-- Modal -->
-{#if userToDelete}
-  <ConfirmationModal
-    bind:show={showDeleteModal}
-    title="Delete User"
-    message="You are about to delete <strong class='text-error'>{userToDelete.name}</strong>."
-    details="This action cannot be undone. All user data will be permanently deleted."
-    style="critical"
-    confirmText="Delete User"
-    require2FA={true}
-    onConfirm={handleDeleteConfirm}
-    onCancel={() => {
-      showDeleteModal = false;
-      userToDelete = null;
-    }}
-  />
-{/if}
-```
-
-## Flujo de 2FA
-
-Cuando `require2FA={true}`:
-
-1. **Sin 2FA habilitado**: Ejecuta `onConfirm()` directamente
-2. **Con 2FA habilitado**:
-   - Muestra alerta informativa de 2FA requerido
-   - Al confirmar, cambia a pantalla de verificación
-   - Solicita código de 6 dígitos
-   - Verifica con Supabase Auth MFA
-   - Si es correcto, ejecuta `onConfirm()`
-   - Si falla, muestra error y permite reintentar
-
-## Estilos
-
-### Normal (Primary)
-- Borde azul/primary
-- Icono de información por defecto (puede personalizarse)
-- Botón de confirmación primary
-- Mensaje con fondo azul claro
-
-### Critical (Error)
-- Borde rojo/error
-- Icono de advertencia por defecto (puede personalizarse)
-- Botón de confirmación error
-- Mensaje con fondo rojo claro
-- Texto "This action cannot be undone"
-
-## Iconos Disponibles
-
-Puedes personalizar el icono usando la prop `icon`:
-
-| Icono | Uso recomendado |
-|-------|-----------------|
-| `warning` | Advertencias generales (default para critical) |
-| `info` | Información general (default para normal) |
-| `trash` | Eliminar/borrar elementos |
-| `send` | Enviar invitaciones, notificaciones |
-| `logout` | Salir, cerrar sesión |
-| `transfer` | Transferir propiedad/datos |
-| `shield` | Acciones de seguridad |
-
-### Ejemplo con iconos personalizados
-
-```svelte
-<!-- Eliminar miembro con icono de papelera -->
 <ConfirmationModal
   bind:show={showDeleteModal}
-  title="Remove Member"
-  message="Delete <strong>{member.name}</strong>?"
+  title="Eliminar miembro"
+  messageContent={removeMemberMessage}
   style="critical"
-  icon="trash"
-  require2FA={true}
-  onConfirm={handleDelete}
-/>
-
-<!-- Transferir propiedad -->
-<ConfirmationModal
-  bind:show={showTransferModal}
-  title="Transfer Ownership"
-  message="Transfer to <strong>{newOwner.name}</strong>?"
-  style="critical"
-  icon="transfer"
-  require2FA={true}
-  onConfirm={handleTransfer}
-/>
-
-<!-- Salir de familia -->
-<ConfirmationModal
-  bind:show={showLeaveModal}
-  title="Leave Family"
-  message="Are you sure you want to leave?"
-  style="critical"
-  icon="logout"
-  require2FA={true}
-  onConfirm={handleLeave}
+  onConfirm={removeMember}
 />
 ```
 
-## Integración con Supabase
+Pasar `message="Eliminar <strong>Alex</strong>"` mostrará las etiquetas literalmente; ya no se interpreta como HTML.
 
-El componente usa `createClient()` de `$lib/supabase` para:
-- Verificar si el usuario tiene 2FA habilitado
-- Crear challenges de MFA
-- Verificar códigos TOTP
-- Mantenerse sincronizado con la sesión
+## Flujo `require2FA`
 
-## Accesibilidad
+1. Lista factores TOTP del usuario.
+2. Si encuentra uno verificado, muestra el paso para introducir el código.
+3. Crea un challenge y verifica el TOTP.
+4. Ejecuta `onConfirm` si Supabase acepta el código.
+5. Si no hay factor, ejecuta `onConfirm` sin challenge.
 
-- ✅ Focus trap en el modal
-- ✅ ESC para cerrar
-- ✅ Click en backdrop para cerrar
-- ✅ Botón de cancelar siempre visible
-- ✅ Loading states claros
-- ✅ Mensajes de error descriptivos
+Consecuencias:
 
-## Ejemplo Real
+- `require2FA` no obliga a enrolar un factor.
+- Para operaciones críticas, el endpoint debe comprobar AAL2 aunque el modal haya verificado un código.
+- El layout SSR aplica MFA al acceso general de usuarios que ya tienen un factor verificado; no convierte este componente en autorización.
 
-Ver implementación completa en:
-- `src/routes/(protected)/family/[familyId]/members/+page.svelte`
+Consulta `docs/2FA_SETUP.md` y `docs/PROJECT_AUDIT_2026-08-07.md` antes de usarlo en operaciones sensibles.
+
+## Accesibilidad actual
+
+- Contenedor con `role="dialog"`, `aria-modal="true"` y título asociado mediante `aria-labelledby`.
+- Cierre mediante botón de backdrop y tecla Escape cuando no hay una verificación en curso.
+- Foco inicial en Cancelar y restauración del foco anterior al cerrar mediante una attachment de Svelte.
+- Botones reales para confirmar, cancelar y cerrar el backdrop.
+- Estados de carga y error visibles.
+
+El componente no implementa un focus trap completo. Debe probarse con teclado y lector de pantalla en los recorridos donde se utilice.

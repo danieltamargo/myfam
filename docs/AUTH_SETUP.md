@@ -1,159 +1,110 @@
-# Configuración de Autenticación Email/Password
+# Configuración y estado de autenticación
 
-## Paso 1: Configurar en Supabase Dashboard
+## Estado actual
 
-### 1. Habilitar Email Provider
+MyFamily incluye registro, email/password, Google, GitHub, callback PKCE, recuperación de contraseña y TOTP. A 15 de agosto de 2026, el cierre local aplica estas garantías:
 
-1. Ve a **Authentication > Providers**
-2. Busca "Email" en la lista
-3. Asegúrate de que esté **habilitado** (toggle en verde)
+- El callback OAuth solo acepta rutas internas validadas en `next`; URLs absolutas, protocol-relative, backslashes, valores malformados y variantes codificadas caen en `/dashboard`.
+- Las rutas internas válidas conservan su query string.
+- El layout protegido comprueba el AAL en SSR y exige challenge cuando una sesión AAL1 puede elevarse a AAL2.
+- `/verify-2fa` valida también el destino de retorno y queda fuera del layout protegido para evitar bucles.
+- Transferir ownership, borrar una familia y borrar una cuenta mantienen comprobaciones AAL2 propias en servidor/RPC/Edge Function.
 
-### 2. Configurar Email Confirmation
+Estas garantías locales no validan por sí solas la configuración de un proyecto remoto. La auditoría vigente es [PROJECT_AUDIT_2026-08-07.md](PROJECT_AUDIT_2026-08-07.md); la auditoría del 5 de agosto se conserva únicamente como historia previa al roadmap.
 
-**Para Desarrollo (recomendado para pruebas):**
-- Desactiva "Confirm email"
-- Los usuarios podrán iniciar sesión inmediatamente después de registrarse
+## Variables de entorno
 
-**Para Producción (recomendado por seguridad):**
-- Activa "Confirm email"
-- Los usuarios recibirán un email de confirmación antes de poder acceder
+Copia `.env.example` a `.env` y completa únicamente las variables públicas previstas por el proyecto.
 
-### 3. Configurar URLs de Redirect
+No coloques una clave `service_role`, secret key, contraseña de base de datos ni credencial de proveedor en variables `VITE_*`/`PUBLIC_*`: se consideran públicas para el bundle o el cliente.
 
-1. Ve a **Authentication > URL Configuration**
-2. Configura lo siguiente:
+## Configuración del Dashboard de Supabase
 
-**Site URL:**
+### Email
+
+En **Authentication > Providers > Email**:
+
+- Desarrollo local: la confirmación puede desactivarse temporalmente para pruebas controladas.
+- Producción: activa la política decidida, configura SMTP propio y revisa límites, expiración y protección contra abuso en el Dashboard real.
+
+### URLs
+
+En **Authentication > URL Configuration** configura explícitamente los orígenes autorizados.
+
+Desarrollo:
+
+```text
+Site URL: http://localhost:5173
+Redirect URL: http://localhost:5173/auth/callback
+Redirect URL: http://localhost:5173/reset-password
 ```
-http://localhost:5173
+
+Producción debe usar únicamente el dominio HTTPS real y las rutas necesarias. Evita comodines amplios como `/**` salvo que exista una razón y una revisión de seguridad documentadas.
+
+La validación del callback es una defensa adicional y no sustituye la allowlist del proveedor.
+
+### OAuth
+
+Configura Google y GitHub con credenciales almacenadas en Supabase. Los callbacks registrados en cada proveedor deben coincidir con los que muestra el Dashboard.
+
+Después del intercambio PKCE, una persona con factor TOTP verificado y sesión AAL1 será detenida por el layout SSR antes de acceder a datos protegidos, incluso si el flujo OAuth intentaba volver directamente a una ruta interna.
+
+## Base de datos y perfil
+
+La migración base actual es `supabase/migrations/20260116050346_complete_schema.sql`. Contiene `handle_new_user()` y el trigger `on_auth_user_created`; las migraciones posteriores endurecen RLS, operaciones familiares, módulos y almacenamiento.
+
+Verificación local del trigger:
+
+```sql
+select tgname
+from pg_trigger
+where tgname = 'on_auth_user_created';
 ```
 
-**Redirect URLs (añade estas):**
-```
-http://localhost:5173/auth/callback
-http://localhost:5173/**
-```
+No ejecutes `001-complete-schema.sql`: ese nombre pertenece a documentación antigua y el archivo no existe. Antes de validar auth, reconstruye Supabase local mediante las migraciones versionadas.
 
-## Paso 2: Verificar Migraciones
-
-Asegúrate de que la migración `001-complete-schema.sql` esté aplicada, ya que contiene el trigger `handle_new_user()` que:
-
-- Crea automáticamente un perfil cuando un usuario se registra
-- Sincroniza el email del usuario con la tabla `profiles`
-- Se ejecuta tanto para OAuth como para email/password
-
-## Paso 3: Probar el Flujo
+## Flujos que deben probarse
 
 ### Registro
-1. Ve a `http://localhost:5173/register`
-2. Completa el formulario:
-   - Display Name (opcional)
-   - Email
-   - Password (mínimo 6 caracteres)
-   - Confirm Password
-3. Haz clic en "Sign Up"
 
-**Si email confirmation está desactivado:**
-- Serás redirigido automáticamente al dashboard
+1. Registro con email nuevo.
+2. Perfil creado una sola vez.
+3. Confirmación de email según la configuración seleccionada.
+4. Callback con ruta interna y con intentos externos/codificados.
+5. Registro duplicado y errores de proveedor sin filtrar información sensible.
 
-**Si email confirmation está activado:**
-- Verás un mensaje: "Check your email to confirm your account!"
-- Revisa tu bandeja de entrada (y spam)
-- Haz clic en el link de confirmación
-- Serás redirigido al dashboard
+### Login y MFA
 
-### Login
-1. Ve a `http://localhost:5173/login`
-2. Ingresa tu email y contraseña
-3. Haz clic en "Sign In"
-4. Serás redirigido al dashboard
+1. Credenciales correctas e incorrectas.
+2. Usuario sin TOTP → acceso general AAL1.
+3. Usuario con TOTP verificado y AAL1 → challenge obligatorio.
+4. Usuario con AAL2 → acceso protegido.
+5. Acceso directo a una ruta protegida con AAL1 elevable → `/verify-2fa`.
+6. Retorno interno con query tras verificar.
+7. `next=https://evil.example`, `//evil.example`, backslashes y codificación → `/dashboard`.
+8. OAuth con usuario que tiene TOTP → challenge antes de datos protegidos.
 
-## Troubleshooting
+### Recuperación de contraseña
 
-### "Email not confirmed"
-- Si olvidaste desactivar "Confirm email" en desarrollo, ve al Supabase Dashboard
-- **Authentication > Users** → encuentra tu usuario → "Confirm email"
+1. Solicitud desde `/forgot-password`.
+2. Mensaje neutral para emails existentes e inexistentes.
+3. Link válido, expirado y reutilizado según la configuración real.
+4. Actualización desde `/reset-password`.
+5. Tratamiento explícito de sesiones anteriores.
 
-### "Invalid login credentials"
-- Verifica que el email y contraseña sean correctos
-- Si registraste con OAuth (Google/GitHub), no puedes usar email/password con ese email
+### Cierre de sesión
 
-### Email no llega
-- Revisa la carpeta de spam
-- En desarrollo, los emails pueden tardar unos minutos
-- Para desarrollo, considera desactivar "Confirm email"
+1. Cookies eliminadas.
+2. Rutas protegidas inaccesibles después del logout.
+3. Estado de familia y stores del cliente reiniciados.
 
-### Profile no se crea
-- Verifica que el trigger `handle_new_user()` exista en la base de datos:
-```sql
-SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
-```
-- Si no existe, ejecuta la migración `001-complete-schema.sql`
+## Requisitos pendientes antes de producción
 
-## Seguridad
+- Probar email, OAuth, Storage y Edge Functions contra el proyecto remoto elegido.
+- Configurar rate limits, SMTP, CAPTCHA/antibot cuando proceda, logs y alertas.
+- Definir recovery de MFA, soporte de cuentas bloqueadas y notificaciones de seguridad.
+- Revisar CSP y cabeceras de seguridad en la plataforma de hosting elegida.
+- Mantener autorización de mínimo privilegio en acciones de servidor, RPC y RLS; MFA no sustituye roles ni ACL.
+- Ejecutar una revisión de seguridad independiente antes de almacenar datos familiares reales.
 
-### Passwords
-- Mínimo 6 caracteres (configurable en el código)
-- Supabase hashea automáticamente las contraseñas con bcrypt
-- Nunca se almacenan en texto plano
-
-### Email Confirmation
-- **Desarrollo**: Desactivado para agilizar pruebas
-- **Producción**: SIEMPRE activado para prevenir:
-  - Registro de cuentas falsas
-  - Abuso del sistema
-  - Verificar que el usuario tiene acceso al email
-
-### Rate Limiting
-Supabase incluye rate limiting por defecto:
-- Máximo de intentos de login por IP
-- Máximo de registros por hora
-
-## Recuperación de Contraseña ✅
-
-### Flujo Implementado
-
-1. **Usuario olvida contraseña:**
-   - Va a `/login` y hace clic en "Forgot password?"
-   - Redirige a `/forgot-password`
-
-2. **Solicitar reset:**
-   - Ingresa su email
-   - Supabase envía email con link de reset
-   - Link válido por 1 hora
-
-3. **Resetear contraseña:**
-   - Usuario hace clic en link del email
-   - Redirige a `/reset-password`
-   - Ingresa nueva contraseña (mínimo 6 caracteres)
-   - Contraseña actualizada exitosamente
-   - Redirige a `/login`
-
-### Personalizar Email Template
-
-Para personalizar el email de reset:
-
-1. Ve a **Authentication > Email Templates** en Supabase Dashboard
-2. Selecciona "Reset Password"
-3. Usa el template personalizado de `docs/EMAIL_TEMPLATES.md`
-4. Guarda los cambios
-
-Ver documentación completa en `docs/EMAIL_TEMPLATES.md`
-
----
-
-## Próximos Pasos
-
-### Magic Links (pendiente)
-Para login sin contraseña:
-
-1. Llamar a `supabase.auth.signInWithOtp({ email })`
-2. Usuario recibe link por email
-3. Clic en link → login automático
-
-### 2FA/MFA (pendiente)
-Para autenticación de dos factores:
-
-1. Configurar providers de 2FA
-2. Implementar TOTP (Time-based One-Time Password)
-3. O usar SMS/Email como segundo factor
+Consulta [2FA_SETUP.md](2FA_SETUP.md) para el comportamiento MFA y [EMAIL_TEMPLATES.md](EMAIL_TEMPLATES.md) para los borradores de email.

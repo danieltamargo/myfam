@@ -1,300 +1,123 @@
-# Two-Factor Authentication (2FA) Setup Guide
+# 2FA/MFA con TOTP: estado, uso y requisitos
 
-## ¿Qué es 2FA?
+## Estado actual
 
-La autenticación de dos factores (2FA) añade una capa extra de seguridad a tu cuenta. Además de tu contraseña, necesitarás un código de 6 dígitos generado por una aplicación de autenticación.
+MyFamily implementa MFA opcional mediante TOTP de Supabase:
 
-### Beneficios de 2FA
+- Enrollment desde el perfil mediante QR o secreto manual.
+- Challenge y verificación de códigos de seis dígitos.
+- Desactivación de factores desde el perfil.
+- Enforcement SSR para cualquier usuario que ya tenga un factor verificado.
+- Comprobación AAL2 adicional en operaciones críticas de cuenta y familia.
 
-✅ **Mayor seguridad**: Protege tu cuenta incluso si alguien obtiene tu contraseña
-✅ **Prevención de accesos no autorizados**: Solo tú puedes acceder con tu app de autenticación
-✅ **Estándar de la industria**: TOTP es usado por Google, GitHub, AWS, y más
+El layout del grupo `(protected)` consulta `getAuthenticatorAssuranceLevel()` en cada carga SSR autenticada. Cuando `currentLevel` es `aal1` y `nextLevel` es `aal2`, no carga datos protegidos: redirige a `/verify-2fa` y conserva como retorno únicamente una ruta interna validada. La pantalla de challenge está fuera del grupo protegido para evitar bucles.
 
----
+Un usuario sin factor verificado obtiene `aal1`/`aal1` y puede seguir usando las rutas protegidas; MyFamily no obliga a enrolar MFA. Esta política es **MFA obligatoria para quien haya optado por activarla**, no MFA obligatoria para todas las cuentas.
 
-## Paso 1: Instalar una App de Autenticación
+## Dos niveles de enforcement
 
-Elige una de estas aplicaciones (todas son gratuitas):
+### Acceso general con MFA activada
 
-### Recomendadas
+El enforcement SSR impide que una persona con TOTP verificado evite el challenge mediante:
 
-**Google Authenticator**
-- iOS: https://apps.apple.com/app/google-authenticator/id388497605
-- Android: https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2
-- ✅ Simple y confiable
-- ❌ No tiene backup automático
+- acceso directo a una URL protegida;
+- retorno desde OAuth;
+- navegación después de login con contraseña;
+- una sesión AAL1 recuperada o refrescada.
 
-**Microsoft Authenticator**
-- iOS: https://apps.apple.com/app/microsoft-authenticator/id983156458
-- Android: https://play.google.com/store/apps/details?id=com.azure.authenticator
-- ✅ Backup en la nube
-- ✅ Compatible con muchos servicios
+La decisión no depende del flujo cliente de login. El destino solicitado se serializa como `next`, se valida de nuevo en `/verify-2fa` y cae en `/dashboard` si es vacío, externo, protocol-relative, contiene backslashes, codificación ambigua o está mal formado.
 
-**Authy**
-- iOS: https://apps.apple.com/app/twilio-authy/id494168017
-- Android: https://play.google.com/store/apps/details?id=com.authy.authy
-- ✅ Backup multi-dispositivo
-- ✅ Sincronización entre teléfono y PC
+### Operaciones críticas que exigen AAL2
 
-**1Password / Bitwarden**
-- ✅ Si ya usas un gestor de contraseñas
-- ✅ Todo en un solo lugar
-- ⚠️ Menos seguro si tu vault es comprometido
+El acceso general no sustituye la autorización específica. Estas operaciones mantienen una comprobación AAL2 en servidor y, donde corresponde, también en la frontera que ejecuta la mutación:
 
----
+- transferencia de propiedad familiar;
+- borrado de una familia;
+- borrado de cuenta.
 
-## Paso 2: Habilitar 2FA en MyFamily
+Las RPC de transferencia/borrado familiar usan `private.require_aal2()` y la Edge Function de borrado de cuenta comprueba el claim `aal` del token. Las políticas RLS, roles familiares y ACL de cada dominio siguen siendo la frontera definitiva para los datos; AAL2 no concede permisos por sí solo.
 
-1. **Inicia sesión** en MyFamily
-2. Ve a tu **Perfil** (click en tu avatar → Profile)
-3. Busca la sección "**Two-Factor Authentication (2FA)**"
-4. Haz clic en "**Enable 2FA**"
+`ConfirmationModal` puede mostrar un challenge TOTP para mejorar la experiencia, pero nunca autoriza una operación. Un cliente modificado puede omitir cualquier modal, por lo que el endpoint/RPC debe repetir todas las comprobaciones necesarias.
 
-### Escanear el QR Code
+## Activar TOTP
 
-1. Se mostrará un código QR en pantalla
-2. Abre tu app de autenticación
-3. Toca "**+**" o "**Add account**"
-4. Selecciona "**Scan QR code**"
-5. Apunta la cámara al código QR
-6. La app agregará "MyFamily Authenticator"
+1. Inicia sesión.
+2. Abre el perfil.
+3. Selecciona **Enable 2FA**.
+4. Escanea el QR con una aplicación TOTP o introduce el secreto manualmente.
+5. Introduce el código actual y confirma.
 
-### Entrada Manual (si no puedes escanear)
+El QR y el secreto permiten clonar el segundo factor. No hagas capturas ni los guardes en texto claro. Usa únicamente las funciones de backup cifrado de tu autenticador o una política de factores adicionales revisada.
 
-Si no puedes escanear el QR:
+Flujo técnico de enrollment:
 
-1. En tu app, selecciona "**Enter a setup key**" o "**Manual entry**"
-2. Copia el código secreto mostrado en pantalla
-3. Pégalo en tu app
-4. Nombre de la cuenta: "MyFamily"
-5. Tipo: Time-based (TOTP)
-
-### Verificar y Activar
-
-1. Tu app mostrará un código de 6 dígitos
-2. Ingresa ese código en el campo de verificación
-3. Haz clic en "**Verify & Enable**"
-4. ✅ ¡2FA está ahora activo!
-
----
-
-## Paso 3: Iniciar Sesión con 2FA
-
-### Flujo de Login
-
-1. Ve a `/login`
-2. Ingresa tu **email** y **contraseña**
-3. Serás redirigido a `/verify-2fa`
-4. Abre tu **app de autenticación**
-5. Ingresa el **código de 6 dígitos**
-6. El código se verifica automáticamente
-7. ✅ ¡Has iniciado sesión!
-
-### Características del Login 2FA
-
-- ⚡ **Auto-submit**: El código se envía automáticamente al completar los 6 dígitos
-- 🔄 **Códigos rotativos**: Los códigos cambian cada 30 segundos
-- ⏱️ **Tiempo limitado**: Cada código es válido solo por 30 segundos
-- ❌ **Un solo uso**: Cada código solo puede usarse una vez
-
----
-
-## Desactivar 2FA
-
-⚠️ **Advertencia**: Desactivar 2FA hace tu cuenta menos segura.
-
-1. Ve a **Profile**
-2. En la sección "Two-Factor Authentication"
-3. Haz clic en "**Disable 2FA**"
-4. Confirma la acción
-5. 2FA estará desactivado inmediatamente
-
----
-
-## Solución de Problemas
-
-### "Invalid code" al verificar
-
-**Causas comunes:**
-- El código expiró (cada 30 segundos cambia)
-- Hora del dispositivo incorrecta
-- Código ingresado incorrectamente
-
-**Soluciones:**
-1. Espera a que se genere un nuevo código
-2. Verifica que la hora de tu dispositivo sea correcta
-3. Asegúrate de ingresar los 6 dígitos exactos
-
-### Perdí acceso a mi app de autenticación
-
-**Si aún tienes sesión activa:**
-1. Ve a tu perfil
-2. Desactiva 2FA
-3. Configura nuevamente con un nuevo dispositivo
-
-**Si NO tienes sesión activa:**
-- Actualmente no hay recuperación automática
-- Contacta al administrador del sistema
-- **Importante**: Guarda códigos de backup (próximamente)
-
-### El código QR no se escanea
-
-1. Asegúrate de que la cámara tenga permisos
-2. Mejora la iluminación
-3. Acerca o aleja el teléfono
-4. Usa **entrada manual** como alternativa
-
-### Los códigos no funcionan
-
-**Verifica la hora del sistema:**
-
-La autenticación TOTP depende de la hora exacta. Si tu dispositivo tiene la hora incorrecta, los códigos no funcionarán.
-
-**En iPhone:**
-Settings → General → Date & Time → Set Automatically (ON)
-
-**En Android:**
-Settings → System → Date & Time → Use network-provided time (ON)
-
----
-
-## Mejores Prácticas
-
-### ✅ Recomendado
-
-1. **Usa una app con backup**: Authy o Microsoft Authenticator
-2. **Guarda el código QR**: Toma captura de pantalla y guárdala segura
-3. **Configura en múltiples dispositivos**: Escanea el QR con varios dispositivos
-4. **Mantén tu app actualizada**: Actualiza tu app de autenticación regularmente
-
-### ❌ Evita
-
-1. **No compartas capturas del QR**: El QR permite acceder a tu cuenta
-2. **No uses la misma app sin backup**: Si pierdes el teléfono, pierdes acceso
-3. **No dependas de un solo dispositivo**: Ten backup en tablet u otro teléfono
-
----
-
-## Preguntas Frecuentes
-
-### ¿Qué pasa si cambio de teléfono?
-
-**Antes de cambiar:**
-1. Escanea el QR code con el nuevo teléfono (o desactiva y reactiva 2FA)
-2. Verifica que funciona en el nuevo dispositivo
-3. Solo entonces borra la app del teléfono antiguo
-
-**Si ya cambiaste y no guardaste el QR:**
-- Inicia sesión con tu sesión actual (si la tienes)
-- Desactiva 2FA
-- Reactívala y escanea con el nuevo teléfono
-
-### ¿Puedo usar SMS en vez de una app?
-
-Actualmente no. MyFamily usa TOTP (Time-based One-Time Password) que es:
-- ✅ Más seguro que SMS
-- ✅ Funciona sin conexión
-- ✅ Gratuito (no requiere plan de SMS)
-
-### ¿2FA es obligatorio?
-
-No, 2FA es **opcional** pero **muy recomendado**, especialmente si:
-- Eres owner de una familia
-- Manejas información sensible
-- Accedes desde múltiples dispositivos
-
-### ¿Cuánto tiempo es válido un código?
-
-Cada código es válido por **30 segundos**. Pasado ese tiempo, se genera uno nuevo automáticamente.
-
-### ¿Puedo compartir mi cuenta con 2FA?
-
-No es recomendado. Cada usuario debe tener su propia cuenta. Si necesitas compartir acceso a una familia, invita a otros usuarios como miembros.
-
----
-
-## Códigos de Backup (Próximamente)
-
-En una futura actualización, implementaremos:
-
-- **Recovery codes**: Códigos de un solo uso para emergencias
-- **Backup codes**: Para cuando no tengas acceso a tu app
-- **Email recovery**: Opción de desactivar 2FA vía email
-
-Por ahora, asegúrate de:
-1. Tener backup de la app de autenticación
-2. Guardar captura del QR code en lugar seguro
-3. Configurar en múltiples dispositivos
-
----
-
-## Soporte Técnico
-
-### Funciona con:
-- ✅ Google Authenticator
-- ✅ Microsoft Authenticator
-- ✅ Authy
-- ✅ 1Password
-- ✅ Bitwarden
-- ✅ Cualquier app compatible con TOTP (RFC 6238)
-
-### No funciona con:
-- ❌ SMS
-- ❌ Email codes
-- ❌ Llamadas telefónicas
-- ❌ Hardware tokens (por ahora)
-
----
-
-## Implementación Técnica
-
-Para desarrolladores que quieran entender cómo funciona:
-
-### Tecnología
-- **Protocolo**: TOTP (Time-based One-Time Password - RFC 6238)
-- **Hash**: SHA-1
-- **Dígitos**: 6
-- **Período**: 30 segundos
-- **QR Code**: otpauth:// URI format
-
-### Flujo de Enrollment
-
-```javascript
-// 1. Generar secret y QR
+```ts
 const { data } = await supabase.auth.mfa.enroll({
   factorType: 'totp',
   friendlyName: 'MyFamily Authenticator'
 });
-// data.totp.qr_code -> QR en base64
-// data.totp.secret -> Secret para entrada manual
 
-// 2. Verificar código
-const { data: challenge } = await supabase.auth.mfa.challenge({
-  factorId
-});
+const challenge = await supabase.auth.mfa.challenge({ factorId: data.id });
 await supabase.auth.mfa.verify({
-  factorId,
-  challengeId: challenge.id,
-  code: '123456'
+  factorId: data.id,
+  challengeId: challenge.data.id,
+  code
 });
 ```
 
-### Flujo de Verificación en Login
+## Login y navegación
 
-```javascript
-// 1. Login normal
-await supabase.auth.signInWithPassword({ email, password });
+1. El primer factor (password, OAuth u otro proveedor admitido) crea una sesión AAL1.
+2. El layout SSR comprueba el nivel actual y el siguiente nivel disponible.
+3. Una sesión AAL1 con factor verificado se redirige a `/verify-2fa` antes de cargar datos protegidos.
+4. Challenge + verify elevan la sesión a AAL2.
+5. La persona vuelve al destino interno solicitado o a `/dashboard` como fallback.
 
-// 2. Verificar si tiene 2FA
-const { data: factors } = await supabase.auth.mfa.listFactors();
-const hasMFA = factors?.totp?.some(f => f.status === 'verified');
+Supabase documenta esta matriz:
 
-// 3. Si tiene 2FA, pedir código
-if (hasMFA) {
-  // Redirigir a /verify-2fa
-}
-```
+| Nivel actual | Siguiente nivel | Comportamiento de MyFamily |
+| --- | --- | --- |
+| `aal1` | `aal1` | Acceso general permitido; no hay factor verificado |
+| `aal1` | `aal2` | Challenge obligatorio antes de rutas protegidas |
+| `aal2` | `aal2` | Acceso protegido permitido |
+| `aal2` | `aal1` | No se fuerza challenge; revisar/refrescar la sesión tras desenrolar |
 
----
+Referencia: [MFA de Supabase](https://supabase.com/docs/guides/auth/auth-mfa) y [TOTP](https://supabase.com/docs/guides/auth/auth-mfa/totp).
 
-¿Necesitas ayuda? Abre un issue en GitHub o contacta al administrador.
+## Desactivar TOTP
+
+La interfaz permite desenrolar factores desde el perfil. Antes de producción debe validarse el recorrido completo contra la configuración remota, incluida la exigencia del proveedor sobre AAL2, el refresco de sesión posterior, la auditoría y la notificación al usuario.
+
+## Pérdida del autenticador
+
+MyFamily no implementa recovery codes ni recuperación autoservicio. Si la persona pierde el dispositivo y no conserva un método alternativo válido, necesitará un procedimiento administrativo todavía no definido.
+
+Antes de ofrecer MFA a usuarios reales deben cerrarse:
+
+- procedimiento de recuperación con verificación de identidad;
+- revocación administrativa auditada;
+- notificación ante enrollment y unenrollment;
+- política probada para varios factores/dispositivos;
+- soporte operativo para cuentas bloqueadas.
+
+No se deben prometer “códigos de backup” mientras no existan en el producto y el proveedor no los soporte en la integración elegida.
+
+## Matriz mínima de pruebas
+
+| Caso | Resultado esperado |
+| --- | --- |
+| Usuario sin factor + sesión AAL1 | Accede a rutas protegidas según roles/RLS |
+| Usuario con factor + sesión AAL1 | Redirección SSR al challenge |
+| Usuario con factor + sesión AAL2 | Acceso protegido permitido |
+| Acceso directo a `/dashboard` con AAL1 elevable | Redirección antes de consultar datos |
+| Acceso a `/verify-2fa` | No entra en un bucle SSR |
+| `next` externo, codificado o con backslash | Fallback `/dashboard` |
+| POST crítico directo con AAL1 | Rechazado sin mutación |
+| Refresh de sesión | La siguiente carga SSR vuelve a evaluar AAL |
+| Código inválido, expirado o reutilizado | Rechazado sin filtrar detalles sensibles |
+
+Las pruebas unitarias cubren las decisiones SSR y la validación del retorno. La prueba manual final debe añadir un TOTP real contra Supabase local y recorrer password, URL directa y OAuth configurado.
+
+## Alcance funcional
+
+MyFamily usa TOTP mediante una aplicación autenticadora. No implementa SMS, email como segundo factor, hardware keys ni recovery codes. Cualquier aplicación compatible con TOTP/RFC 6238 puede funcionar, pero su backup y seguridad pertenecen al usuario y al proveedor de esa aplicación.

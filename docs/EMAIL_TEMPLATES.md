@@ -1,5 +1,11 @@
 # Configuración de Email Templates en Supabase
 
+## Estado de este documento
+
+Los bloques siguientes son **borradores**, no una copia verificada de la configuración remota. Antes de producción hay que revisar en el Dashboard las variables admitidas, expiración, rate limits, proveedor SMTP, redirects y contenido realmente publicado.
+
+La marca definitiva es **MyFamily**. Elige un idioma coherente por plantilla antes de activarla y comprueba el contenido realmente publicado en Supabase.
+
 ## Acceso a Email Templates
 
 1. Ve a tu proyecto en **Supabase Dashboard**
@@ -106,7 +112,7 @@
     </div>
 
     <p style="color: #e53e3e; font-size: 14px; font-weight: bold;">
-      ⚠️ This link will expire in 1 hour.
+      ⚠️ For your security, use this link as soon as possible.
     </p>
 
     <p style="color: #718096; font-size: 14px;">
@@ -179,9 +185,7 @@ Los redirect URLs ya están configurados en el código:
 
 ### Rate Limiting
 
-Supabase incluye rate limiting por defecto:
-- Máximo 4 emails de reset por hora por email
-- Previene spam y abuso del sistema
+Configura y verifica los límites vigentes en **Authentication > Rate Limits**. No dependas de una cifra fija en esta documentación: puede variar por plan, versión y configuración del proyecto.
 
 ---
 
@@ -215,13 +219,13 @@ Supabase incluye rate limiting por defecto:
 ### Emails no llegan
 - Verifica que el proveedor de email esté habilitado
 - Revisa la carpeta de spam
-- Verifica que la configuración SMTP sea correcta (Supabase usa SendGrid por defecto)
-- En el plan gratuito hay límites de emails por hora
+- Verifica que la configuración SMTP y el remitente estén validados
+- Revisa los límites y logs vigentes del proyecto en el Dashboard
 
 ### Links expirados
-- Los links de reset expiran en 1 hora por defecto
-- Los links de confirmación no expiran por defecto
-- Puedes configurar esto en Authentication settings
+- Revisa la expiración configurada realmente en **Authentication settings**.
+- No dependas de cifras copiadas en esta guía: los límites pueden variar por proyecto, plan y versión.
+- Prueba enlaces válidos, expirados y reutilizados antes del despliegue.
 
 ### Emails desde producción
 Si planeas usar tu propio dominio de email:
@@ -235,7 +239,7 @@ Si planeas usar tu propio dominio de email:
 
 Para una mejor experiencia:
 
-1. **Logo:** Añade el logo de MyFamily en los templates
+1. **Marca:** Usa `MyFamily` de forma consistente
 2. **Colores:** Usa los colores de tu marca
 3. **Footer:** Incluye links a redes sociales, términos, etc.
 4. **Idioma:** Los templates soportan i18n si lo necesitas en el futuro
