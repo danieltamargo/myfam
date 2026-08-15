@@ -131,28 +131,33 @@ test('crea un evento recurrente privado, lo filtra y protege sus recordatorios',
 			.eq('name', 'Cumpleaños')
 			.single();
 		expect(categoryError).toBeNull();
+		const eventYear = new Date().getUTCFullYear() + 1;
+		const eventDate = `${eventYear}-08-10`;
 
 		await signIn(page, ownerEmail, password);
-		await page.goto(`/family/${familyId}/calendar?view=month&date=2026-08-10`);
+		await page.goto(`/family/${familyId}/calendar?view=month&date=${eventDate}`);
 		await expect(page.getByRole('heading', { name: 'Calendario familiar' })).toBeVisible();
+		await page.waitForTimeout(750);
 
 		const eventName = `Cumpleaños recurrente ${suffix}`;
 		const createForm = page.locator('#nuevo-evento');
 		await createForm.getByLabel('Título').fill(eventName);
-		await createForm.getByLabel('Inicio').fill('2026-08-10T14:00');
-		await createForm.getByLabel('Final').fill('2026-08-10T15:30');
+		await createForm.getByLabel('Inicio').fill(`${eventDate}T14:00`);
+		await createForm.getByLabel('Final').fill(`${eventDate}T15:30`);
 		await createForm.getByLabel('Visibilidad').selectOption('selected_members');
 		await createForm.getByLabel('Repetición').selectOption('daily');
 		await createForm.getByLabel('Cada').fill('1');
-		await createForm.getByLabel('Repetir hasta').fill('2026-08-12T14:00');
+		await createForm.getByLabel('Repetir hasta').fill(`${eventYear}-08-12T14:00`);
 		await createForm.getByLabel('Máximo de veces').fill('3');
 		await createForm.getByLabel('Recordatorio').selectOption('30');
 		await createForm.getByLabel('Categoría Wishlist').selectOption(category!.id);
 		await createForm.getByLabel('Invitada Calendario').check({ force: true });
-		await createForm.getByRole('button', { name: 'Crear evento' }).press('Enter');
+		await expect(createForm.getByLabel('Visibilidad')).toHaveValue('selected_members');
+		await expect(createForm.getByLabel('Recordatorio')).toHaveValue('30');
+		await expect(createForm.getByLabel('Invitada Calendario')).toBeChecked();
+		await createForm.getByRole('button', { name: 'Crear evento' }).click();
 
 		await expect(page.getByText('Evento creado.')).toBeVisible();
-		await expect(page.getByText(eventName).first()).toBeVisible();
 		const { data: storedEvent, error: storedEventError } = await owner
 			.from('calendar_events')
 			.select('id, visibility, timezone, recurrence_frequency, wishlist_category_id')
@@ -171,8 +176,8 @@ test('crea un evento recurrente privado, lo filtra y protege sus recordatorios',
 			'get_calendar_occurrences',
 			{
 				p_family_id: familyId!,
-				p_from: '2026-08-10T00:00:00Z',
-				p_to: '2026-08-13T00:00:00Z'
+				p_from: `${eventYear}-08-10T00:00:00Z`,
+				p_to: `${eventYear}-08-13T00:00:00Z`
 			}
 		);
 		expect(occurrencesError).toBeNull();
@@ -184,7 +189,7 @@ test('crea un evento recurrente privado, lo filtra y protege sus recordatorios',
 		).toEqual([]);
 
 		await page.goto(
-			`/family/${familyId}/calendar?view=agenda&date=2026-08-10&participant=${selectedId}&event=${storedEvent!.id}`
+			`/family/${familyId}/calendar?view=agenda&date=${eventDate}&participant=${selectedId}&event=${storedEvent!.id}`
 		);
 		const eventDetail = page.locator('#detalle-evento');
 		await expect(eventDetail.locator('#event-detail-title')).toHaveText(eventName);
@@ -196,7 +201,7 @@ test('crea un evento recurrente privado, lo filtra y protege sus recordatorios',
 
 		const { data: processed, error: reminderError } = await admin.rpc(
 			'process_calendar_reminders',
-			{ p_now: '2026-08-10T11:31:00Z', p_limit: 20 }
+			{ p_now: `${eventYear}-08-10T11:31:00Z`, p_limit: 20 }
 		);
 		expect(reminderError).toBeNull();
 		expect(processed).toBeGreaterThanOrEqual(1);

@@ -340,10 +340,12 @@ select lives_ok(
   'author reserves document deletion with optimistic versioning'
 );
 select lives_ok(
-  $$delete from storage.objects
+  $$select set_config('storage.allow_delete_query', 'true', true);
+    delete from storage.objects
     where bucket_id = 'family-documents'
-      and name = '60000000-1000-4000-8000-000000000001/60000000-0000-4000-8000-000000000003/60000000-2000-4000-8000-000000000002'$$,
-  'author deletes the private object after reserving metadata'
+      and name = '60000000-1000-4000-8000-000000000001/60000000-0000-4000-8000-000000000003/60000000-2000-4000-8000-000000000002';
+    select set_config('storage.allow_delete_query', 'false', true)$$,
+  'Storage API-authorized path lets the author delete the private object after reserving metadata'
 );
 select lives_ok(
   $$select public.complete_family_document_delete('60000000-2000-4000-8000-000000000002')$$,
