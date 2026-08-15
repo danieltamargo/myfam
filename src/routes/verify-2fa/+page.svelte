@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { createClient } from '$lib/supabase';
+	import { safeInternalPath } from '$lib/auth/redirects';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 
 	const supabase = createClient();
@@ -10,6 +12,7 @@
 	let code = $state('');
 	let factorId = $state('');
 	let hasSession = $state(false);
+	let returnTo = $derived(safeInternalPath(page.url.searchParams.get('next')));
 
 	onMount(async () => {
 		// Verificar si el usuario tiene una sesión parcial (autenticado pero sin 2FA)
@@ -34,8 +37,8 @@
 		const verifiedFactor = data.totp?.find((f) => f.status === 'verified');
 
 		if (!verifiedFactor) {
-			// Si no hay 2FA configurado, continuar al dashboard
-			goto('/dashboard');
+			// Si no hay 2FA configurado, continuar al destino interno solicitado
+			goto(returnTo);
 			return;
 		}
 
@@ -71,8 +74,8 @@
 
 			if (verifyError) throw verifyError;
 
-			// Éxito - redirigir al dashboard
-			goto('/dashboard');
+			// Éxito - volver al destino interno solicitado
+			goto(returnTo);
 		} catch (err: any) {
 			error = err.message || 'Invalid code. Please try again.';
 			code = '';

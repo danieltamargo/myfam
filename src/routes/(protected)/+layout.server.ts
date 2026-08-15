@@ -1,12 +1,15 @@
 import type { LayoutServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import { enforceMfaForProtectedRoute } from '$lib/server/auth/mfa';
 
-export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabase } }) => {
+export const load: LayoutServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
 	const { user, session } = await safeGetSession();
 
 	if (!user || !session) {
 		throw redirect(303, '/login');
 	}
+
+	await enforceMfaForProtectedRoute(supabase, url);
 
 	// Get user's families
 	const { data: familyMembers } = await supabase
