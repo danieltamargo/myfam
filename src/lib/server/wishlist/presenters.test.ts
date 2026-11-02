@@ -137,4 +137,19 @@ describe('presentWishlistData', () => {
 		expect(result.myPurchases).toHaveLength(1);
 		expect(result.myPurchases[0]?.item_id).toBe(otherItemId);
 	});
+
+	it('keeps received gifts out of ordinary lists and exposes only the viewer history without buyers', () => {
+		const data = queryData();
+		data.items = data.items.map((item) => ({ ...item, status: 'fulfilled' }));
+		const result = presentWishlistData(data, currentUserId);
+
+		expect(result.items).toEqual([]);
+		expect(result.receivedItems).toEqual([
+			{ id: ownItemId, name: 'Mi regalo', description: null, updated_at: null }
+		]);
+		expect(result.allPurchases).toEqual([]);
+		expect(result.allReservations).toEqual([]);
+		expect(result.comments).toEqual([]);
+		expect(JSON.stringify(result.receivedItems)).not.toContain(coordinatorId);
+	});
 });

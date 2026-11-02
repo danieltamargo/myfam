@@ -26,6 +26,7 @@ export interface FamilyNoteRecord extends Omit<
 }
 
 export interface NotePageData {
+	selectedMember: string;
 	filter: NoteFilter;
 	search: string;
 	members: NoteMember[];
@@ -58,7 +59,8 @@ export async function loadNotePage(
 	userId: string,
 	filter: NoteFilter,
 	search: string,
-	requestedNoteId: string | null
+	requestedNoteId: string | null,
+	selectedMember = ''
 ): Promise<NotePageData> {
 	let notesQuery = supabase
 		.from('family_notes')
@@ -68,6 +70,7 @@ export async function loadNotePage(
 		.eq('family_id', familyId)
 		.order('updated_at', { ascending: false });
 
+	if (selectedMember) notesQuery = notesQuery.eq('created_by', selectedMember);
 	if (filter === 'archived') notesQuery = notesQuery.not('archived_at', 'is', null);
 	else notesQuery = notesQuery.is('archived_at', null);
 	if (filter === 'mine') notesQuery = notesQuery.eq('created_by', userId);
@@ -134,5 +137,5 @@ export async function loadNotePage(
 		: (notes[0]?.id ?? null);
 	const selectedNote = notes.find((note) => note.id === selectedNoteId) ?? null;
 
-	return { filter, search, members, notes, selectedNoteId, selectedNote };
+	return { filter, search, members, notes, selectedNoteId, selectedNote, selectedMember };
 }

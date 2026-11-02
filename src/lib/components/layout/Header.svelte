@@ -4,6 +4,7 @@
 	import { goto } from '$app/navigation';
 	import { activeFamily } from '$lib/stores/familyStore';
 	import NotificationBell from './NotificationBell.svelte';
+	import { resolve } from '$app/paths';
 
 	interface Props {
 		user?: {
@@ -25,13 +26,15 @@
 			role: string;
 		} | null;
 		notifications?: Array<any>;
+		isSuperAdmin?: boolean;
 	}
 
 	let {
 		user,
 		families = [],
 		activeFamily: initialActiveFamily = null,
-		notifications = []
+		notifications = [],
+		isSuperAdmin = false
 	}: Props = $props();
 
 	const supabase = createClient();
@@ -158,7 +161,11 @@
 			{/if}
 
 			<div class="dropdown dropdown-end">
-				<div tabindex="-1" role="button" class="btn avatar btn-circle btn-ghost">
+				<button
+					type="button"
+					aria-label="Abrir menú de usuario"
+					class="btn avatar btn-circle btn-ghost"
+				>
 					<div class="w-10 rounded-full ring ring-primary ring-offset-2 ring-offset-base-100">
 						{#if user.user_metadata?.avatar_url}
 							<img
@@ -175,7 +182,7 @@
 							</div>
 						{/if}
 					</div>
-				</div>
+				</button>
 				<ul
 					tabindex="-1"
 					class="dropdown-content menu z-1 mt-3 w-52 overflow-x-hidden overflow-y-auto menu-sm rounded-box bg-base-200 p-2 shadow"
@@ -192,6 +199,13 @@
 							</a>
 						</li>
 					{/each}
+					{#if isSuperAdmin}
+						<li>
+							<a href={resolve('/admin')} class={isActive('/admin') ? 'active' : ''}
+								>Administración</a
+							>
+						</li>
+					{/if}
 					<div class="divider my-1"></div>
 					<li>
 						<button onclick={signOut} class="text-error">

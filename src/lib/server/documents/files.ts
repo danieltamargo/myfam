@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 import { DOCUMENT_LIMITS, DOCUMENT_MIME_TYPES, type DocumentMimeType } from './schemas';
+import { ScannedUploadError, uploadScannedObject } from '$lib/server/security/upload-storage';
 
 export const FAMILY_DOCUMENTS_BUCKET = 'family-documents';
 const UNSAFE_NAME_PATTERN = /[/\\\p{Cc}]/u;
@@ -79,13 +80,13 @@ export async function uploadDocumentObject(
 	path: string,
 	validated: ValidatedDocumentFile
 ): Promise<void> {
-	const { error } = await supabase.storage
-		.from(FAMILY_DOCUMENTS_BUCKET)
-		.upload(path, validated.file, {
-			contentType: validated.mimeType,
-			upsert: false
-		});
-	if (error) throw new DocumentFileError(500, 'No se pudo guardar el documento privado.');
+	try {
+		await uploadScannedObject(supabase, { bucket: FAMILY_DOCUMENTS_BUCKET }, path, validated.file);
+	} catch (caught) {
+		if (caught instanceof ScannedUploadError)
+			throw new DocumentFileError(caught.status, caught.message);
+		throw new DocumentFileError(503, 'No se pudo analizar el documento de forma segura.');
+	}
 }
 
 export async function removeDocumentObject(

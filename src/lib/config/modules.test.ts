@@ -11,7 +11,7 @@ describe('project test baseline', () => {
 		expect(cn('px-2', optionalClass ? 'hidden' : undefined, 'px-4')).toBe('px-4');
 	});
 
-	it('keeps Wishlist core, exposes Expenses and disables Games globally', () => {
+	it('keeps Wishlist core and exposes optional Expenses and secure Games', () => {
 		expect(MODULE_CATALOG.wishlist.availability).toBe('core');
 		expect(MODULE_CATALOG.expenses.availability).toBe('available');
 		expect(getNavigationModules([]).some((module) => module.id === 'expenses')).toBe(false);
@@ -19,11 +19,9 @@ describe('project test baseline', () => {
 			true
 		);
 		expect(getNavigationModules([]).map((module) => module.id)).toEqual(['members', 'wishlist']);
-		expect(MODULE_CATALOG.games.availability).toBe('disabled');
-		expect(getNavigationModules(['games']).some((module) => module.id === 'games')).toBe(false);
-		expect(() => requireModuleAvailable('games')).toThrowError(
-			expect.objectContaining({ status: 404 })
-		);
+		expect(MODULE_CATALOG.games.availability).toBe('available');
+		expect(getNavigationModules(['games']).some((module) => module.id === 'games')).toBe(true);
+		expect(requireModuleAvailable('games')).toMatchObject({ id: 'games' });
 	});
 
 	it('publishes every completed organizational module as available', () => {
@@ -36,7 +34,8 @@ describe('project test baseline', () => {
 			'planner',
 			'meals',
 			'habits',
-			'documents'
+			'documents',
+			'games'
 		] as const) {
 			expect(MODULE_CATALOG[moduleId]).toMatchObject({
 				availability: 'available',
@@ -48,10 +47,18 @@ describe('project test baseline', () => {
 	it.each([
 		['games index', loadGames],
 		['game room', loadGameRoom]
-	])('returns 404 before loading the %s route', async (_label, load) => {
+	])('returns 404 before loading the family-disabled %s route', async (_label, load) => {
+		const query = {
+			select: () => query,
+			eq: () => query,
+			maybeSingle: async () => ({ data: { enabled: false }, error: null })
+		};
 		const event = {
 			params: { familyId: crypto.randomUUID(), roomId: crypto.randomUUID() },
-			locals: { supabase: {}, safeGetSession: () => Promise.resolve({ user: null }) }
+			locals: {
+				supabase: { from: () => query },
+				safeGetSession: () => Promise.resolve({ user: null })
+			}
 		};
 
 		await expect(load(event as never)).rejects.toMatchObject({ status: 404 });

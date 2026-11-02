@@ -13,11 +13,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, {
 			encoding: 'utf8',
@@ -72,6 +69,23 @@ test('coordina cantidades sin spoilers entre owner, comprador y usuario externo'
 	page,
 	browser
 }, testInfo) => {
+	const receivedCommentIds = new Set<string>();
+	page.on('websocket', (socket) => {
+		if (!socket.url().includes('/realtime/')) return;
+		socket.on('framereceived', ({ payload }) => {
+			const frame = JSON.parse(String(payload));
+			const event = Array.isArray(frame) ? frame[3] : frame.event;
+			const body = Array.isArray(frame) ? frame[4] : frame.payload;
+			const change = body?.data;
+			if (
+				event === 'postgres_changes' &&
+				change?.table === 'gift_item_comments' &&
+				typeof change.record?.id === 'string'
+			) {
+				receivedCommentIds.add(change.record.id);
+			}
+		});
+	});
 	test.setTimeout(120_000);
 	const status = getLocalSupabaseStatus();
 	const admin = createClient<Database>(status.API_URL, status.SECRET_KEY, {
@@ -228,13 +242,71 @@ test('coordina cantidades sin spoilers entre owner, comprador y usuario externo'
 
 		ownerContext = await browser.newContext();
 		const ownerPage = await ownerContext.newPage();
+		await ownerPage.clock.install();
 		await signIn(ownerPage, ownerEmail, password);
 		await ownerPage.goto(`/family/${familyId}/wishlist?item=${item!.id}`);
 		const ownerDialog = ownerPage.getByRole('dialog', { name: 'Detalle del regalo' });
 		await expect(ownerDialog.getByText('La coordinación está oculta')).toBeVisible();
 		await expect(ownerDialog.getByTestId('wishlist-coordination')).toHaveCount(0);
+		await page
+			.getByTestId(`wishlist-item-${item!.id}`)
+			.getByRole('button', { name: 'Ver detalles', exact: true })
+			.click();
+		await expect(dialog).toBeVisible();
+		const remoteComment = `Coordinación privada ${suffix}`;
+		const { data: createdComment, error: commentError } = await buyer
+			.from('gift_item_comments')
+			.insert({ item_id: item!.id, author_id: buyerId, content: remoteComment })
+			.select('id')
+			.single();
+		expect(commentError).toBeNull();
+		await expect
+			.poll(() => receivedCommentIds.has(createdComment!.id), { timeout: 10_000 })
+			.toBe(true);
+		await expect(dialog.getByText(remoteComment, { exact: true })).toBeVisible();
+		await expect(ownerDialog.getByText(remoteComment, { exact: true })).toHaveCount(0);
+		await expect(ownerDialog.getByText('La coordinación está oculta')).toBeVisible();
+		expect(
+			(await owner.from('gift_item_comments').select('id').eq('id', createdComment!.id)).data
+		).toEqual([]);
+		await page.keyboard.press('Escape');
+		await expect(dialog).not.toBeVisible();
+
 		await ownerPage.keyboard.press('Escape');
 		await expect(ownerPage).not.toHaveURL(/item=/);
+		const { data: linkedCalendarEvent, error: linkedCalendarError } = await admin
+			.from('calendar_events')
+			.insert({
+				family_id: familyId!,
+				created_by: ownerId,
+				title: `Evento privado ${suffix}`,
+				starts_at: '2026-11-01T10:00:00Z',
+				ends_at: '2026-11-01T11:00:00Z',
+				timezone: 'UTC',
+				visibility: 'selected_members'
+			})
+			.select('id')
+			.single();
+		expect(linkedCalendarError).toBeNull();
+		await ownerPage.reload();
+		await ownerPage
+			.getByTestId(`wishlist-item-${item!.id}`)
+			.getByRole('button', { name: 'Editar', exact: true })
+			.click();
+		const editDialog = ownerPage.getByRole('dialog', { name: 'Editar regalo' });
+		await editDialog
+			.getByLabel('Evento del calendario (opcional)')
+			.selectOption(linkedCalendarEvent!.id);
+		await editDialog.getByRole('button', { name: 'Guardar cambios' }).click();
+		await expect(editDialog).not.toBeVisible();
+		expect(
+			(await owner.from('gift_calendar_event_links').select('event_id').eq('item_id', item!.id))
+				.data
+		).toEqual([{ event_id: linkedCalendarEvent!.id }]);
+		expect(
+			(await buyer.from('gift_calendar_event_links').select('event_id').eq('item_id', item!.id))
+				.data
+		).toEqual([]);
 
 		const downloadPromise = ownerPage.waitForEvent('download');
 		await ownerPage.getByRole('button', { name: 'Exportar mi lista' }).click();
@@ -247,6 +319,73 @@ test('coordina cantidades sin spoilers entre owner, comprador y usuario externo'
 		expect(serializedExport).not.toContain('purchase');
 		expect(serializedExport).not.toContain('reservation');
 		expect(serializedExport).not.toContain('image_url');
+
+		await ownerPage.goto(`/family/${familyId}/wishlist?item=${item!.id}`);
+		await ownerDialog.getByRole('button', { name: 'Marcar como recibido' }).click();
+		await expect(ownerDialog).not.toBeVisible();
+		await expect(ownerPage.getByTestId(`wishlist-item-${item!.id}`)).toHaveCount(0);
+		let refreshResponses = 0;
+		const drainedRefresh = ownerPage.waitForResponse((response) => {
+			const url = new URL(response.url());
+			const activeRefresh =
+				url.pathname.endsWith('/wishlist/__data.json') && !url.searchParams.has('view');
+			if (activeRefresh) refreshResponses += 1;
+			return activeRefresh;
+		});
+		await expect
+			.poll(async () => {
+				await ownerPage.evaluate(() => window.dispatchEvent(new Event('focus')));
+				await ownerPage.clock.runFor(100);
+				return refreshResponses;
+			})
+			.toBeGreaterThan(0);
+		await (await drainedRefresh).finished();
+		await ownerPage.clock.runFor(100);
+		let releaseHistory: () => void = () => {};
+		const historyBarrier = new Promise<void>((resolve) => (releaseHistory = resolve));
+		let historyRequested: () => void = () => {};
+		const historyRequest = new Promise<void>((resolve) => (historyRequested = resolve));
+		let historyPending = false;
+		const competingRefreshes: string[] = [];
+		await ownerPage.route('**/wishlist/__data.json?*', async (route) => {
+			if (new URL(route.request().url()).searchParams.get('view') === 'history') {
+				historyPending = true;
+				historyRequested();
+				await historyBarrier;
+			} else if (historyPending) {
+				competingRefreshes.push(new URL(route.request().url()).pathname);
+			}
+			await route.continue();
+		});
+		const openHistory = ownerPage
+			.getByRole('button', { name: 'Mi histórico', exact: true })
+			.click();
+		try {
+			await historyRequest;
+			await ownerPage.evaluate(() => window.dispatchEvent(new Event('focus')));
+			await ownerPage.clock.runFor(100);
+		} finally {
+			releaseHistory();
+		}
+		await openHistory;
+		const history = ownerPage.getByRole('region', { name: 'Regalos recibidos' });
+		await expect(ownerPage).toHaveURL(/view=history/);
+		await expect(history.getByText(itemName, { exact: true })).toBeVisible();
+		historyPending = false;
+		expect(competingRefreshes).toEqual([]);
+		await expect(history.getByText(/Comprado por/)).toHaveCount(0);
+		expect((await owner.from('gift_purchases').select('id').eq('item_id', item!.id)).data).toEqual(
+			[]
+		);
+		await history.getByRole('button', { name: 'Revelar comprador (spoiler)' }).click();
+		await expect(history.getByText('Comprado por Comprador Wishlist · 2 unidades')).toBeVisible();
+		await page.reload();
+		await expect(page.getByTestId(`wishlist-item-${item!.id}`)).toHaveCount(0);
+		await page.getByRole('button', { name: 'Mi histórico', exact: true }).click();
+		await expect(
+			page.getByRole('region', { name: 'Regalos recibidos' }).getByText(itemName)
+		).toHaveCount(0);
+		expect((await buyer.from('gift_items').select('id').eq('id', item!.id)).data).toEqual([]);
 
 		outsiderContext = await browser.newContext();
 		const outsiderPage = await outsiderContext.newPage();

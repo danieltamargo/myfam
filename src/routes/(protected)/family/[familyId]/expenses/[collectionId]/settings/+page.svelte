@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -39,9 +40,9 @@
 <div class="mx-auto max-w-5xl space-y-6 pb-12">
 	<nav class="breadcrumbs text-sm text-base-content/60" aria-label="Ruta de navegación">
 		<ul>
-			<li><a href={`/family/${data.family.id}/expenses`}>Gastos</a></li>
+			<li><a href={resolve(`/family/${data.family.id}/expenses` as '/')}>Gastos</a></li>
 			<li>
-				<a href={`/family/${data.family.id}/expenses/${data.collection.id}`}
+				<a href={resolve(`/family/${data.family.id}/expenses/${data.collection.id}` as '/')}
 					>{data.collection.name}</a
 				>
 			</li>
@@ -119,6 +120,43 @@
 						<dd class="mt-1 font-mono">{data.collection.currency}</dd>
 					</div>
 				</dl>
+			{/if}
+		</div>
+	</section>
+
+	<section aria-labelledby="calendar-association" class="card bg-base-100 card-border">
+		<div class="card-body gap-4">
+			<h2 id="calendar-association" class="card-title">Evento del calendario</h2>
+			<p class="text-sm text-base-content/65">
+				Puedes asociar esta colección a un evento real o dejarla como genérica. La asociación solo
+				se muestra a quienes pueden ver tanto la colección como el evento.
+			</p>
+			{#if data.calendarEvent}
+				<p class="font-medium">Evento: {data.calendarEvent.title}</p>
+			{/if}
+			{#if canManage && !data.collection.archivedAt}
+				<form
+					method="POST"
+					action="?/setCalendarEvent"
+					class="flex flex-col items-start gap-3 sm:flex-row sm:items-end"
+				>
+					<label class="form-control w-full sm:max-w-md" for="settings-calendar-event">
+						<span class="mb-2 font-medium">Asociación</span>
+						<select id="settings-calendar-event" class="select w-full" name="calendar_event_id">
+							<option value="__keep__">No cambiar asociación</option>
+							<option value="">Sin evento (desvincular)</option>
+							{#each data.calendarEvents as event (event.id)}
+								<option value={event.id}
+									>{event.title} · {new Intl.DateTimeFormat('es-ES', {
+										dateStyle: 'short',
+										timeZone: event.timezone
+									}).format(new Date(event.starts_at))}</option
+								>
+							{/each}
+						</select>
+					</label>
+					<button type="submit" class="btn btn-primary">Guardar asociación</button>
+				</form>
 			{/if}
 		</div>
 	</section>

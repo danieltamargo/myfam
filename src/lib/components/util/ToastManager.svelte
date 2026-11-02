@@ -31,15 +31,11 @@
 						d={getIconForType(toast.type)}
 					/>
 				</svg>
-				{#if toast.useHTML}
-					<span>{@html toast.message}</span>
-				{:else}
-					<span>{toast.message}</span>
-				{/if}
+				<span>{toast.message}</span>
 			</div>
 			<button
 				class="btn ms-auto btn-ghost btn-sm"
-				on:click={() => toastStore.dismiss(toast.id)}
+				onclick={() => toastStore.dismiss(toast.id)}
 				aria-label="Close"
 			>
 				<svg

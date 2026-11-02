@@ -1,530 +1,109 @@
-import { error, fail, redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import type {
-	TicTacToeState,
-	TicTacToeBoard,
-	Connect4State,
-	BotDifficulty
-} from '$lib/types/games';
-import { getBotMove } from '$lib/games/ai/tic-tac-toe-ai';
-import type { Database, Json } from '$lib/types/database';
-import { requireModuleAvailable } from '$lib/server/modules/availability';
+import { requireFamilyRole } from '$lib/server/auth/authorization';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
+import { loadFamilyGame } from '$lib/server/games/queries';
+import {
+	gameCommandFailure,
+	parseGameMove,
+	parseGameVersion,
+	parseWordleGuess
+} from '$lib/server/games/commands';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
-	requireModuleAvailable('games');
-
-	const { user } = await safeGetSession();
-	if (!user) {
-		throw error(401, 'Unauthorized');
-	}
-
-	const roomId = params.roomId;
-
-	// Load room details
-	const { data: room, error: roomError } = await supabase
-		.from('game_rooms')
-		.select(
-			`
-			*,
-			creator:profiles!game_rooms_created_by_fkey (
-				id,
-				display_name,
-				avatar_url
-			)
-		`
-		)
-		.eq('id', roomId)
-		.single();
-
-	if (roomError || !room) {
-		console.error('Error loading room:', roomError);
-		throw error(404, 'Room not found');
-	}
-
-	// Verify user is a participant or family member
-	const { data: participation } = await supabase
-		.from('room_participants')
-		.select('*')
-		.eq('room_id', roomId)
-		.eq('user_id', user.id)
-		.eq('is_active', true)
-		.single();
-
-	const { data: familyMembership } = room.family_id
-		? await supabase
-				.from('family_members')
-				.select('id')
-				.eq('family_id', room.family_id)
-				.eq('user_id', user.id)
-				.maybeSingle()
-		: { data: null };
-	const isFamilyMember = Boolean(familyMembership);
-
-	if (!participation && !isFamilyMember) {
-		throw error(403, 'You are not a participant in this room');
-	}
-
-	// Load participants
-	const { data: participants, error: participantsError } = await supabase
-		.from('room_participants')
-		.select(
-			`
-			*,
-			profile:profiles (
-				id,
-				display_name,
-				avatar_url
-			)
-		`
-		)
-		.eq('room_id', roomId)
-		.eq('is_active', true)
-		.order('player_number');
-
-	if (participantsError) {
-		console.error('Error loading participants:', participantsError);
-		throw error(500, 'Failed to load participants');
-	}
-
-	// Load current game session (including finished ones to show result modal)
-	const { data: session, error: sessionError } = await supabase
-		.from('game_sessions')
-		.select('*')
-		.eq('room_id', roomId)
-		.order('started_at', { ascending: false })
-		.limit(1)
-		.single();
-
-	if (sessionError && sessionError.code !== 'PGRST116') {
-		// PGRST116 = no rows returned
-		console.error('Error loading session:', sessionError);
-		console.error('Session error code:', sessionError.code);
-	}
-
-	console.log('Session loaded:', session ? 'Found' : 'Not found');
-	console.log('Room status:', room.status);
-
-	// Load moves for current session
-	let moves: any[] = [];
-	if (session) {
-		const { data: movesData, error: movesError } = await supabase
-			.from('game_moves')
-			.select('*')
-			.eq('session_id', session.id)
-			.order('move_number');
-
-		if (movesError) {
-			console.error('Error loading moves:', movesError);
-		} else {
-			moves = movesData || [];
-		}
-	}
-
+export const load: PageServerLoad = async ({ params, locals }) => {
+	await requireModuleAvailable(locals.supabase, params.familyId, 'games');
+	const { user } = await requireFamilyRole(locals, params.familyId, ['owner', 'admin', 'member']);
 	return {
-		room,
-		participants: participants || [],
-		session: session || null,
-		moves,
-		currentUserId: user.id,
-		myParticipant: participation
+		...(await loadFamilyGame(locals.supabase, params.familyId, params.roomId)),
+		currentUserId: user.id
 	};
 };
 
-// Helper function to check if there's a winner in Tic-Tac-Toe
-function checkTicTacToeWinner(board: TicTacToeBoard): {
-	winner: 1 | 2 | null;
-	winningLine: Array<{ row: number; col: number }> | null;
-} {
-	const lines = [
-		// Rows
-		[
-			{ row: 0, col: 0 },
-			{ row: 0, col: 1 },
-			{ row: 0, col: 2 }
-		],
-		[
-			{ row: 1, col: 0 },
-			{ row: 1, col: 1 },
-			{ row: 1, col: 2 }
-		],
-		[
-			{ row: 2, col: 0 },
-			{ row: 2, col: 1 },
-			{ row: 2, col: 2 }
-		],
-		// Columns
-		[
-			{ row: 0, col: 0 },
-			{ row: 1, col: 0 },
-			{ row: 2, col: 0 }
-		],
-		[
-			{ row: 0, col: 1 },
-			{ row: 1, col: 1 },
-			{ row: 2, col: 1 }
-		],
-		[
-			{ row: 0, col: 2 },
-			{ row: 1, col: 2 },
-			{ row: 2, col: 2 }
-		],
-		// Diagonals
-		[
-			{ row: 0, col: 0 },
-			{ row: 1, col: 1 },
-			{ row: 2, col: 2 }
-		],
-		[
-			{ row: 0, col: 2 },
-			{ row: 1, col: 1 },
-			{ row: 2, col: 0 }
-		]
-	];
-
-	for (const line of lines) {
-		const [a, b, c] = line;
-		const cellA = board[a.row][a.col];
-		const cellB = board[b.row][b.col];
-		const cellC = board[c.row][c.col];
-
-		if (cellA && cellA === cellB && cellA === cellC) {
-			return {
-				winner: cellA === 'X' ? 1 : 2,
-				winningLine: line
-			};
-		}
-	}
-
-	return { winner: null, winningLine: null };
-}
-
-// Helper function to check if board is full (draw)
-function isBoardFull(board: TicTacToeBoard): boolean {
-	for (let row = 0; row < 3; row++) {
-		for (let col = 0; col < 3; col++) {
-			if (board[row][col] === null) {
-				return false;
-			}
-		}
-	}
-	return true;
-}
-
-/**
- * Helper function to execute a bot's turn
- */
-async function executeBotTurn(
-	supabase: any,
-	sessionId: string,
-	roomId: string,
-	botPlayerNumber: number,
-	botDifficulty: BotDifficulty,
-	currentState: TicTacToeState
-) {
-	// Get bot move from AI
-	const botMove = getBotMove(currentState.board, botPlayerNumber as 1 | 2, botDifficulty);
-
-	// Make the move
-	const symbol = botPlayerNumber === 1 ? 'X' : 'O';
-	const newBoard: TicTacToeBoard = currentState.board.map((r, rowIndex) =>
-		r.map((cell, colIndex) =>
-			rowIndex === botMove.row && colIndex === botMove.col ? symbol : cell
-		)
-	) as TicTacToeBoard;
-
-	// Check for winner
-	const { winner, winningLine } = checkTicTacToeWinner(newBoard);
-	const isDraw = !winner && isBoardFull(newBoard);
-
-	// Create new state
-	const newState: TicTacToeState = {
-		board: newBoard,
-		currentPlayer: botPlayerNumber === 1 ? 2 : 1,
-		winner,
-		isDraw,
-		winningLine
-	};
-
-	// Get move number
-	const { count } = await supabase
-		.from('game_moves')
-		.select('*', { count: 'exact', head: true })
-		.eq('session_id', sessionId);
-
-	const moveNumber = (count || 0) + 1;
-
-	// Insert bot move (with null player_id since it's a bot)
-	await supabase.from('game_moves').insert({
-		session_id: sessionId,
-		player_id: null,
-		player_number: botPlayerNumber,
-		move_number: moveNumber,
-		move_data: botMove,
-		state_after: newState as unknown as Json
-	});
-
-	// Update session state
-	const updateData: Database['public']['Tables']['game_sessions']['Update'] = {
-		game_state: newState as unknown as Json
-	};
-
-	// If game is over, update session
-	if (winner || isDraw) {
-		updateData.status = 'finished';
-		updateData.finished_at = new Date().toISOString();
-		updateData.final_state = newState as unknown as Json;
-		updateData.is_draw = isDraw;
-
-		if (winner) {
-			// Winner is a bot (no user_id)
-			updateData.winner_player_number = winner;
-		}
-
-		// Also update room status
-		await supabase
-			.from('game_rooms')
-			.update({ status: 'finished', finished_at: new Date().toISOString() })
-			.eq('id', roomId);
-	}
-
-	await supabase.from('game_sessions').update(updateData).eq('id', sessionId);
-
-	return { newState, winner, isDraw };
-}
-
-export const actions: Actions = {
-	// Make a move in Tic-Tac-Toe
-	makeMove: async ({ request, params, locals: { supabase, safeGetSession } }) => {
-		requireModuleAvailable('games');
-		const { user } = await safeGetSession();
-		if (!user) {
-			return fail(401, { error: 'Unauthorized' });
-		}
-
-		const formData = await request.formData();
-		const row = parseInt(formData.get('row') as string);
-		const col = parseInt(formData.get('col') as string);
-		const sessionId = formData.get('session_id') as string;
-
-		// Validate input
-		if (isNaN(row) || isNaN(col) || row < 0 || row > 2 || col < 0 || col > 2) {
-			return fail(400, { error: 'Invalid move coordinates' });
-		}
-
-		// Load session
-		const { data: session, error: sessionError } = await supabase
-			.from('game_sessions')
-			.select('*, room:game_rooms(*)')
-			.eq('id', sessionId)
-			.single();
-
-		if (sessionError || !session) {
-			return fail(404, { error: 'Session not found' });
-		}
-
-		// Load participant to get player number
-		const { data: participant } = await supabase
-			.from('room_participants')
-			.select('player_number')
-			.eq('room_id', session.room_id)
-			.eq('user_id', user.id)
-			.single();
-
-		if (!participant) {
-			return fail(403, { error: 'You are not a participant in this game' });
-		}
-
-		if (participant.player_number !== 1 && participant.player_number !== 2) {
-			return fail(409, { error: 'Participant has no valid player number' });
-		}
-
-		const state = session.game_state as unknown as TicTacToeState;
-
-		// Validate it's this player's turn
-		if (state.currentPlayer !== participant.player_number) {
-			return fail(400, { error: 'Not your turn' });
-		}
-
-		// Validate cell is empty
-		if (state.board[row][col] !== null) {
-			return fail(400, { error: 'Cell is already occupied' });
-		}
-
-		// Make the move
-		const symbol = participant.player_number === 1 ? 'X' : 'O';
-		const newBoard: TicTacToeBoard = state.board.map((r, rowIndex) =>
-			r.map((cell, colIndex) => (rowIndex === row && colIndex === col ? symbol : cell))
-		) as TicTacToeBoard;
-
-		// Check for winner
-		const { winner, winningLine } = checkTicTacToeWinner(newBoard);
-		const isDraw = !winner && isBoardFull(newBoard);
-
-		// Create new state
-		const newState: TicTacToeState = {
-			board: newBoard,
-			currentPlayer: state.currentPlayer === 1 ? 2 : 1,
-			winner,
-			isDraw,
-			winningLine
-		};
-
-		// Get move number
-		const { count } = await supabase
-			.from('game_moves')
-			.select('*', { count: 'exact', head: true })
-			.eq('session_id', sessionId);
-
-		const moveNumber = (count || 0) + 1;
-
-		// Insert move
-		const { error: moveError } = await supabase.from('game_moves').insert({
-			session_id: sessionId,
-			player_id: user.id,
-			player_number: participant.player_number,
-			move_number: moveNumber,
-			move_data: { row, col },
-			state_after: newState as unknown as Json
+const gameActions: Actions = {
+	guess: async ({ params, request, locals }) => {
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const form = await request.formData();
+		const version = parseGameVersion(form);
+		const guess = parseWordleGuess(form);
+		if (!version || !guess)
+			return fail(400, {
+				error: 'Escribe una palabra de cinco letras del diccionario de la partida.'
+			});
+		const result = await locals.supabase.rpc('guess_family_wordle', {
+			p_room_id: params.roomId,
+			p_version: version,
+			p_guess: guess
 		});
-
-		if (moveError) {
-			console.error('Error inserting move:', moveError);
-			return fail(500, { error: 'Failed to record move' });
-		}
-
-		// Update session state
-		const updateData: Database['public']['Tables']['game_sessions']['Update'] = {
-			game_state: newState as unknown as Json
-		};
-
-		// If game is over, update session
-		if (winner || isDraw) {
-			updateData.status = 'finished';
-			updateData.finished_at = new Date().toISOString();
-			updateData.final_state = newState as unknown as Json;
-			updateData.is_draw = isDraw;
-
-			if (winner) {
-				// Find winner's user_id
-				const { data: winnerParticipant } = await supabase
-					.from('room_participants')
-					.select('user_id, is_bot')
-					.eq('room_id', session.room_id)
-					.eq('player_number', winner)
-					.single();
-
-				if (winnerParticipant) {
-					if (winnerParticipant.is_bot) {
-						// Bot winner - use player_number
-						updateData.winner_player_number = winner;
-					} else {
-						// Human winner - use user_id
-						updateData.winner_id = winnerParticipant.user_id;
-					}
-				}
-			}
-
-			// Also update room status
-			await supabase
-				.from('game_rooms')
-				.update({ status: 'finished', finished_at: new Date().toISOString() })
-				.eq('id', session.room_id);
-		}
-
-		const { error: updateError } = await supabase
-			.from('game_sessions')
-			.update(updateData)
-			.eq('id', sessionId);
-
-		if (updateError) {
-			console.error('Error updating session:', updateError);
-			return fail(500, { error: 'Failed to update game state' });
-		}
-
-		// After successful move, check if next player is a bot
-		if (!winner && !isDraw) {
-			const nextPlayerNumber = newState.currentPlayer;
-
-			// Check if next player is a bot
-			const { data: nextParticipant } = await supabase
-				.from('room_participants')
-				.select('is_bot, bot_difficulty')
-				.eq('room_id', session.room_id)
-				.eq('player_number', nextPlayerNumber)
-				.eq('is_active', true)
-				.single();
-
-			if (nextParticipant?.is_bot && nextParticipant.bot_difficulty) {
-				// Execute bot turn
-				try {
-					await executeBotTurn(
-						supabase,
-						sessionId,
-						session.room_id,
-						nextPlayerNumber,
-						nextParticipant.bot_difficulty as BotDifficulty,
-						newState
-					);
-				} catch (botError) {
-					console.error('Error executing bot turn:', botError);
-					// Don't fail the user's move, just log the error
-				}
-			}
-		}
-
-		return { success: true };
+		return result.error ? gameCommandFailure(result.error) : { success: true };
 	},
-
-	// Rematch - create a new session in the same room
-	rematch: async ({ params, locals: { supabase, safeGetSession } }) => {
-		requireModuleAvailable('games');
-		const { user } = await safeGetSession();
-		if (!user) {
-			return fail(401, { error: 'Unauthorized' });
-		}
-
-		const roomId = params.roomId;
-
-		// Verify room exists and user is participant
-		const { data: room } = await supabase.from('game_rooms').select('*').eq('id', roomId).single();
-
-		if (!room) {
-			return fail(404, { error: 'Room not found' });
-		}
-
-		// Reset all participants to not ready
-		await supabase.from('room_participants').update({ is_ready: false }).eq('room_id', roomId);
-
-		// Update room status
-		await supabase
-			.from('game_rooms')
-			.update({ status: 'waiting', started_at: null, finished_at: null })
-			.eq('id', roomId);
-
-		return { success: true };
+	react: async ({ params, request, locals }) => {
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const version = parseGameVersion(await request.formData());
+		if (!version) return fail(400, { error: 'Versión de partida no válida.' });
+		const result = await locals.supabase.rpc('react_family_game', {
+			p_room_id: params.roomId,
+			p_version: version
+		});
+		return result.error ? gameCommandFailure(result.error) : { success: true };
 	},
-
-	// Leave game and return to lobby
-	leaveGame: async ({ params, locals: { supabase, safeGetSession } }) => {
+	chooseColor: async ({ params, request, locals }) => {
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const form = await request.formData();
+		const version = parseGameVersion(form);
+		const choice = form.get('choice');
+		if (!version || typeof choice !== 'string' || !/^[a-z]{1,20}$/.test(choice))
+			return fail(400, { error: 'Color no válido.' });
+		const result = await locals.supabase.rpc('choose_family_game_color', {
+			p_room_id: params.roomId,
+			p_version: version,
+			p_choice: choice
+		});
+		return result.error ? gameCommandFailure(result.error) : { success: true };
+	},
+	move: async ({ params, request, locals }) => {
 		requireModuleAvailable('games');
-		const { user } = await safeGetSession();
-		if (!user) {
-			return fail(401, { error: 'Unauthorized' });
-		}
-
-		const roomId = params.roomId;
-
-		// Mark as inactive
-		await supabase
-			.from('room_participants')
-			.update({
-				is_active: false,
-				left_at: new Date().toISOString()
-			})
-			.eq('room_id', roomId)
-			.eq('user_id', user.id);
-
-		// Redirect to games lobby
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const move = parseGameMove(await request.formData());
+		if (!move) return fail(400, { error: 'Jugada no válida.' });
+		const result = await locals.supabase.rpc('move_family_game', {
+			p_room_id: params.roomId,
+			p_version: move.version,
+			p_row: move.row,
+			p_col: move.col
+		});
+		return result.error ? gameCommandFailure(result.error) : { success: true };
+	},
+	ready: async ({ params, locals }) => {
+		requireModuleAvailable('games');
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const result = await locals.supabase.rpc('ready_family_game', { p_room_id: params.roomId });
+		return result.error ? gameCommandFailure(result.error) : { success: true };
+	},
+	start: async ({ params, locals }) => {
+		requireModuleAvailable('games');
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const result = await locals.supabase.rpc('start_family_game', { p_room_id: params.roomId });
+		return result.error ? gameCommandFailure(result.error) : { success: true };
+	},
+	timeout: async ({ params, locals }) => {
+		requireModuleAvailable('games');
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const result = await locals.supabase.rpc('end_family_game', {
+			p_room_id: params.roomId,
+			p_reason: 'timeout'
+		});
+		return result.error ? gameCommandFailure(result.error) : { success: true };
+	},
+	leave: async ({ params, locals }) => {
+		requireModuleAvailable('games');
+		await loadFamilyGame(locals.supabase, params.familyId, params.roomId);
+		const result = await locals.supabase.rpc('end_family_game', {
+			p_room_id: params.roomId,
+			p_reason: 'leave'
+		});
+		if (result.error) return gameCommandFailure(result.error);
 		throw redirect(303, `/family/${params.familyId}/games`);
 	}
 };
+
+export const actions: Actions = guardModuleActions('games', gameActions);

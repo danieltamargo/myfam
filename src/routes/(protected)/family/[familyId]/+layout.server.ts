@@ -1,6 +1,8 @@
 import type { LayoutServerLoad } from './$types';
 import { error, redirect } from '@sveltejs/kit';
 import { loadFamilyModuleAccess } from '$lib/server/modules/availability';
+import { loadBirthdayAlerts } from '$lib/server/birthdays/queries';
+import type { BirthdayAlert } from '$lib/birthdays/upcoming';
 
 export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -25,6 +27,17 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 
 	const family = membership.family as any;
 	const moduleAccess = await loadFamilyModuleAccess(supabase, familyId);
+	let birthdayAlerts: BirthdayAlert[] = [];
+	let birthdayAlertsError = '';
+	try {
+		birthdayAlerts = await loadBirthdayAlerts(
+			supabase,
+			familyId,
+			moduleAccess.some((access) => access.moduleId === 'wishlist' && access.enabled)
+		);
+	} catch {
+		birthdayAlertsError = 'No se pudieron cargar los avisos de cumpleaños. Vuelve a intentarlo.';
+	}
 
 	return {
 		family: {
@@ -34,6 +47,8 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 			createdBy: family.created_by
 		},
 		userRole: membership.role,
-		moduleAccess
+		moduleAccess,
+		birthdayAlerts,
+		birthdayAlertsError
 	};
 };

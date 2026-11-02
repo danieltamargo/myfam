@@ -45,12 +45,16 @@ Las listas crecientes usan paginación por cursor. Los adjuntos se suben a bucke
 
 ## Privacidad por dominio
 
-- Familia: `owner`, `admin` y `member` controlan la administración general.
+- Familia: `owner`, `admin` y `member` controlan la administración general; owner puede delegar gestión de miembros y configuración de módulos por separado.
 - Gastos: cada colección mantiene su propia ACL, independiente del rol familiar.
-- Wishlist: el propietario de un deseo no puede leer reservas, compras ni coordinación asociada a su propio ítem.
+- Wishlist: el propietario de un deseo no puede leer coordinación asociada a su propio ítem; tras recibirlo puede revelar explícitamente quién lo compró mediante una RPC autorizada.
 - Notas, listas, hábitos, calendario y documentos: sus modelos de visibilidad se evalúan en RLS y en los DTO enviados a la página.
-- Módulos: Miembros y Wishlist son núcleo; los módulos publicados opcionales dependen de una preferencia familiar; Juegos permanece bloqueado globalmente.
+- Módulos: Miembros y Wishlist son núcleo; los módulos publicados opcionales dependen de una preferencia familiar. Juegos utiliza un protocolo autorizado por participante, manteniendo bloqueadas las entradas heredadas.
 
 ## Operación
 
-Las migraciones se validan desde una base vacía con `npm run db:reset`. El cierre local se comprueba con `npm run verify`, `npm run test:db` y `npm run test:e2e`. El entorno de producción debe añadir adaptador de despliegue explícito, backups programados, pruebas de restauración, alertas y rotación de secretos.
+El despliegue web utiliza adapter-node y Docker, con pnpm y Node 24. Supabase local se ejecuta mediante sus contenedores; el Compose web no incluye todo Supabase. El cierre local utiliza `pnpm verify`, `pnpm test:db` y `pnpm test:e2e`. Las migraciones nuevas se aplican incrementalmente; `pnpm db:reset` solo debe usarse en bases desechables porque elimina datos.
+
+Durante esta QA, los servicios locales de Supabase consumieron aproximadamente 1,9 GiB de RAM, incluyendo Studio y Analytics, además del proceso Node. Esta medición no garantiza capacidad de producción ni justifica prometer un VPS de 1 GiB. Hay que medir el despliegue elegido y excluir servicios de desarrollo innecesarios. Producción requiere proxy HTTPS, límites de Auth/API, backups externos, restauración probada, alertas y rotación de secretos.
+
+Los conflictos de versión de la aplicación usan `PT409` para devolver HTTP 409. Los errores nativos de serialización conservan `40001`; usarlo como excepción de negocio puede provocar reintentos infinitos en PostgREST 14.

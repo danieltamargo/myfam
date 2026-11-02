@@ -1,4 +1,5 @@
 import { moneyToCents, splitTotalInCents, type ExpenseSplitValue } from '$lib/expenses/splits';
+import { MAX_SETTLEMENT_CENTS } from '$lib/expenses/settlements';
 
 export const EXPENSE_LIMITS = {
 	collectionName: 80,
@@ -43,6 +44,38 @@ export interface ExpenseFormContext {
 export interface ExpenseCategoryInput {
 	name: string;
 	color: string | null;
+}
+
+export interface ExpenseSettlementInput {
+	fromUserId: string;
+	toUserId: string;
+	amountCents: number;
+	idempotencyKey: string;
+}
+
+export function parseExpenseSettlementForm(
+	formData: FormData
+): ExpenseValidationResult<ExpenseSettlementInput> {
+	const fromUserId = textValue(formData, 'from_user_id');
+	const toUserId = textValue(formData, 'to_user_id');
+	const idempotencyKey = textValue(formData, 'idempotency_key');
+	const rawAmount = textValue(formData, 'amount_cents');
+	const amountCents = Number(rawAmount);
+	const errors: ExpenseValidationErrors = {};
+	if (!isUuid(fromUserId) || !isUuid(toUserId) || fromUserId === toUserId)
+		errors.participants = 'Los participantes del reembolso no son válidos.';
+	if (!isUuid(idempotencyKey))
+		errors.idempotency_key = 'Recarga la página antes de registrar el pago.';
+	if (
+		!/^\d+$/.test(rawAmount) ||
+		!Number.isSafeInteger(amountCents) ||
+		amountCents < 1 ||
+		amountCents > MAX_SETTLEMENT_CENTS
+	)
+		errors.amount_cents = 'El importe del reembolso no es válido.';
+	return Object.keys(errors).length
+		? { success: false, errors }
+		: { success: true, data: { fromUserId, toUserId, amountCents, idempotencyKey } };
 }
 
 export interface RecurringExpenseInput {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseMemberFilter } from './schemas';
 import { habitWeek, parseHabitCompletion, parseHabitForm } from './schemas';
 
 const ownerId = '10000000-0000-4000-8000-000000000001';
@@ -45,4 +46,11 @@ describe('habit schemas', () => {
 			'2026-08-05'
 		]);
 	});
+});
+
+it('acepta una persona válida e ignora filtros malformados', () => {
+	expect(parseMemberFilter(new URLSearchParams({ member: memberId }))).toBe(memberId);
+	for (const member of ['', 'invalid', 'or=(id.gt.0)']) {
+		expect(parseMemberFilter(new URLSearchParams({ member }))).toBe('');
+	}
 });

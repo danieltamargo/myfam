@@ -10,7 +10,7 @@ MyFamily implementa MFA opcional mediante TOTP de Supabase:
 - Enforcement SSR para cualquier usuario que ya tenga un factor verificado.
 - Comprobación AAL2 adicional en operaciones críticas de cuenta y familia.
 
-El layout del grupo `(protected)` consulta `getAuthenticatorAssuranceLevel()` en cada carga SSR autenticada. Cuando `currentLevel` es `aal1` y `nextLevel` es `aal2`, no carga datos protegidos: redirige a `/verify-2fa` y conserva como retorno únicamente una ruta interna validada. La pantalla de challenge está fuera del grupo protegido para evitar bucles.
+El hook de servidor consulta `getAuthenticatorAssuranceLevel()` antes de resolver cualquier petición del grupo `(protected)`, incluidas acciones POST y endpoints. Cuando `currentLevel` es `aal1` y `nextLevel` es `aal2`, redirige a `/verify-2fa` y conserva como retorno únicamente una ruta interna validada. La pantalla de challenge está fuera del grupo protegido para evitar bucles. Esta barrera protege la aplicación SvelteKit. La migración `20261031235500_direct_supabase_mfa.sql` extiende la misma decisión al acceso directo mediante políticas restrictivas en tablas y Storage, y guardias en RPC y helpers privilegiados. Conserva las comprobaciones de roles y ACL; AAL2 no otorga permisos adicionales.
 
 Un usuario sin factor verificado obtiene `aal1`/`aal1` y puede seguir usando las rutas protegidas; MyFamily no obliga a enrolar MFA. Esta política es **MFA obligatoria para quien haya optado por activarla**, no MFA obligatoria para todas las cuentas.
 
@@ -68,7 +68,7 @@ await supabase.auth.mfa.verify({
 ## Login y navegación
 
 1. El primer factor (password, OAuth u otro proveedor admitido) crea una sesión AAL1.
-2. El layout SSR comprueba el nivel actual y el siguiente nivel disponible.
+2. El hook de servidor comprueba el nivel actual y el siguiente nivel disponible.
 3. Una sesión AAL1 con factor verificado se redirige a `/verify-2fa` antes de cargar datos protegidos.
 4. Challenge + verify elevan la sesión a AAL2.
 5. La persona vuelve al destino interno solicitado o a `/dashboard` como fallback.
@@ -88,19 +88,11 @@ Referencia: [MFA de Supabase](https://supabase.com/docs/guides/auth/auth-mfa) y 
 
 La interfaz permite desenrolar factores desde el perfil. Antes de producción debe validarse el recorrido completo contra la configuración remota, incluida la exigencia del proveedor sobre AAL2, el refresco de sesión posterior, la auditoría y la notificación al usuario.
 
-## Pérdida del autenticador
+## Recuperar el acceso
 
-MyFamily no implementa recovery codes ni recuperación autoservicio. Si la persona pierde el dispositivo y no conserva un método alternativo válido, necesitará un procedimiento administrativo todavía no definido.
+La guía [Recuperación MFA](mfa-recovery.md) documenta el flujo actual: se generan ocho códigos de un solo uso de 128 bits y se guardan únicamente como hashes. Para cuentas con contraseña y un código previamente guardado, el autoservicio exige una sesión limitada, una barrera de sesión vigente y completar una nueva contraseña más TOTP; la recuperación no simula ni concede AAL2. Si hay OAuth únicamente, no quedan códigos o falla un paso intermedio, se requiere el runbook seguro de operador.
 
-Antes de ofrecer MFA a usuarios reales deben cerrarse:
-
-- procedimiento de recuperación con verificación de identidad;
-- revocación administrativa auditada;
-- notificación ante enrollment y unenrollment;
-- política probada para varios factores/dispositivos;
-- soporte operativo para cuentas bloqueadas.
-
-No se deben prometer “códigos de backup” mientras no existan en el producto y el proveedor no los soporte en la integración elegida.
+La verificación de identidad por el operador y su proceso de soporte siguen pendientes de validación operativa real. También quedan pendientes SMTP y las notificaciones de seguridad; no se afirma que estén configurados. No se implementan SMS ni códigos de hardware.
 
 ## Matriz mínima de pruebas
 
@@ -116,8 +108,14 @@ No se deben prometer “códigos de backup” mientras no existan en el producto
 | Refresh de sesión | La siguiente carga SSR vuelve a evaluar AAL |
 | Código inválido, expirado o reutilizado | Rechazado sin filtrar detalles sensibles |
 
-Las pruebas unitarias cubren las decisiones SSR y la validación del retorno. La prueba manual final debe añadir un TOTP real contra Supabase local y recorrer password, URL directa y OAuth configurado.
+Las pruebas unitarias cubren las decisiones SSR y la validación del retorno. La integración focal posterior añadió TOTP real contra Supabase local. El recorrido con OAuth real sigue pendiente de credenciales del proveedor.
 
 ## Alcance funcional
 
-MyFamily usa TOTP mediante una aplicación autenticadora. No implementa SMS, email como segundo factor, hardware keys ni recovery codes. Cualquier aplicación compatible con TOTP/RFC 6238 puede funcionar, pero su backup y seguridad pertenecen al usuario y al proveedor de esa aplicación.
+MyFamily usa TOTP mediante una aplicación autenticadora y códigos de recuperación almacenados como hashes; el segundo factor sigue siendo TOTP. No se implementan SMS ni códigos de hardware. Cualquier aplicación compatible con TOTP/RFC 6238 puede funcionar, pero su backup y seguridad pertenecen al usuario y al proveedor de esa aplicación. Para los límites y pasos de recuperación, consulta [Recuperación MFA](mfa-recovery.md).
+
+## Verificación del acceso directo
+
+`supabase/tests/database/095_direct_mfa.test.sql` pasó 68 aserciones; la suite DB coordinada pasó 856 en 28 archivos también después del reinicio. Comprueba la frontera MFA con factores verificados, sesiones AAL1/AAL2, RPC, Storage y bypass administrativo. La integración focal Auth/MFA posterior pasó 4/4 en escritorio y móvil, incluido TOTP real: factor sin verificar, factor verificado y bloqueo del token AAL1 anterior en DB/RPC/Storage, acceso AAL2, rechazo de externo y acceso AAL1 restaurado tras desenrolar.
+
+Los eventos DELETE de Postgres Changes en Realtime no aplican RLS. Las URLs de Storage firmadas previamente siguen siendo válidas hasta su caducidad; activar MFA no las revoca inmediatamente. Sigue pendiente validar OAuth real con credenciales del proveedor y operar el procedimiento de verificación de identidad con soporte real.

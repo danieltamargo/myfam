@@ -22,47 +22,48 @@ function throwCommandError(error: PostgrestError, fallback: string): never {
 	if (error.code === 'P0002') throw new WishlistCommandError(404, 'El regalo no existe.');
 	if (error.code === '23505')
 		throw new WishlistCommandError(409, 'La operación ya se había aplicado.');
+	if (error.code === '40001' || error.code === 'PT409')
+		throw new WishlistCommandError(
+			409,
+			'El regalo cambió. Recarga la página e inténtalo de nuevo.'
+		);
 	if (error.code === '23514' || error.code === '22023')
 		throw new WishlistCommandError(400, error.message || fallback);
 	throw new WishlistCommandError(500, fallback);
 }
 
-async function validateEventIds(
-	supabase: SupabaseClient<Database>,
-	familyId: string,
-	eventIds: string[]
-): Promise<string[]> {
-	const uniqueIds = [...new Set(eventIds)];
-	if (uniqueIds.length === 0) return [];
-	const { data, error } = await supabase
-		.from('gift_event_categories')
-		.select('id')
-		.eq('family_id', familyId)
-		.in('id', uniqueIds);
-	if (error) throwCommandError(error, 'No se pudieron validar las categorías.');
-	if ((data ?? []).length !== uniqueIds.length)
-		throw new WishlistCommandError(400, 'Alguna categoría no pertenece a esta familia.');
-	return uniqueIds;
+function nullableRpc<T>(value: T | null): T {
+	return value as T;
 }
 
-async function replaceEventLinks(
+async function saveWishlistItem(
 	supabase: SupabaseClient<Database>,
-	itemId: string,
-	eventIds: string[]
-): Promise<void> {
-	const { error: deleteError } = await supabase
-		.from('gift_item_events')
-		.delete()
-		.eq('item_id', itemId);
-	if (deleteError) throwCommandError(deleteError, 'No se pudieron actualizar las categorías.');
-	if (eventIds.length === 0) return;
-	const { error: insertError } = await supabase.from('gift_item_events').insert(
-		eventIds.map((eventCategoryId) => ({
-			item_id: itemId,
-			event_category_id: eventCategoryId
-		}))
-	);
-	if (insertError) throwCommandError(insertError, 'No se pudieron actualizar las categorías.');
+	familyId: string,
+	ownerId: string,
+	itemId: string | null,
+	version: number | null,
+	input: WishlistItemInput
+): Promise<string> {
+	const { data, error } = await supabase.rpc('save_wishlist_item', {
+		p_item_id: nullableRpc(itemId),
+		p_family_id: familyId,
+		p_owner_id: ownerId,
+		p_version: nullableRpc(version),
+		p_name: input.name,
+		p_description: nullableRpc(input.description),
+		p_links: input.links,
+		p_price: nullableRpc(input.price),
+		p_currency: input.currency,
+		p_priority: input.priority,
+		p_desired_quantity: input.desiredQuantity,
+		p_status: input.status,
+		p_image_path: nullableRpc(input.imagePath),
+		p_category_ids: input.eventIds,
+		p_calendar_change: input.calendarChange,
+		p_calendar_event_id: nullableRpc(input.calendarEventId)
+	});
+	if (error) throwCommandError(error, 'No se pudo guardar el regalo.');
+	return data;
 }
 
 export async function createWishlistItem(
@@ -71,34 +72,7 @@ export async function createWishlistItem(
 	ownerId: string,
 	input: WishlistItemInput
 ): Promise<string> {
-	const eventIds = await validateEventIds(supabase, familyId, input.eventIds);
-	const { data: item, error } = await supabase
-		.from('gift_items')
-		.insert({
-			family_id: familyId,
-			owner_id: ownerId,
-			name: input.name,
-			description: input.description,
-			links: input.links,
-			price: input.price,
-			currency: input.currency,
-			priority: input.priority,
-			desired_quantity: input.desiredQuantity,
-			status: input.status,
-			image_url: input.imagePath
-		})
-		.select('id')
-		.single();
-	if (error) throwCommandError(error, 'No se pudo crear el regalo.');
-
-	try {
-		await replaceEventLinks(supabase, item.id, eventIds);
-	} catch (linkError) {
-		await supabase.from('gift_items').delete().eq('id', item.id).eq('owner_id', ownerId);
-		throw linkError;
-	}
-
-	return item.id;
+	return saveWishlistItem(supabase, familyId, ownerId, null, null, input);
 }
 
 export async function updateWishlistItem(
@@ -109,33 +83,7 @@ export async function updateWishlistItem(
 	version: number,
 	input: WishlistItemInput
 ): Promise<void> {
-	const eventIds = await validateEventIds(supabase, familyId, input.eventIds);
-	const { data: item, error } = await supabase
-		.from('gift_items')
-		.update({
-			name: input.name,
-			description: input.description,
-			links: input.links,
-			price: input.price,
-			currency: input.currency,
-			priority: input.priority,
-			desired_quantity: input.desiredQuantity,
-			status: input.status,
-			image_url: input.imagePath
-		})
-		.eq('id', itemId)
-		.eq('family_id', familyId)
-		.eq('owner_id', ownerId)
-		.eq('version', version)
-		.select('id')
-		.maybeSingle();
-	if (error) throwCommandError(error, 'No se pudo actualizar el regalo.');
-	if (!item)
-		throw new WishlistCommandError(
-			409,
-			'El regalo cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'
-		);
-	await replaceEventLinks(supabase, itemId, eventIds);
+	await saveWishlistItem(supabase, familyId, ownerId, itemId, version, input);
 }
 
 export async function deleteWishlistItem(
@@ -179,6 +127,27 @@ export async function purchaseWishlistItem(
 		p_quantity: quantity
 	});
 	if (error) throwCommandError(error, 'No se pudo marcar el regalo como comprado.');
+}
+
+export async function receiveWishlistItem(
+	supabase: SupabaseClient<Database>,
+	itemId: string,
+	version: number
+): Promise<void> {
+	const { error } = await supabase.rpc('mark_gift_item_received', {
+		p_item_id: itemId,
+		p_version: version
+	});
+	if (error) throwCommandError(error, 'No se pudo marcar el regalo como recibido.');
+}
+
+export async function revealReceivedWishlistBuyers(
+	supabase: SupabaseClient<Database>,
+	itemId: string
+) {
+	const { data, error } = await supabase.rpc('reveal_received_gift_buyers', { p_item_id: itemId });
+	if (error) throwCommandError(error, 'No se pudo revelar quién compró el regalo.');
+	return data;
 }
 
 export async function releaseWishlistItem(

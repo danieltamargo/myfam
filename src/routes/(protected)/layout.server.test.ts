@@ -5,6 +5,12 @@ describe('layout protegido', () => {
 	it('bloquea una URL protegida directa antes de consultar datos con una sesión AAL1 elevable', async () => {
 		const from = vi.fn();
 		const supabase = {
+			rpc: vi.fn().mockReturnValue({
+				single: vi.fn().mockResolvedValue({
+					data: { required: false, pending: false, session_valid: true, allowed: null },
+					error: null
+				})
+			}),
 			auth: {
 				mfa: {
 					getAuthenticatorAssuranceLevel: vi.fn().mockResolvedValue({

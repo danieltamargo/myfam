@@ -1,7 +1,14 @@
 <script lang="ts">
+	import { safeAuthError, passwordRecoveryMessage } from '$lib/auth/messages';
+	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
 	import { createClient } from '$lib/supabase';
 
 	const supabase = createClient();
+	let ready = $state(false);
+	onMount(() => {
+		ready = true;
+	});
 
 	let loading = $state(false);
 	let error = $state('');
@@ -20,8 +27,8 @@
 
 		loading = false;
 
-		if (resetError) {
-			error = resetError.message;
+		if (resetError && safeAuthError(resetError, 'recovery')) {
+			error = safeAuthError(resetError, 'recovery');
 			return;
 		}
 
@@ -48,14 +55,13 @@
 					<div class="flex flex-col gap-2">
 						<span class="font-semibold">Check your email!</span>
 						<span class="text-sm">
-							We've sent a password reset link to <strong>{email}</strong>
+							{passwordRecoveryMessage}
 						</span>
-						<span class="text-sm text-base-content/70"> The link will expire in 1 hour. </span>
 					</div>
 				</div>
 
 				<div class="mt-4 card-actions justify-center">
-					<a href="/login" class="btn btn-ghost btn-sm"> Back to Login </a>
+					<a href={resolve('/login')} class="btn btn-ghost btn-sm"> Back to Login </a>
 				</div>
 			{:else}
 				<form onsubmit={handleSubmit} class="mt-4 flex flex-col gap-4">
@@ -70,11 +76,11 @@
 							placeholder="you@example.com"
 							class="input-bordered input"
 							required
-							disabled={loading}
+							disabled={!ready || loading}
 						/>
 					</div>
 
-					<button type="submit" class="btn btn-primary" disabled={loading}>
+					<button type="submit" class="btn btn-primary" disabled={!ready || loading}>
 						{#if loading}
 							<span class="loading loading-spinner"></span>
 						{/if}
@@ -84,7 +90,7 @@
 
 				<div class="mt-4 text-center text-sm">
 					<span class="text-base-content/70">Remember your password?</span>
-					<a href="/login" class="ml-1 link link-primary">Sign in</a>
+					<a href={resolve('/login')} class="ml-1 link link-primary">Sign in</a>
 				</div>
 			{/if}
 		</div>

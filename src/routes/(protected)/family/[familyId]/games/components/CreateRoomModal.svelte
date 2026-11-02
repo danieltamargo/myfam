@@ -16,17 +16,9 @@
 	// Form state
 	let selectedGameType = $state<GameType | null>(null);
 	let roomName = $state('');
-	let maxPlayers = $state(2);
+	let maxPlayers = $derived(selectedGameType ? GAME_METADATA[selectedGameType].minPlayers : 2);
 	let isPublic = $state(false);
 	let isSubmitting = $state(false);
-
-	// Auto-set max players when game type changes
-	$effect(() => {
-		if (selectedGameType) {
-			const metadata = GAME_METADATA[selectedGameType];
-			maxPlayers = metadata.minPlayers;
-		}
-	});
 
 	function nextStep() {
 		if (currentStep === 1 && selectedGameType) {
@@ -50,7 +42,7 @@
 		}
 	}
 
-	const canProceed = $derived(() => {
+	const canProceed = $derived.by(() => {
 		if (currentStep === 1) return selectedGameType !== null;
 		if (currentStep === 2) return roomName.trim().length > 0;
 		return false;
@@ -82,7 +74,7 @@
 				<p class="text-base-content/70">Selecciona el juego que quieres jugar</p>
 
 				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-					{#each Object.entries(GAME_METADATA) as [type, metadata]}
+					{#each Object.entries(GAME_METADATA) as [type, metadata] (type)}
 						<button
 							type="button"
 							onclick={() => (selectedGameType = type as GameType)}
@@ -112,7 +104,7 @@
 			<!-- Step 1 Actions -->
 			<div class="modal-action">
 				<button type="button" class="btn" onclick={onClose}>Cancelar</button>
-				<button type="button" class="btn btn-primary" onclick={nextStep} disabled={!canProceed()}>
+				<button type="button" class="btn btn-primary" onclick={nextStep} disabled={!canProceed}>
 					Siguiente
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
@@ -140,14 +132,10 @@
 					return async ({ result, update }) => {
 						if (result.type === 'success') {
 							if (result.data?.joinCode) {
-								toastStore.show(
-									`Sala creada. Código: <span class="font-mono text-lg font-bold">${result.data.joinCode}</span>`,
-									{
-										type: 'success',
-										duration: 8000,
-										useHTML: true
-									}
-								);
+								toastStore.show(`Sala creada. Código: ${result.data.joinCode}`, {
+									type: 'success',
+									duration: 8000
+								});
 							} else {
 								toastStore.show('Sala creada exitosamente', { type: 'success' });
 							}
@@ -196,7 +184,7 @@
 							<span class="label-text font-medium">Número de jugadores</span>
 						</label>
 						<div class="flex gap-2">
-							{#each Array(gameMetadata.maxPlayers - gameMetadata.minPlayers + 1) as _, i}
+							{#each Array(gameMetadata.maxPlayers - gameMetadata.minPlayers + 1) as _, i (i)}
 								{@const playerCount = gameMetadata.minPlayers + i}
 								<button
 									type="button"
@@ -268,7 +256,7 @@
 						</svg>
 						Atrás
 					</button>
-					<button type="submit" class="btn btn-primary" disabled={isSubmitting || !canProceed()}>
+					<button type="submit" class="btn btn-primary" disabled={isSubmitting || !canProceed}>
 						{#if isSubmitting}
 							<span class="loading loading-sm loading-spinner"></span>
 							Creando...

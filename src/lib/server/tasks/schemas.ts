@@ -177,3 +177,8 @@ export function parseTaskStatus(
 	}
 	return { success: true, data: { ...identity.data, status: status as TaskStatus } };
 }
+
+export function parseMemberFilter(searchParams: URLSearchParams): string {
+	const member = searchParams.get('member') ?? '';
+	return UUID_PATTERN.test(member) ? member : '';
+}

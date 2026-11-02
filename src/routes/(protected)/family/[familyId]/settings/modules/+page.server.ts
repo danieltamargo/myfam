@@ -1,20 +1,28 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { isModuleId, MODULE_CATALOG } from '$lib/config/modules';
-import { requireFamilyRole } from '$lib/server/auth/authorization';
+import { hasFamilyCapability, requireFamilyCapability } from '$lib/server/auth/authorization';
 
-export const load: PageServerLoad = async ({ parent }) => {
-	const { family, moduleAccess, userRole } = await parent();
+export const load: PageServerLoad = async ({ parent, locals, params }) => {
+	const { family, moduleAccess } = await parent();
+	const { user } = await locals.safeGetSession();
+	const { data: membership, error } = await locals.supabase
+		.from('family_members')
+		.select('role, can_configure_modules')
+		.eq('family_id', params.familyId)
+		.eq('user_id', user!.id)
+		.single();
+	if (error) throw new Error('No se pudo consultar la configuración de permisos');
 	return {
 		family,
 		modules: moduleAccess,
-		canManage: userRole === 'owner' || userRole === 'admin'
+		canManage: hasFamilyCapability(membership, 'configure_modules')
 	};
 };
 
 export const actions: Actions = {
 	setPreference: async ({ request, params, locals }) => {
-		await requireFamilyRole(locals, params.familyId, ['owner', 'admin']);
+		await requireFamilyCapability(locals, params.familyId, 'configure_modules');
 		const formData = await request.formData();
 		const moduleId = formData.get('moduleId');
 		const enabledValue = formData.get('enabled');

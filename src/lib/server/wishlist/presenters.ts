@@ -1,4 +1,5 @@
 import type { Tables } from '$lib/types/database';
+import type { CalendarEventOption } from '$lib/server/calendar/resource-links';
 
 export interface WishlistProfileDto {
 	id: string;
@@ -29,6 +30,7 @@ export interface WishlistItemDto extends Omit<
 	image_src: string | null;
 	profiles: WishlistProfileDto;
 	gift_item_events: WishlistItemEventDto[];
+	calendar_event?: CalendarEventOption | null;
 }
 
 export interface WishlistReservationDto extends Tables<'gift_reservations'> {
@@ -42,6 +44,7 @@ export interface WishlistCommentDto extends Tables<'gift_item_comments'> {
 }
 
 export interface WishlistQueryData {
+	calendarEvents?: CalendarEventOption[];
 	members: WishlistMemberDto[];
 	eventCategories: WishlistEventCategoryDto[];
 	items: WishlistItemDto[];
@@ -51,6 +54,7 @@ export interface WishlistQueryData {
 }
 
 export interface WishlistPageDto {
+	calendarEvents: CalendarEventOption[];
 	members: WishlistMemberDto[];
 	eventCategories: WishlistEventCategoryDto[];
 	items: WishlistItemDto[];
@@ -60,25 +64,37 @@ export interface WishlistPageDto {
 	allPurchases: WishlistPurchaseDto[];
 	comments: WishlistCommentDto[];
 	currentUserId: string;
+	receivedItems: Pick<WishlistItemDto, 'id' | 'name' | 'description' | 'updated_at'>[];
 }
 
 export function presentWishlistData(
 	data: WishlistQueryData,
 	currentUserId: string
 ): WishlistPageDto {
+	const items = data.items.filter((item) => item.status !== 'fulfilled');
+	const visibleItemIds = new Set(items.map((item) => item.id));
 	const ownItemIds = new Set(
 		data.items.filter((item) => item.owner_id === currentUserId).map((item) => item.id)
 	);
 	const visibleReservations = data.reservations.filter(
-		(reservation) => !ownItemIds.has(reservation.item_id)
+		(reservation) => visibleItemIds.has(reservation.item_id) && !ownItemIds.has(reservation.item_id)
 	);
-	const visiblePurchases = data.purchases.filter((purchase) => !ownItemIds.has(purchase.item_id));
-	const visibleComments = data.comments.filter((comment) => !ownItemIds.has(comment.item_id));
+	const visiblePurchases = data.purchases.filter(
+		(purchase) => visibleItemIds.has(purchase.item_id) && !ownItemIds.has(purchase.item_id)
+	);
+	const visibleComments = data.comments.filter(
+		(comment) => visibleItemIds.has(comment.item_id) && !ownItemIds.has(comment.item_id)
+	);
 
 	return {
+		calendarEvents: data.calendarEvents ?? [],
 		members: data.members,
 		eventCategories: data.eventCategories,
-		items: data.items,
+		items,
+		receivedItems: data.items
+			.filter((item) => item.status === 'fulfilled' && item.owner_id === currentUserId)
+			.sort((a, b) => (b.updated_at ?? '').localeCompare(a.updated_at ?? ''))
+			.map(({ id, name, description, updated_at }) => ({ id, name, description, updated_at })),
 		myPurchases: visiblePurchases.filter((purchase) => purchase.purchased_by === currentUserId),
 		myReservations: visibleReservations.filter(
 			(reservation) => reservation.reserved_by === currentUserId

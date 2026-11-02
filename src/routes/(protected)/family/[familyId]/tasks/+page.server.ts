@@ -10,6 +10,7 @@ import {
 } from '$lib/server/tasks/commands';
 import { loadTaskFormContext, loadTaskPage, TaskQueryError } from '$lib/server/tasks/queries';
 import {
+	parseMemberFilter,
 	parseTaskForm,
 	parseTaskGroupForm,
 	parseTaskIdentity,
@@ -49,7 +50,8 @@ export const load: PageServerLoad = async ({
 				params.familyId,
 				user.id,
 				userRole,
-				parseTaskView(url.searchParams)
+				parseTaskView(url.searchParams),
+				parseMemberFilter(url.searchParams)
 			)),
 			familyId: params.familyId
 		};

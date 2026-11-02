@@ -74,11 +74,11 @@ values (
   '10000000-0000-4000-8000-000000000003'
 );
 
-insert into storage.objects (bucket_id, name, owner_id)
+insert into storage.objects (bucket_id, name, owner_id, metadata)
 values (
   'gift-images',
   '10000000-1000-4000-8000-000000000001/10000000-0000-4000-8000-000000000002/secret.webp',
-  '10000000-0000-4000-8000-000000000002'
+  '10000000-0000-4000-8000-000000000002', '{"size":100}'
 );
 
 select has_column('public', 'gift_items', 'desired_quantity', 'gift items have desired quantity');
@@ -111,15 +111,19 @@ select throws_ok(
   $$select public.reserve_gift_item('10000000-2000-4000-8000-000000000001', 1::smallint, 'reserved')$$,
   '42501'
 );
-select throws_ok(
-  $$update public.gift_items set desired_quantity = 1 where id = '10000000-2000-4000-8000-000000000001'$$,
-  '23514'
-);
-select is((select count(*)::integer from storage.objects where bucket_id = 'gift-images'), 1, 'item owner can read family image objects');
 select lives_ok(
-  $$insert into storage.objects (bucket_id, name, owner_id) values ('gift-images', '10000000-1000-4000-8000-000000000001/10000000-0000-4000-8000-000000000001/owner.webp', '10000000-0000-4000-8000-000000000001')$$,
-  'member can upload only under their family and user path'
+  $$update public.gift_items set desired_quantity = 1 where id = '10000000-2000-4000-8000-000000000001'$$,
+  'owner can reduce desired quantity independently of hidden coordination'
 );
+update public.gift_items set desired_quantity = 4 where id = '10000000-2000-4000-8000-000000000001';
+select is((select count(*)::integer from storage.objects where bucket_id = 'gift-images'), 1, 'item owner can read family image objects');
+select throws_ok(
+  $$insert into storage.objects (bucket_id, name, owner_id) values ('gift-images', '10000000-1000-4000-8000-000000000001/10000000-0000-4000-8000-000000000001/owner.webp', '10000000-0000-4000-8000-000000000001')$$,
+  '42501', null, 'direct upload cannot bypass antivirus'
+);
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata) values ('gift-images', '10000000-1000-4000-8000-000000000001/10000000-0000-4000-8000-000000000001/owner.webp', '10000000-0000-4000-8000-000000000001', '{"size":100}');
+set local role authenticated;
 select throws_ok(
   $$insert into storage.objects (bucket_id, name, owner_id) values ('gift-images', '10000000-1000-4000-8000-000000000001/10000000-0000-4000-8000-000000000002/forged.webp', '10000000-0000-4000-8000-000000000001')$$,
   '42501'

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 import { isOwnedImagePath, type WishlistItemContext } from './schemas';
+import { ScannedUploadError, uploadScannedObject } from '$lib/server/security/upload-storage';
 
 const BUCKET = 'gift-images';
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -22,6 +23,7 @@ export class WishlistImageError extends Error {
 }
 
 export interface PreparedWishlistImage {
+	context: WishlistItemContext;
 	file: File | null;
 	previousPath: string | null;
 	finalPath: string | null;
@@ -54,7 +56,7 @@ export function prepareWishlistImage(
 	const finalPath = uploadedPath ?? (removeImage ? null : previousPath);
 	formData.set('image_url', finalPath ?? '');
 
-	return { file, previousPath, finalPath, uploadedPath };
+	return { file, previousPath, finalPath, uploadedPath, context: { ...context } };
 }
 
 export async function loadWishlistImagePath(
@@ -64,13 +66,15 @@ export async function loadWishlistImagePath(
 ): Promise<string | null> {
 	const { data, error } = await supabase
 		.from('gift_items')
-		.select('image_url')
+		.select('image_url, status')
 		.eq('id', itemId)
 		.eq('family_id', context.familyId)
 		.eq('owner_id', context.ownerId)
 		.maybeSingle();
 	if (error) throw new WishlistImageError(500, 'No se pudo comprobar la imagen actual.');
 	if (!data) throw new WishlistImageError(404, 'El regalo no existe.');
+	if (data.status === 'fulfilled')
+		throw new WishlistImageError(400, 'Los regalos recibidos no se pueden editar.');
 	return data.image_url;
 }
 
@@ -79,13 +83,18 @@ export async function uploadWishlistImage(
 	prepared: PreparedWishlistImage
 ): Promise<void> {
 	if (!prepared.file || !prepared.uploadedPath) return;
-	const { error } = await supabase.storage
-		.from(BUCKET)
-		.upload(prepared.uploadedPath, prepared.file, {
-			contentType: prepared.file.type,
-			upsert: false
-		});
-	if (error) throw new WishlistImageError(500, 'No se pudo subir la imagen privada.');
+	try {
+		await uploadScannedObject(
+			supabase,
+			{ bucket: BUCKET, ...prepared.context },
+			prepared.uploadedPath,
+			prepared.file
+		);
+	} catch (caught) {
+		if (caught instanceof ScannedUploadError)
+			throw new WishlistImageError(caught.status, caught.message);
+		throw new WishlistImageError(503, 'No se pudo analizar la imagen de forma segura.');
+	}
 }
 
 async function removePath(

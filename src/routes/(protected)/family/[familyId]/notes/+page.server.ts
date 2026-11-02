@@ -9,6 +9,7 @@ import {
 } from '$lib/server/notes/commands';
 import { loadNoteFormContext, loadNotePage, NoteQueryError } from '$lib/server/notes/queries';
 import {
+	parseMemberFilter,
 	parseFamilyNoteForm,
 	parseNoteFilter,
 	parseNoteIdentity,
@@ -40,7 +41,15 @@ export const load: PageServerLoad = async ({
 	const { filter, search, noteId } = parseNoteFilter(url.searchParams);
 	try {
 		return {
-			...(await loadNotePage(supabase, params.familyId, user.id, filter, search, noteId)),
+			...(await loadNotePage(
+				supabase,
+				params.familyId,
+				user.id,
+				filter,
+				search,
+				noteId,
+				parseMemberFilter(url.searchParams)
+			)),
 			familyId: params.familyId,
 			currentUserId: user.id
 		};

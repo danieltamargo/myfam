@@ -21,6 +21,15 @@ export async function enforceMfaForProtectedRoute(
 	if (assuranceError || !data) {
 		throw error(503, 'No se pudo verificar el nivel de autenticación');
 	}
+	const { data: recovery, error: recoveryError } = await supabase
+		.rpc('get_my_mfa_recovery_state')
+		.single();
+	if (recoveryError || !recovery) throw error(503, 'No se pudo comprobar la recuperación MFA');
+	if (!recovery.session_valid) throw redirect(303, '/login');
+	if (recovery.pending || (recovery.required && !recovery.allowed)) {
+		throw error(403, 'Esta sesión no está autorizada para completar la recuperación');
+	}
+	if (recovery.required) throw redirect(303, '/recover-2fa/setup');
 
 	if (data.currentLevel === 'aal1' && data.nextLevel === 'aal2') {
 		const returnTo = safeInternalPath(`${url.pathname}${url.search}`);

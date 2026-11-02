@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '$lib/types/database';
 import type { ListVisibility } from './schemas';
+import type { ListHistory, ListType } from '$lib/lists/suggestions';
 
 export class ListQueryError extends Error {
 	constructor(message: string) {
@@ -15,7 +16,8 @@ export interface ListMember {
 	avatarUrl: string | null;
 }
 
-export interface FamilyListRecord extends Omit<Tables<'family_lists'>, 'visibility'> {
+export interface FamilyListRecord extends Omit<Tables<'family_lists'>, 'visibility' | 'list_type'> {
+	list_type: ListType;
 	visibility: ListVisibility;
 	memberIds: string[];
 	canEdit: boolean;
@@ -29,6 +31,7 @@ export interface FamilyListItemRecord extends Tables<'family_list_items'> {
 }
 
 export interface ListPageData {
+	history: ListHistory[];
 	members: ListMember[];
 	lists: FamilyListRecord[];
 	selectedListId: string | null;
@@ -137,6 +140,7 @@ export async function loadListPage(
 		const counts = countsByList.get(list.id) ?? { total: 0, completed: 0 };
 		return {
 			...list,
+			list_type: list.list_type as ListType,
 			visibility: list.visibility as ListVisibility,
 			memberIds: listMembers.map((member) => member.id),
 			canEdit:
@@ -170,5 +174,22 @@ export async function loadListPage(
 			: null
 	}));
 
-	return { members, lists, selectedListId, selectedList, items };
+	const { data: historyRows, error: historyError } = await supabase
+		.from('family_lists')
+		.select('id, title, list_type, visibility, family_list_items(title, quantity, unit)')
+		.eq('family_id', familyId)
+		.order('updated_at', { ascending: false })
+		.order('id')
+		.order('sort_order', { referencedTable: 'family_list_items' })
+		.order('id', { referencedTable: 'family_list_items' })
+		.limit(50);
+	assertQuery(historyError, 'No se pudo cargar el histórico de listas');
+	const history: ListHistory[] = (historyRows ?? []).map((list) => ({
+		id: list.id,
+		title: list.title,
+		list_type: list.list_type as ListType,
+		visibility: list.visibility,
+		items: list.family_list_items
+	}));
+	return { members, lists, selectedListId, selectedList, items, history };
 }

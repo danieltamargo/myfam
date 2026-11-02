@@ -13,11 +13,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, {
 			encoding: 'utf8',
@@ -132,6 +129,58 @@ test('family ownership operations are atomic, audited, and AAL2-gated', async ()
 			p_invitation_id: invitationId!
 		});
 		expect(acceptError).toBeNull();
+
+		const capabilities = {
+			p_family_id: familyId!,
+			p_target_user_id: bobId!,
+			p_can_manage_members: true,
+			p_can_configure_modules: true
+		};
+		expect((await bobAal1.rpc('set_family_member_capabilities', capabilities)).error?.code).toBe(
+			'42501'
+		);
+		expect((await aliceAal1.rpc('set_family_member_capabilities', capabilities)).error).toBeNull();
+		expect(
+			(
+				await bobAal1.rpc('set_family_module_preference', {
+					p_family_id: familyId!,
+					p_module_name: 'notes',
+					p_enabled: false
+				})
+			).error
+		).toBeNull();
+		expect(
+			(await bobAal1.rpc('get_managed_family_invitations', { p_family_id: familyId! })).error
+		).toBeNull();
+		expect((await bobAal1.rpc('set_family_member_capabilities', capabilities)).error?.code).toBe(
+			'42501'
+		);
+		expect(
+			(
+				await bobAal1.rpc('remove_family_member', {
+					p_family_id: familyId!,
+					p_target_user_id: aliceId!
+				})
+			).error?.code
+		).toBe('42501');
+		expect(
+			(
+				await aliceAal1.rpc('set_family_member_capabilities', {
+					...capabilities,
+					p_can_manage_members: false,
+					p_can_configure_modules: false
+				})
+			).error
+		).toBeNull();
+		expect(
+			(
+				await bobAal1.rpc('set_family_module_preference', {
+					p_family_id: familyId!,
+					p_module_name: 'notes',
+					p_enabled: true
+				})
+			).error?.code
+		).toBe('42501');
 
 		const { error: aal1TransferError } = await aliceAal1.rpc('transfer_family_ownership', {
 			p_family_id: familyId!,

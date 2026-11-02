@@ -104,7 +104,6 @@
 					<option value="all">Todos</option>
 					<optgroup label="Regalo">
 						<option value="active">Activo</option>
-						<option value="fulfilled">Completado</option>
 						<option value="archived">Archivado</option>
 					</optgroup>
 					<optgroup label="Coordinación">

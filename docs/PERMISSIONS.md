@@ -14,6 +14,8 @@
 
 Las invitaciones solo son visibles para la persona destinataria, quien invita y la administración autorizada. Los perfiles públicos exponen únicamente los datos necesarios dentro de familias compartidas.
 
+Owner puede delegar por separado `can_manage_members` y `can_configure_modules`. El miembro delegado puede invitar y retirar miembros ordinarios, o configurar módulos según la capacidad concedida; no cambia roles, propiedad ni delegaciones. Owner/admin conservan sus capacidades implícitas.
+
 ## ACL de colecciones de gastos
 
 Una colección de gastos es privada incluso para otras personas de la misma familia. Pertenecer a la familia no concede acceso: hace falta una membresía activa en la colección.
@@ -38,6 +40,10 @@ Los ítems son visibles para la familia, pero su coordinación es confidencial f
 - no se renderiza HTML introducido por usuarios.
 
 Ocultar componentes en pantalla no forma parte de esta garantía; la protección está en la base y se prueba con solicitudes directas.
+
+Solo el destinatario puede marcar recibido. El regalo sale de las vistas activas y del acceso de terceros; su histórico es privado y paginado. El comprador se revela mediante una acción explícita posterior, sin abrir las políticas de compras al destinatario. Las firmas de imágenes ya emitidas pueden seguir siendo válidas hasta cinco minutos.
+
+Reducir la cantidad deseada no consulta ni revela asignaciones ocultas. Las asignaciones previas se conservan y las RPC rechazan nuevas asignaciones que excedan la cantidad actual.
 
 ## Visibilidad de contenido
 

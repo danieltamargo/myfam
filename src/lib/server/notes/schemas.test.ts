@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseMemberFilter } from './schemas';
 import { parseFamilyNoteForm, parseNoteFilter } from './schemas';
 
 const ownerId = '10000000-0000-4000-8000-000000000001';
@@ -46,4 +47,11 @@ describe('note schemas', () => {
 		const params = new URLSearchParams({ filter: 'other', search: `  ${'a'.repeat(120)}  ` });
 		expect(parseNoteFilter(params)).toMatchObject({ filter: 'all', search: 'a'.repeat(100) });
 	});
+});
+
+it('acepta una persona válida e ignora filtros malformados', () => {
+	expect(parseMemberFilter(new URLSearchParams({ member: memberId }))).toBe(memberId);
+	for (const member of ['', 'invalid', 'or=(id.gt.0)']) {
+		expect(parseMemberFilter(new URLSearchParams({ member }))).toBe('');
+	}
 });

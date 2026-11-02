@@ -1,266 +1,188 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { createClient } from '$lib/supabase';
-	import { page } from '$app/stores';
+	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { invalidateAll } from '$app/navigation';
-	import type { PageData } from './$types';
-	import { GAME_METADATA, type GameType } from '$lib/types/games';
+	import { createClient } from '$lib/supabase';
+	import type { PageProps } from './$types';
+	import {
+		FAMILY_GAME_TYPES,
+		FAMILY_GAME_NAMES,
+		type FamilyGameType
+	} from '$lib/games/family-games';
 
-	// Import components
-	import RoomCard from './components/RoomCard.svelte';
-	import CreateRoomModal from './components/CreateRoomModal.svelte';
-	import JoinRoomModal from './components/JoinRoomModal.svelte';
+	let { data, form }: PageProps = $props();
+	let opponent = $state('');
+	let gameType = $state<FamilyGameType>('tic_tac_toe');
+	let busy = $state(false);
+	let syncError = $state('');
+	const opponents = $derived(
+		data.members.filter((member) => member.user_id !== data.currentUserId)
+	);
+	const statusLabels: Record<string, string> = {
+		waiting: 'Esperando',
+		in_progress: 'En juego',
+		finished: 'Finalizada',
+		cancelled: 'Cancelada'
+	};
 
-	let { data }: { data: PageData } = $props();
-
-	// Modal states
-	let showCreateModal = $state(false);
-	let showJoinModal = $state(false);
-
-	// Filter state
-	let selectedGameType = $state<GameType | 'all'>('all');
-
-	// Realtime subscription
 	onMount(() => {
 		const supabase = createClient();
-		const familyId = $page.params.familyId;
-
-		// Create a single channel for all game lobby updates
-		const channel = supabase
-			.channel(`game-lobby:${familyId}`)
-			.on(
-				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'game_rooms',
-					filter: `family_id=eq.${familyId}`
-				},
-				(payload) => {
-					console.log('Room change:', payload);
-					invalidateAll();
-				}
-			)
-			.on(
-				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'room_participants'
-				},
-				(payload) => {
-					console.log('Participant change:', payload);
-					invalidateAll();
-				}
-			)
-			.subscribe((status) => {
-				console.log('Realtime subscription status:', status);
+		let refreshing = false;
+		async function refresh() {
+			if (refreshing || busy) return;
+			refreshing = true;
+			try {
+				await invalidateAll();
+				syncError = '';
+			} catch {
+				syncError = 'No se pudieron actualizar las partidas. Recarga la página.';
+			} finally {
+				refreshing = false;
+			}
+		}
+		const channel = supabase.channel(`family-games:${data.familyId}`).on(
+			'postgres_changes',
+			{
+				event: '*',
+				schema: 'public',
+				table: 'game_rooms',
+				filter: `family_id=eq.${data.familyId}`
+			},
+			refresh
+		);
+		let active = true;
+		void supabase.realtime
+			.setAuth()
+			.then(() => {
+				if (!active) return;
+				channel.subscribe((status) => {
+					if (status === 'SUBSCRIBED') void refresh();
+				});
+			})
+			.catch(() => {
+				if (active) syncError = 'No se pudieron conectar las partidas. Recarga la página.';
 			});
-
+		const timer = setInterval(() => {
+			if (document.visibilityState === 'visible') void refresh();
+		}, 15_000);
 		return () => {
-			supabase.removeChannel(channel);
+			active = false;
+			clearInterval(timer);
+			void supabase.removeChannel(channel);
 		};
 	});
-
-	// Group participants by room
-	let participantsByRoom = $derived(() => {
-		const groups: Record<string, any[]> = {};
-
-		for (const participant of data.participants) {
-			if (!groups[participant.room_id]) {
-				groups[participant.room_id] = [];
-			}
-			groups[participant.room_id].push(participant);
-		}
-
-		return groups;
-	});
-
-	// Filter rooms by game type
-	let filteredRooms = $derived(() => {
-		if (selectedGameType === 'all') {
-			return data.rooms;
-		}
-		return data.rooms.filter((room) => room.game_type === selectedGameType);
-	});
-
-	// Check if user is in a room
-	function isUserInRoom(roomId: string): boolean {
-		return data.userParticipation.some((p) => p.room_id === roomId);
-	}
-
-	// Get participants for a room
-	function getRoomParticipants(roomId: string) {
-		return participantsByRoom()[roomId] || [];
-	}
 </script>
 
-<div class="container mx-auto space-y-6 p-6">
-	<!-- Header -->
-	<div class="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-		<div>
-			<h1 class="text-3xl font-bold">Mini Juegos</h1>
-			<p class="mt-1 text-base-content/70">Juega con tu familia en tiempo real</p>
-		</div>
+<svelte:head><title>Partidas familiares · MyFamily</title></svelte:head>
 
-		<div class="flex gap-2">
-			<button onclick={() => (showJoinModal = true)} class="btn gap-2 btn-outline">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke-width="1.5"
-					stroke="currentColor"
-					class="h-5 w-5"
-				>
-					<path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
-					/>
-				</svg>
-				Unirse con código
-			</button>
-			<button onclick={() => (showCreateModal = true)} class="btn gap-2 btn-primary">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke-width="1.5"
-					stroke="currentColor"
-					class="h-5 w-5"
-				>
-					<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-				</svg>
-				Crear Sala
-			</button>
-		</div>
-	</div>
-
-	<!-- Game Type Filter -->
-	<div class="flex flex-wrap gap-2">
-		<button
-			onclick={() => (selectedGameType = 'all')}
-			class="btn btn-sm {selectedGameType === 'all' ? 'btn-primary' : 'btn-ghost'}"
-		>
-			Todos
-		</button>
-		{#each Object.entries(GAME_METADATA) as [type, metadata]}
-			<button
-				onclick={() => (selectedGameType = type as GameType)}
-				class="btn btn-sm {selectedGameType === type ? 'btn-primary' : 'btn-ghost'}"
-			>
-				<span>{metadata.icon}</span>
-				<span>{metadata.name}</span>
-			</button>
-		{/each}
-	</div>
-
-	<!-- Active Rooms -->
-	<div>
-		<h2 class="mb-4 text-xl font-semibold">Salas Activas</h2>
-
-		{#if filteredRooms().length === 0}
-			<div class="card bg-base-200">
-				<div class="card-body items-center py-12 text-center">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						fill="none"
-						viewBox="0 0 24 24"
-						stroke-width="1.5"
-						stroke="currentColor"
-						class="h-16 w-16 text-base-content/30"
-					>
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 01-.657.643 48.39 48.39 0 01-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 01-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 00-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 01-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 00.657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 01-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 005.427-.63 48.05 48.05 0 00.582-4.717.532.532 0 00-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 00.658-.663 48.422 48.422 0 00-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 01-.61-.58v0z"
-						/>
-					</svg>
-					<h3 class="mt-4 text-lg font-semibold">No hay salas activas</h3>
-					<p class="text-base-content/70">Crea una sala nueva para empezar a jugar</p>
-					<button onclick={() => (showCreateModal = true)} class="btn mt-4 btn-primary">
-						Crear Primera Sala
-					</button>
-				</div>
-			</div>
+<div class="mx-auto max-w-4xl space-y-8 pb-10">
+	<header>
+		<h1 class="text-3xl font-bold">Juegos en familia</h1>
+		<p class="mt-2 text-base-content/70">
+			Invita a un familiar a tres en raya, Wordle compartido, reacción o acertar el color. Abandonar
+			una partida en curso concede la victoria al otro jugador.
+		</p>
+	</header>
+	{#if form?.error || syncError}<p class="alert alert-error" role="alert">
+			{form?.error || syncError}
+		</p>{/if}
+	<section class="rounded-box border border-base-300 bg-base-100 p-5" aria-labelledby="create-game">
+		<h2 id="create-game" class="text-xl font-semibold">Nueva partida</h2>
+		{#if opponents.length === 0}
+			<p class="mt-3">Invita a otro miembro a la familia para poder jugar.</p>
 		{:else}
-			<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-				{#each filteredRooms() as room (room.id)}
-					<RoomCard
-						{room}
-						participants={getRoomParticipants(room.id)}
-						isUserInRoom={isUserInRoom(room.id)}
-						currentUserId={data.currentUserId}
-					/>
-				{/each}
-			</div>
-		{/if}
-	</div>
-
-	<!-- Quick Stats / Leaderboards Preview -->
-	<div>
-		<h2 class="mb-4 text-xl font-semibold">Clasificaciones</h2>
-		<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-			{#each Object.entries(GAME_METADATA) as [type, metadata]}
-				{@const leaderboard = data.leaderboards[type as GameType] || []}
-				<div class="card bg-base-200">
-					<div class="card-body">
-						<h3 class="card-title text-lg">
-							<span>{metadata.icon}</span>
-							<span>{metadata.name}</span>
-						</h3>
-
-						{#if leaderboard.length === 0}
-							<p class="text-sm text-base-content/60">No hay partidas aún</p>
-						{:else}
-							<div class="mt-2 space-y-2">
-								{#each leaderboard.slice(0, 3) as entry, index}
-									<div class="flex items-center gap-2">
-										<div class="w-6 text-lg font-bold">
-											{#if index === 0}
-												<span class="text-yellow-500">🥇</span>
-											{:else if index === 1}
-												<span class="text-gray-400">🥈</span>
-											{:else if index === 2}
-												<span class="text-orange-600">🥉</span>
-											{/if}
-										</div>
-										<div class="avatar">
-											<div class="h-8 w-8 rounded-full">
-												{#if entry.avatar_url}
-													<img src={entry.avatar_url} alt={entry.display_name} />
-												{:else}
-													<div
-														class="flex items-center justify-center bg-primary text-primary-content"
-													>
-														{entry.display_name.charAt(0).toUpperCase()}
-													</div>
-												{/if}
-											</div>
-										</div>
-										<div class="min-w-0 flex-1">
-											<div class="truncate text-sm font-medium">{entry.display_name}</div>
-											<div class="text-xs text-base-content/60">
-												{entry.games_won} victorias • {entry.win_rate}%
-											</div>
-										</div>
-									</div>
-								{/each}
-							</div>
-						{/if}
+			<form
+				method="POST"
+				action="?/createRoom"
+				class="mt-4 space-y-5"
+				use:enhance={({ cancel }) => {
+					if (busy) {
+						cancel();
+						return;
+					}
+					busy = true;
+					return async ({ update }) => {
+						try {
+							await update();
+						} catch {
+							syncError = 'No se pudo crear la partida. Inténtalo de nuevo.';
+						} finally {
+							busy = false;
+						}
+					};
+				}}
+			>
+				<label class="block space-y-2"
+					><span>Juego</span><select name="gameType" class="select w-full" bind:value={gameType}
+						>{#each FAMILY_GAME_TYPES as type (type)}<option value={type}
+								>{FAMILY_GAME_NAMES[type]}</option
+							>{/each}</select
+					></label
+				>
+				<label class="block space-y-2"
+					><span>Nombre de la partida</span><input
+						name="name"
+						class="input w-full"
+						maxlength="100"
+						value={FAMILY_GAME_NAMES[gameType]}
+						required
+					/></label
+				>
+				<fieldset>
+					<legend class="mb-3 font-semibold">Con quién quieres jugar</legend>
+					<div class="flex flex-wrap gap-3">
+						{#each opponents as member (member.user_id)}
+							<label
+								class="flex cursor-pointer items-center gap-3 rounded-box border border-base-300 p-3 has-checked:border-primary has-checked:bg-primary/10"
+							>
+								<input
+									type="radio"
+									name="opponent"
+									class="radio radio-sm"
+									value={member.user_id ?? ''}
+									bind:group={opponent}
+									required
+								/>
+								{#if member.profile?.avatar_url}<img
+										class="h-10 w-10 rounded-full object-cover"
+										src={member.profile.avatar_url}
+										alt=""
+									/>{:else}<span
+										class="flex h-10 w-10 items-center justify-center rounded-full bg-base-200"
+										aria-hidden="true">{member.profile?.display_name?.charAt(0) || '?'}</span
+									>{/if}
+								<span>{member.profile?.display_name || 'Familiar'}</span>
+							</label>
+						{/each}
 					</div>
-				</div>
-			{/each}
+				</fieldset>
+				<button class="btn btn-primary" disabled={busy || !opponent}
+					>{busy ? 'Creando…' : 'Invitar a jugar'}</button
+				>
+			</form>
+		{/if}
+	</section>
+	<section aria-labelledby="my-games">
+		<h2 id="my-games" class="mb-4 text-xl font-semibold">Mis partidas recientes</h2>
+		<div class="space-y-3">
+			{#each data.rooms as room (room.id)}
+				<a
+					class="flex items-center justify-between gap-3 rounded-box border border-base-300 p-4 hover:bg-base-200"
+					href={resolve(
+						...([`/family/${data.familyId}/games/play/${room.id}`] as unknown as ['/'])
+					)}
+				>
+					<span class="min-w-0 break-words"
+						><span class="block font-medium">{room.name}</span><span
+							class="text-sm text-base-content/70"
+							>{FAMILY_GAME_NAMES[room.game_type as FamilyGameType] || 'Partida'}</span
+						></span
+					><span class="shrink-0 text-sm">{statusLabels[room.status]}</span>
+				</a>
+			{:else}<p class="rounded-box border border-dashed border-base-300 p-6">
+					Aún no tienes partidas. Elige un familiar para empezar.
+				</p>{/each}
 		</div>
-	</div>
+	</section>
 </div>
-
-<!-- Modals -->
-{#if showCreateModal}
-	<CreateRoomModal members={data.members} onClose={() => (showCreateModal = false)} />
-{/if}
-
-{#if showJoinModal}
-	<JoinRoomModal onClose={() => (showJoinModal = false)} />
-{/if}

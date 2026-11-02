@@ -1,0 +1,12 @@
+[Unit]
+Description=MyFamily encrypted cold backup
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/myfamily
+ExecStart=/bin/bash /srv/myfamily/scripts/backup-cycle.sh myfamily-data /srv/myfamily-data/compose.yaml /srv/private-secrets/data-compose.env /srv/private-secrets/backup-sources.json /srv/private-secrets/backup-password /srv/private-backups
+UMask=0077
+TimeoutStartSec=2h
+TimeoutStopSec=10min

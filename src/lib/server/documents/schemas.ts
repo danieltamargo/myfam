@@ -188,3 +188,8 @@ export function parseDocumentPageQuery(searchParams: URLSearchParams): DocumentP
 		requestedCursor && !Number.isNaN(Date.parse(requestedCursor)) ? requestedCursor : null;
 	return { folder, cursor };
 }
+
+export function parseMemberFilter(searchParams: URLSearchParams): string {
+	const member = searchParams.get('member') ?? '';
+	return UUID_PATTERN.test(member) ? member : '';
+}

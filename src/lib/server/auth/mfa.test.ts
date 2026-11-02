@@ -12,7 +12,15 @@ function supabaseWithAal(
 	});
 
 	return {
-		client: { auth: { mfa: { getAuthenticatorAssuranceLevel } } },
+		client: {
+			auth: { mfa: { getAuthenticatorAssuranceLevel } },
+			rpc: vi.fn().mockReturnValue({
+				single: vi.fn().mockResolvedValue({
+					data: { required: false, pending: false, session_valid: true, allowed: null },
+					error: null
+				})
+			})
+		},
 		getAuthenticatorAssuranceLevel
 	};
 }
@@ -66,5 +74,44 @@ describe('enforceMfaForProtectedRoute', () => {
 		await expect(
 			enforceMfaForProtectedRoute(client as never, new URL('http://localhost/dashboard'))
 		).rejects.toMatchObject({ status: 503 });
+	});
+
+	it('requires the bound session to reconfigure MFA even after all factors were removed', async () => {
+		const { client } = supabaseWithAal('aal1', 'aal1');
+		client.rpc.mockReturnValue({
+			single: vi.fn().mockResolvedValue({
+				data: { required: true, pending: false, session_valid: true, allowed: true },
+				error: null
+			})
+		});
+		await expect(
+			enforceMfaForProtectedRoute(client as never, new URL('http://localhost/dashboard'))
+		).rejects.toMatchObject({ status: 303, location: '/recover-2fa/setup' });
+	});
+
+	it('rejects an unbound AAL2 session during recovery', async () => {
+		const { client } = supabaseWithAal('aal2', 'aal2');
+		client.rpc.mockReturnValue({
+			single: vi.fn().mockResolvedValue({
+				data: { required: true, pending: false, session_valid: true, allowed: false },
+				error: null
+			})
+		});
+		await expect(
+			enforceMfaForProtectedRoute(client as never, new URL('http://localhost/dashboard'))
+		).rejects.toMatchObject({ status: 403 });
+	});
+
+	it('rejects an old session after recovery completed', async () => {
+		const { client } = supabaseWithAal('aal2', 'aal2');
+		client.rpc.mockReturnValue({
+			single: vi.fn().mockResolvedValue({
+				data: { required: false, pending: false, session_valid: false, allowed: null },
+				error: null
+			})
+		});
+		await expect(
+			enforceMfaForProtectedRoute(client as never, new URL('http://localhost/dashboard'))
+		).rejects.toMatchObject({ status: 303, location: '/login' });
 	});
 });

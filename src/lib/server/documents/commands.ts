@@ -24,7 +24,7 @@ function throwCommandError(error: PostgrestError, fallback: string): never {
 		throw new DocumentCommandError(403, 'No tienes permiso para realizar esta operación.');
 	if (error.code === 'P0002')
 		throw new DocumentCommandError(404, 'El documento ya no está disponible.');
-	if (error.code === '40001')
+	if (error.code === '40001' || error.code === 'PT409')
 		throw new DocumentCommandError(
 			409,
 			'El documento cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'

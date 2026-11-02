@@ -12,11 +12,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
 	) as LocalSupabaseStatus;
@@ -172,6 +169,16 @@ test('crea, busca, edita y archiva una nota seleccionada sin ejecutar HTML', asy
 		await page.getByLabel('Buscar notas').fill('alojamiento');
 		await page.getByRole('button', { name: 'Buscar' }).click();
 		await expect(page).toHaveURL(/search=alojamiento/);
+		await expect(page.getByRole('article').getByRole('heading', { name: noteTitle })).toBeVisible();
+
+		await page.getByTitle('Invitada Notas', { exact: true }).click();
+		await expect(page).toHaveURL(new RegExp(`member=${selectedId}`));
+		await expect(page).toHaveURL(/search=alojamiento/);
+		await expect(page.getByRole('article').getByRole('heading', { name: noteTitle })).toHaveCount(
+			0
+		);
+		await page.getByTitle('Owner Notas', { exact: true }).click();
+		await expect(page).toHaveURL(new RegExp(`member=${ownerId}`));
 		await expect(page.getByRole('article').getByRole('heading', { name: noteTitle })).toBeVisible();
 
 		await page.getByRole('button', { name: 'Editar' }).click();

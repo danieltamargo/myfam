@@ -79,7 +79,10 @@
 
 	{#if !data.canManage}
 		<div role="note" class="alert alert-soft alert-info">
-			<span>Puedes consultar esta configuración. Solo owner y admin pueden cambiarla.</span>
+			<span
+				>Puedes consultar esta configuración. Pueden cambiarla el propietario, los administradores y
+				los miembros con permiso para configurar módulos.</span
+			>
 		</div>
 	{/if}
 
@@ -127,9 +130,10 @@
 						<div class="flex items-start justify-between gap-3">
 							<span aria-hidden="true" class="text-3xl">{module.icon}</span>
 							<span
-								class="badge shrink-0"
-								class:badge-success={access.enabled}
-								class:badge-ghost={!access.enabled}
+								class={[
+									'badge shrink-0',
+									{ 'badge-success': access.enabled, 'badge-ghost': !access.enabled }
+								]}
 							>
 								{access.enabled ? 'Activo' : 'Oculto'}
 							</span>
@@ -143,9 +147,10 @@
 							<input type="hidden" name="enabled" value={access.enabled ? 'false' : 'true'} />
 							<button
 								type="submit"
-								class="btn btn-block btn-sm"
-								class:btn-primary={!access.enabled}
-								class:btn-ghost={access.enabled}
+								class={[
+									'btn btn-block btn-sm',
+									{ 'btn-primary': !access.enabled, 'btn-ghost': access.enabled }
+								]}
 								disabled={!data.canManage || submitting !== null}
 								aria-label={`${access.enabled ? 'Desactivar' : 'Activar'} ${module.label}`}
 							>

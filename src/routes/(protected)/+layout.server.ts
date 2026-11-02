@@ -1,6 +1,7 @@
 import type { LayoutServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 import { enforceMfaForProtectedRoute } from '$lib/server/auth/mfa';
+import { isSuperAdmin } from '$lib/server/admin/access';
 
 export const load: LayoutServerLoad = async ({ url, locals: { safeGetSession, supabase } }) => {
 	const { user, session } = await safeGetSession();
@@ -42,6 +43,7 @@ export const load: LayoutServerLoad = async ({ url, locals: { safeGetSession, su
 
 	return {
 		user,
+		isSuperAdmin: isSuperAdmin(user.id),
 		session,
 		families,
 		activeFamily,

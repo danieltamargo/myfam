@@ -1,16 +1,19 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import type { Tables } from '$lib/types/database';
 	import type { ExpenseFilterState, ExpensePeriod } from '$lib/server/expenses/filters';
 	import type { ExpenseMember } from '$lib/server/expenses/queries';
+	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 
 	interface Props {
 		filters: ExpenseFilterState;
 		members: ExpenseMember[];
 		categories: Tables<'expense_categories'>[];
 		exportHref: string;
+		collectionHref: string;
 	}
 
-	let { filters, members, categories, exportHref }: Props = $props();
+	let { filters, members, categories, exportHref, collectionHref }: Props = $props();
 	let overrides = $state<{
 		period?: ExpensePeriod['preset'];
 		anchor?: string;
@@ -43,7 +46,9 @@
 				Las fechas se interpretan como días locales, sin conversión horaria.
 			</p>
 		</div>
-		<a class="btn btn-ghost btn-sm" href={exportHref} data-testid="expenses-export">Exportar CSV</a>
+		<a class="btn btn-ghost btn-sm" href={resolve(exportHref as '/')} data-testid="expenses-export"
+			>Exportar CSV</a
+		>
 	</div>
 	<form method="GET" class="grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
 		<label class="form-control" for="expense-filter-period">
@@ -99,23 +104,8 @@
 				oninput={(event) => (overrides.to = event.currentTarget.value)}
 			/>
 		</label>
-		<label class="form-control" for="expense-filter-payer">
-			<span class="label-text mb-1 text-xs font-medium">Pagador</span>
-			<select
-				id="expense-filter-payer"
-				class="select-bordered select select-sm"
-				name="paid_by"
-				value={selectedPayer}
-				onchange={(event) => (overrides.payer = event.currentTarget.value)}
-				data-testid="expenses-filter-payer"
-			>
-				<option value="">Todos</option>
-				{#each members.filter((member) => member.status === 'active') as member (member.userId)}<option
-						value={member.userId}>{member.profile.displayName}</option
-					>{/each}
-			</select>
-		</label>
-		<label class="form-control" for="expense-filter-category">
+
+		<label class="form-control md:col-span-2" for="expense-filter-category">
 			<span class="label-text mb-1 text-xs font-medium">Categoría</span>
 			<select
 				id="expense-filter-category"
@@ -131,8 +121,19 @@
 					>{/each}
 			</select>
 		</label>
+		<div class="md:col-span-2 xl:col-span-6">
+			<MemberRadioFilter
+				name="paid_by"
+				label="Pagador"
+				members={members
+					.filter((member) => member.status === 'active')
+					.map((member) => member.profile)}
+				value={selectedPayer}
+				onselect={(value) => (overrides.payer = value)}
+			/>
+		</div>
 		<div class="flex justify-end gap-2 md:col-span-2 xl:col-span-6">
-			<a class="btn btn-ghost btn-sm" href="?">Limpiar</a>
+			<a class="btn btn-ghost btn-sm" href={resolve(collectionHref as '/')}>Limpiar</a>
 			<button class="btn btn-sm btn-primary" type="submit">Aplicar filtros</button>
 		</div>
 	</form>

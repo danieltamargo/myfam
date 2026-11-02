@@ -1,3 +1,5 @@
+import { LIST_TYPES, type ListType } from '$lib/lists/suggestions';
+
 export const LIST_LIMITS = {
 	title: 120,
 	description: 2_000,
@@ -16,6 +18,8 @@ export type ListValidationResult<T> =
 	| { success: false; errors: ListValidationErrors };
 
 export interface FamilyListInput {
+	listType: ListType;
+	sourceListId: string | null;
 	title: string;
 	description: string | null;
 	visibility: ListVisibility;
@@ -49,6 +53,11 @@ export function parseFamilyListForm(
 	const errors: ListValidationErrors = {};
 	const title = textValue(formData, 'title');
 	const description = textValue(formData, 'description');
+	const listType = textValue(formData, 'list_type') || 'other';
+	const sourceListId = textValue(formData, 'source_list_id');
+	if (!LIST_TYPES.includes(listType as ListType))
+		errors.list_type = 'El tipo de lista no es válido.';
+	if (sourceListId && !isUuid(sourceListId)) errors.source_list_id = 'La plantilla no es válida.';
 	const visibility = textValue(formData, 'visibility');
 	const memberIds = [
 		...new Set(
@@ -75,6 +84,8 @@ export function parseFamilyListForm(
 		: {
 				success: true,
 				data: {
+					listType: listType as ListType,
+					sourceListId: sourceListId || null,
 					title,
 					description: description || null,
 					visibility: visibility as ListVisibility,

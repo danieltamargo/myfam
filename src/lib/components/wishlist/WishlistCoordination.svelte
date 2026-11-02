@@ -74,6 +74,12 @@
 		max={summary.desiredQuantity}
 		aria-label={`${summary.desiredQuantity - summary.remainingQuantity} de ${summary.desiredQuantity} unidades coordinadas`}
 	></progress>
+	{#if summary.purchasedQuantity + summary.reservedQuantity > summary.desiredQuantity}
+		<p class="mt-2 text-sm text-warning" role="status">
+			La cantidad deseada se ha reducido. La coordinación existente se conserva; revisadla antes de
+			añadir más.
+		</p>
+	{/if}
 
 	{#if summary.reservationCount > 0}
 		<p class="mt-1 text-xs text-base-content/65" title={reservationTitle}>

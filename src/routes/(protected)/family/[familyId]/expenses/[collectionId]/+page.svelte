@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import type { ActionData, PageData } from './$types';
 	import ExpenseBreakdown from '$lib/components/expenses/ExpenseBreakdown.svelte';
@@ -7,6 +8,7 @@
 	import ExpenseSummary from '$lib/components/expenses/ExpenseSummary.svelte';
 	import ExpenseTable from '$lib/components/expenses/ExpenseTable.svelte';
 	import RecurringExpenseForm from '$lib/components/expenses/RecurringExpenseForm.svelte';
+	import ExpenseSettlements from '$lib/components/expenses/ExpenseSettlements.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let createAmount = $state('');
@@ -61,7 +63,7 @@
 <div class="mx-auto max-w-7xl space-y-6 pb-12">
 	<nav class="breadcrumbs text-sm text-base-content/60" aria-label="Ruta de navegación">
 		<ul>
-			<li><a href={`/family/${data.family.id}/expenses`}>Gastos</a></li>
+			<li><a href={resolve(`/family/${data.family.id}/expenses` as '/')}>Gastos</a></li>
 			<li>{data.collection.name}</li>
 		</ul>
 	</nav>
@@ -83,7 +85,8 @@
 		<div class="flex flex-wrap gap-2">
 			<a
 				class="btn btn-ghost"
-				href={`/family/${data.family.id}/expenses/${data.collection.id}/settings`}>Ajustes</a
+				href={resolve(`/family/${data.family.id}/expenses/${data.collection.id}/settings` as '/')}
+				>Ajustes</a
 			>
 			{#if data.canCreate}<a class="btn btn-primary" href="#nuevo-gasto">Añadir gasto</a>{/if}
 		</div>
@@ -91,16 +94,22 @@
 
 	{#if form?.error}<div class="alert alert-error" role="alert">
 			<span>{form.error}</span>
-		</div>{:else if form?.message}<div class="alert alert-success" role="status">
+		</div>{:else if form?.message && !('settlementRecorded' in form && form.settlementRecorded)}<div
+			class="alert alert-success"
+			role="status"
+		>
 			<span>{form.message}</span>
 		</div>{/if}
 
-	<ExpenseFilters
-		filters={data.filters}
-		members={data.members}
-		categories={data.categories}
-		{exportHref}
-	/>
+	{#key `${data.collection.id}:${filterParams()}`}
+		<ExpenseFilters
+			filters={data.filters}
+			members={data.members}
+			categories={data.categories}
+			{exportHref}
+			collectionHref={`/family/${data.family.id}/expenses/${data.collection.id}`}
+		/>
+	{/key}
 	<ExpenseSummary
 		dashboard={data.dashboard}
 		currency={data.collection.currency}
@@ -145,6 +154,19 @@
 		</div>
 	</section>
 
+	{#key data.collection.id}
+		<ExpenseSettlements
+			suggestions={data.settlementSuggestions}
+			warning={data.settlementWarning}
+			serverMessage={form && 'settlementRecorded' in form && form.settlementRecorded
+				? form.message
+				: null}
+			settlements={data.settlements}
+			currency={data.collection.currency}
+			actionQuery={filterParams()}
+		/>
+	{/key}
+
 	<section aria-labelledby="movimientos" class="space-y-3">
 		<div class="flex items-end justify-between gap-4">
 			<div>
@@ -160,11 +182,15 @@
 			collection={data.collection}
 			currentUserId={data.currentUserId}
 			canManage={data.canManage}
+			actionQuery={filterParams()}
 		/>
 		{#if data.nextCursor}
 			<div class="flex justify-center pt-2">
-				<a class="btn btn-ghost btn-sm" href={`?${filterParams(data.nextCursor)}`}
-					>Ver movimientos anteriores</a
+				<a
+					class="btn btn-ghost btn-sm"
+					href={resolve(
+						`/family/${data.family.id}/expenses/${data.collection.id}?${filterParams(data.nextCursor)}` as '/'
+					)}>Ver movimientos anteriores</a
 				>
 			</div>
 		{/if}
@@ -185,7 +211,7 @@
 				</div>
 				<form
 					method="POST"
-					action="?/createExpense"
+					action={`?${filterParams()}&/createExpense`}
 					enctype="multipart/form-data"
 					class="grid gap-4 md:grid-cols-6"
 				>
@@ -314,7 +340,11 @@
 								.join(' · ')}
 						</p>
 						{#if rule.canMutate}
-							<form method="POST" action="?/setRecurringActive" class="mt-4 flex justify-end">
+							<form
+								method="POST"
+								action={`?${filterParams()}&/setRecurringActive`}
+								class="mt-4 flex justify-end"
+							>
 								<input type="hidden" name="rule_id" value={rule.id} />
 								<input type="hidden" name="active" value={rule.active ? 'false' : 'true'} />
 								<button class="btn btn-ghost btn-sm" type="submit">
@@ -332,6 +362,7 @@
 				currency={data.collection.currency}
 				currentUserId={data.currentUserId}
 				defaultDate={expenseDate}
+				actionQuery={filterParams()}
 			/>{/if}
 	</section>
 

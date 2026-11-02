@@ -113,3 +113,8 @@ export function parseNoteIdentity(formData: FormData): NoteValidationResult<Note
 		? { success: false, errors }
 		: { success: true, data: { noteId, version } };
 }
+
+export function parseMemberFilter(searchParams: URLSearchParams): string {
+	const member = searchParams.get('member') ?? '';
+	return UUID_PATTERN.test(member) ? member : '';
+}

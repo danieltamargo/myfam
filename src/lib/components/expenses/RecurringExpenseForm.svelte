@@ -9,9 +9,10 @@
 		currency: string;
 		currentUserId: string;
 		defaultDate: string;
+		actionQuery: string;
 	}
 
-	let { members, categories, currency, currentUserId, defaultDate }: Props = $props();
+	let { members, categories, currency, currentUserId, defaultDate, actionQuery }: Props = $props();
 	let amount = $state('');
 	const activeMembers = $derived(members.filter((member) => member.status === 'active'));
 </script>
@@ -23,7 +24,11 @@
 			Crea una regla semanal o mensual. Cada ocurrencia conserva el reparto y nunca genera pagos
 			automáticos.
 		</p>
-		<form method="POST" action="?/createRecurring" class="grid gap-4 md:grid-cols-6">
+		<form
+			method="POST"
+			action={`?${actionQuery}&/createRecurring`}
+			class="grid gap-4 md:grid-cols-6"
+		>
 			<label class="form-control md:col-span-3" for="recurring-description">
 				<span class="label-text mb-2 font-medium">Concepto</span>
 				<input

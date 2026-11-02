@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { onMount } from 'svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
 
 	interface Props {
@@ -7,6 +8,8 @@
 			members: Array<{
 				userId: string;
 				role: string;
+				canManageMembers: boolean;
+				canConfigureModules: boolean;
 				joinedAt: string;
 				displayName: string;
 				avatarUrl?: string;
@@ -14,6 +17,7 @@
 			invitations: Array<any>;
 			currentUserId?: string;
 			userRole: string;
+			canManageMembers: boolean;
 		};
 		form: any;
 	}
@@ -21,6 +25,10 @@
 	let { data, form }: Props = $props();
 
 	let showInviteModal = $state(false);
+	let ready = $state(false);
+	onMount(() => {
+		ready = true;
+	});
 	let inviteEmail = $state('');
 	let editingRole = $state<string | null>(null);
 	let showDeleteModal = $state(false);
@@ -29,7 +37,7 @@
 	let showTransferOwnershipModal = $state(false);
 	let ownershipTransfer = $state<{ userId: string; displayName: string } | null>(null);
 
-	const canManageMembers = $derived(data.userRole === 'owner' || data.userRole === 'admin');
+	const canManageMembers = $derived(data.canManageMembers);
 	const isOwner = $derived(data.userRole === 'owner');
 	const canLeave = $derived(!isOwner); // Non-owners can leave
 
@@ -100,7 +108,11 @@
 			</p>
 		</div>
 		{#if canManageMembers}
-			<button onclick={() => (showInviteModal = true)} class="btn gap-2 btn-primary">
+			<button
+				disabled={!ready}
+				onclick={() => (showInviteModal = true)}
+				class="btn gap-2 btn-primary"
+			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
 					class="h-5 w-5"
@@ -200,6 +212,40 @@
 						</div>
 					</div>
 
+					{#if isOwner && member.role === 'member'}
+						<form method="POST" action="?/setCapabilities" use:enhance class="mt-4 space-y-3">
+							<input type="hidden" name="userId" value={member.userId} />
+							<fieldset class="space-y-2">
+								<legend class="font-semibold">Permisos delegados</legend>
+								<label class="flex items-center gap-2">
+									<input
+										class="checkbox checkbox-sm"
+										type="checkbox"
+										name="manageMembers"
+										checked={member.canManageMembers}
+									/>
+									Gestionar miembros
+								</label>
+								<label class="flex items-center gap-2">
+									<input
+										class="checkbox checkbox-sm"
+										type="checkbox"
+										name="configureModules"
+										checked={member.canConfigureModules}
+									/>
+									Configurar módulos
+								</label>
+							</fieldset>
+							<button class="btn btn-sm" type="submit">Guardar permisos</button>
+						</form>
+					{/if}
+					{#if canManageMembers && !isOwner && member.role === 'member' && member.userId !== data.currentUserId}
+						<button
+							class="btn text-error btn-ghost btn-sm"
+							onclick={() => openDeleteModal(member.userId, member.displayName)}
+							>Retirar miembro</button
+						>
+					{/if}
 					<!-- Role & Actions -->
 					{#if isOwner && member.userId !== data.currentUserId}
 						<div class="mt-2 flex items-center justify-end gap-3">

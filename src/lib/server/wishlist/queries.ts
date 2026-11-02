@@ -1,5 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Tables } from '$lib/types/database';
+import {
+	loadVisibleCalendarEventOptions,
+	loadGiftCalendarAssociations
+} from '$lib/server/calendar/resource-links';
 import type {
 	WishlistCommentDto,
 	WishlistEventCategoryDto,
@@ -122,40 +126,82 @@ function normalizeItemStatus(status: string): WishlistItemDto['status'] {
 	return status === 'fulfilled' || status === 'archived' ? status : 'active';
 }
 
+async function loadOrdinaryItems(supabase: SupabaseClient<Database>, familyId: string) {
+	const items: Tables<'gift_items'>[] = [];
+	const batchSize = 500;
+	for (let offset = 0; ; offset += batchSize) {
+		const { data, error } = await supabase
+			.from('gift_items')
+			.select('*')
+			.eq('family_id', familyId)
+			.neq('status', 'fulfilled')
+			.order('created_at', { ascending: false })
+			.order('id', { ascending: false })
+			.range(offset, offset + batchSize - 1);
+		assertQuery(error, 'No se pudieron cargar los regalos');
+		items.push(...(data ?? []));
+		if ((data ?? []).length < batchSize) return items;
+	}
+}
+
+export async function loadReceivedWishlistHistory(
+	supabase: SupabaseClient<Database>,
+	familyId: string,
+	ownerId: string,
+	pageValue: string | null
+) {
+	const parsedPage = Number(pageValue);
+	const historyPage =
+		Number.isSafeInteger(parsedPage) && parsedPage > 0 ? Math.min(parsedPage, 10_000) : 1;
+	const pageSize = 50;
+	const offset = (historyPage - 1) * pageSize;
+	const { data, error } = await supabase
+		.from('gift_items')
+		.select('id, name, description, updated_at')
+		.eq('family_id', familyId)
+		.eq('owner_id', ownerId)
+		.eq('status', 'fulfilled')
+		.order('updated_at', { ascending: false })
+		.order('id', { ascending: false })
+		.range(offset, offset + pageSize);
+	assertQuery(error, 'No se pudo cargar el histórico');
+	return {
+		receivedItems: (data ?? []).slice(0, pageSize),
+		historyPage,
+		historyHasNext: (data ?? []).length > pageSize
+	};
+}
+
 export async function loadWishlistQueryData(
 	supabase: SupabaseClient<Database>,
 	familyId: string
 ): Promise<WishlistQueryData> {
-	const [membersResult, categoriesResult, itemsResult] = await Promise.all([
+	const [membersResult, categoriesResult, itemRows, calendarEvents] = await Promise.all([
 		supabase
 			.from('family_members')
 			.select('user_id, role')
 			.eq('family_id', familyId)
 			.order('joined_at', { ascending: true }),
 		supabase.from('gift_event_categories').select('*').eq('family_id', familyId).order('name'),
-		supabase
-			.from('gift_items')
-			.select('*')
-			.eq('family_id', familyId)
-			.order('created_at', { ascending: false })
+		loadOrdinaryItems(supabase, familyId),
+		loadVisibleCalendarEventOptions(supabase, familyId)
 	]);
 
 	assertQuery(membersResult.error, 'No se pudieron cargar los miembros');
 	assertQuery(categoriesResult.error, 'No se pudieron cargar las categorías');
-	assertQuery(itemsResult.error, 'No se pudieron cargar los regalos');
 
 	const membershipRows = (membersResult.data ?? []).filter(
 		(member): member is typeof member & { user_id: string } => Boolean(member.user_id)
 	);
-	const itemRows = itemsResult.data ?? [];
 	const eventCategories: WishlistEventCategoryDto[] = categoriesResult.data ?? [];
 	const itemIds = itemRows.map((item) => item.id);
 
-	const [itemEvents, reservationRows, purchases, commentRows] = await Promise.all([
+	const [itemEvents, reservationRows, purchases, commentRows, calendarLinks] = await Promise.all([
 		loadItemEvents(supabase, itemIds),
 		loadReservations(supabase, itemIds),
 		loadPurchases(supabase, itemIds),
-		loadComments(supabase, itemIds)
+		loadComments(supabase, itemIds),
+		loadGiftCalendarAssociations(supabase, itemIds)
 	]);
 
 	const profileIds = [
@@ -199,8 +245,11 @@ export async function loadWishlistQueryData(
 		role: member.role,
 		profiles: profileFor(member.user_id, profiles)
 	}));
+	const calendarById = new Map(calendarEvents.map((event) => [event.id, event]));
+	const calendarEventByItem = new Map(calendarLinks.map((link) => [link.item_id, link.event_id]));
 	const items: WishlistItemDto[] = itemRows.map((item) => ({
 		...item,
+		calendar_event: calendarById.get(calendarEventByItem.get(item.id) ?? '') ?? null,
 		links: item.links ?? [],
 		priority: item.priority ?? 0,
 		status: normalizeItemStatus(item.status),
@@ -217,5 +266,5 @@ export async function loadWishlistQueryData(
 		profiles: profileFor(comment.author_id, profiles)
 	}));
 
-	return { members, eventCategories, items, reservations, purchases, comments };
+	return { members, eventCategories, items, reservations, purchases, comments, calendarEvents };
 }

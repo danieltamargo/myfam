@@ -1,11 +1,13 @@
 <script lang="ts">
-	import { afterNavigate, invalidateAll, pushState, replaceState } from '$app/navigation';
+	import { afterNavigate, goto, invalidateAll, pushState, replaceState } from '$app/navigation';
+	import { enhance } from '$app/forms';
+	import type { SubmitFunction } from '@sveltejs/kit';
 	import { resolve } from '$app/paths';
-	import { page } from '$app/state';
+	import { navigating, page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import { createClient } from '$lib/supabase';
-	import type { PageData } from './$types';
+	import type { PageProps } from './$types';
 	import type { WishlistCommentDto, WishlistItemDto } from '$lib/server/wishlist/presenters';
 	import { summarizeWishlistCoordination } from '$lib/wishlist/coordination';
 	import { createOwnWishlistExport } from '$lib/wishlist/export';
@@ -24,12 +26,32 @@
 
 	type FilterName = 'member' | 'category' | 'priority' | 'status';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: PageProps = $props();
+	const showHistory = $derived(data.showHistory);
+	let historyBusy = $state(false);
+	let historyError = $state('');
+	let refreshError = $state('');
+	const enhanceReveal: SubmitFunction = ({ cancel }) => {
+		if (historyBusy) {
+			cancel();
+			return;
+		}
+		historyBusy = true;
+		historyError = '';
+		return async ({ update }) => {
+			try {
+				await update();
+			} catch {
+				historyError = 'No se pudo revelar el comprador. Inténtalo de nuevo.';
+			} finally {
+				historyBusy = false;
+			}
+		};
+	};
 
 	const statusFilters = new Set([
 		'all',
 		'active',
-		'fulfilled',
 		'archived',
 		'available',
 		'reserved',
@@ -107,7 +129,7 @@
 				return false;
 			if (selectedPriority !== 'all' && item.priority !== Number(selectedPriority)) return false;
 			if (selectedStatus === 'all') return true;
-			if (['active', 'fulfilled', 'archived'].includes(selectedStatus)) {
+			if (['active', 'archived'].includes(selectedStatus)) {
 				return item.status === selectedStatus;
 			}
 
@@ -121,6 +143,23 @@
 	function pathWithQuery(params: URLSearchParams): string {
 		const query = params.toString();
 		return `${page.url.pathname}${query ? `?${query}` : ''}`;
+	}
+
+	function historyHref(pageNumber: number): `/family/${string}/wishlist` {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		params.delete('item');
+		params.set('view', 'history');
+		params.set('history_page', String(pageNumber));
+		return pathWithQuery(params) as `/family/${string}/wishlist`;
+	}
+
+	function changeHistoryView(history: boolean) {
+		const params = new SvelteURLSearchParams(page.url.searchParams);
+		params.delete('item');
+		params.delete('history_page');
+		if (history) params.set('view', 'history');
+		else params.delete('view');
+		return goto(resolve(pathWithQuery(params) as `/family/${string}/wishlist`));
 	}
 
 	function updateQuery(
@@ -243,15 +282,38 @@
 			data.items.map((item) => ({ id: item.id, version: item.version }))
 		);
 		let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+		let refreshing = false;
+		let active = true;
 
 		function scheduleRefresh(): void {
-			if (refreshTimer) return;
+			if (!active || refreshTimer || refreshing) return;
 			refreshTimer = setTimeout(async () => {
 				refreshTimer = undefined;
-				await invalidateAll();
-				realtime.sync(data.items.map((item) => ({ id: item.id, version: item.version })));
+				if (!active) return;
+				if (navigating.to) {
+					scheduleRefresh();
+					return;
+				}
+				refreshing = true;
+				try {
+					await invalidateAll();
+					realtime.sync(data.items.map((item) => ({ id: item.id, version: item.version })));
+					refreshError = '';
+				} catch {
+					refreshError = 'No se pudo actualizar la wishlist. Recarga la página.';
+				} finally {
+					refreshing = false;
+				}
 			}, 75);
 		}
+
+		function refreshVisibleWishlist() {
+			if (document.visibilityState === 'visible') scheduleRefresh();
+		}
+		// RLS may suppress updates when a received gift becomes invisible to this viewer.
+		const refreshInterval = setInterval(refreshVisibleWishlist, 30_000);
+		document.addEventListener('visibilitychange', refreshVisibleWishlist);
+		window.addEventListener('focus', refreshVisibleWishlist);
 
 		function reconcile(table: WishlistRealtimeTable, payload: WishlistRealtimePayload): void {
 			const visibleItemIds = new Set(data.items.map((item) => item.id));
@@ -284,11 +346,27 @@
 				'postgres_changes',
 				{ event: '*', schema: 'public', table: 'gift_item_comments' },
 				(payload) => reconcile('gift_item_comments', payload as WishlistRealtimePayload)
-			)
-			.subscribe();
+			);
+		void supabase.realtime
+			.setAuth()
+			.then(() => {
+				if (!active) return;
+				channel.subscribe((status) => {
+					if (status === 'SUBSCRIBED') scheduleRefresh();
+					else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')
+						refreshError = 'No se pudo conectar la wishlist. Recarga la página.';
+				});
+			})
+			.catch(() => {
+				if (active) refreshError = 'No se pudo conectar la wishlist. Recarga la página.';
+			});
 
 		return () => {
+			active = false;
 			if (refreshTimer) clearTimeout(refreshTimer);
+			clearInterval(refreshInterval);
+			document.removeEventListener('visibilitychange', refreshVisibleWishlist);
+			window.removeEventListener('focus', refreshVisibleWishlist);
 			void supabase.removeChannel(channel);
 		};
 	});
@@ -296,51 +374,123 @@
 
 <div class="container mx-auto max-w-7xl">
 	<WishlistHeader bind:viewMode onAddGift={() => openEditModal()} onExport={exportOwnWishlist} />
-
-	<div class="flex flex-col gap-6 md:flex-row">
-		<WishlistFilters
-			members={data.members}
-			eventCategories={data.eventCategories}
-			{selectedMemberId}
-			{selectedCategoryId}
-			{selectedPriority}
-			{selectedStatus}
-			onChange={changeFilter}
-			onClear={clearFilters}
-		/>
-
-		<main class="min-w-0 flex-1" aria-label="Regalos de la wishlist">
-			<p class="mb-3 text-sm text-base-content/60" aria-live="polite">
-				{filteredItems.length}
-				{filteredItems.length === 1 ? 'regalo' : 'regalos'}
-			</p>
-			{#if viewMode === 'cards'}
-				<WishlistCards
-					items={filteredItems}
-					{isMyItem}
-					{getCoordination}
-					{getReservationNames}
-					{getPriorityLabel}
-					{getPriorityColor}
-					{formatPrice}
-					onOpenDetail={openDetailModal}
-					onOpenEdit={openEditModal}
-				/>
-			{:else}
-				<WishlistTable
-					items={filteredItems}
-					{isMyItem}
-					{getCoordination}
-					{getReservationNames}
-					{getPriorityLabel}
-					{getPriorityColor}
-					{formatPrice}
-					onOpenDetail={openDetailModal}
-					onOpenEdit={openEditModal}
-				/>
-			{/if}
-		</main>
+	<div class="join mb-4" aria-label="Vista de wishlist">
+		<button
+			class={['btn join-item btn-sm', { 'btn-active': !showHistory }]}
+			aria-pressed={!showHistory}
+			onclick={() => changeHistoryView(false)}>Listas de deseos</button
+		>
+		<button
+			class={['btn join-item btn-sm', { 'btn-active': showHistory }]}
+			aria-pressed={showHistory}
+			onclick={() => changeHistoryView(true)}>Mi histórico</button
+		>
 	</div>
+	{#if form?.error || historyError || refreshError}
+		<p class="mb-4 alert alert-error" role="alert">{historyError || refreshError || form?.error}</p>
+	{:else if form?.message}
+		<p class="mb-4 alert alert-success" role="status">{form.message}</p>
+	{/if}
+
+	{#if showHistory}
+		<section aria-label="Regalos recibidos" class="space-y-4">
+			<h2 class="text-xl font-bold">Mis regalos recibidos</h2>
+			<p class="text-sm text-base-content/65">
+				Solo tú puedes ver este histórico. El comprador permanece oculto hasta que decidas
+				revelarlo.
+			</p>
+			{#each data.receivedItems as item (item.id)}
+				<article class="rounded-box border border-base-300 p-4">
+					<h3 class="font-semibold">{item.name}</h3>
+					{#if item.description}<p class="mt-1 text-sm">{item.description}</p>{/if}
+					{#if form?.revealedItemId === item.id && form.revealedBuyers}
+						<div class="mt-3" role="status">
+							{#each form.revealedBuyers as buyer (buyer.buyer_id)}
+								<p>
+									Comprado por {buyer.display_name} · {buyer.quantity}
+									{buyer.quantity === 1 ? 'unidad' : 'unidades'}
+								</p>
+							{:else}<p>No consta quién compró este regalo.</p>{/each}
+						</div>
+					{:else}
+						<form
+							method="POST"
+							action={`?view=history&history_page=${data.historyPage}&/revealBuyers`}
+							use:enhance={enhanceReveal}
+							class="mt-3"
+						>
+							<input type="hidden" name="item_id" value={item.id} />
+							<button type="submit" class="btn btn-outline btn-sm" disabled={historyBusy}
+								>Revelar comprador (spoiler)</button
+							>
+						</form>
+					{/if}
+				</article>
+			{:else}
+				<p class="rounded-box border border-dashed border-base-300 p-6" role="status">
+					Aún no has marcado regalos como recibidos.
+				</p>
+			{/each}
+			<nav class="flex items-center gap-3" aria-label="Páginas del histórico">
+				{#if data.historyPage > 1}
+					<a class="btn btn-outline btn-sm" href={resolve(historyHref(data.historyPage - 1))}
+						>Anterior</a
+					>
+				{/if}
+				<span class="text-sm">Página {data.historyPage}</span>
+				{#if data.historyHasNext}
+					<a class="btn btn-outline btn-sm" href={resolve(historyHref(data.historyPage + 1))}
+						>Siguiente</a
+					>
+				{/if}
+			</nav>
+		</section>
+	{:else}
+		<div class="flex flex-col gap-6 md:flex-row">
+			<WishlistFilters
+				members={data.members}
+				eventCategories={data.eventCategories}
+				{selectedMemberId}
+				{selectedCategoryId}
+				{selectedPriority}
+				{selectedStatus}
+				onChange={changeFilter}
+				onClear={clearFilters}
+			/>
+
+			<main class="min-w-0 flex-1" aria-label="Regalos de la wishlist">
+				<p class="mb-3 text-sm text-base-content/60" aria-live="polite">
+					{filteredItems.length}
+					{filteredItems.length === 1 ? 'regalo' : 'regalos'}
+				</p>
+				{#if viewMode === 'cards'}
+					<WishlistCards
+						items={filteredItems}
+						{isMyItem}
+						{getCoordination}
+						{getReservationNames}
+						{getPriorityLabel}
+						{getPriorityColor}
+						{formatPrice}
+						onOpenDetail={openDetailModal}
+						onOpenEdit={openEditModal}
+					/>
+				{:else}
+					<WishlistTable
+						items={filteredItems}
+						{isMyItem}
+						{getCoordination}
+						{getReservationNames}
+						{getPriorityLabel}
+						{getPriorityColor}
+						{formatPrice}
+						onOpenDetail={openDetailModal}
+						onOpenEdit={openEditModal}
+					/>
+				{/if}
+			</main>
+		</div>
+	{/if}
 </div>
 
 {#if detailItem}
@@ -359,6 +509,7 @@
 {#if showEditModal}
 	<WishlistEditModal
 		item={editItem}
+		calendarEvents={data.calendarEvents}
 		eventCategories={data.eventCategories}
 		{todosEventId}
 		onClose={closeEditModal}

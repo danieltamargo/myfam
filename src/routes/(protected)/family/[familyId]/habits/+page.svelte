@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
 
@@ -46,6 +47,16 @@
 			{showCreate ? 'Cerrar formulario' : '+ Nuevo hábito'}
 		</button>
 	</header>
+
+	<form method="GET" class="rounded-box border border-base-300 bg-base-100 p-3 sm:p-4">
+		<MemberRadioFilter
+			name="member"
+			label="Persona"
+			members={data.members}
+			value={data.selectedMember}
+			autoSubmit
+		/>
+	</form>
 
 	{#if form?.error}
 		<div role="alert" class="alert alert-soft alert-error"><span>{form.error}</span></div>

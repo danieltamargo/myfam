@@ -16,6 +16,7 @@ import {
 	DocumentQueryError
 } from '$lib/server/documents/queries';
 import {
+	parseMemberFilter,
 	parseDocumentAccessForm,
 	parseDocumentId,
 	parseDocumentIdentity,
@@ -50,7 +51,14 @@ export const load: PageServerLoad = async ({
 	const query = parseDocumentPageQuery(url.searchParams);
 	try {
 		return {
-			...(await loadDocumentPage(supabase, params.familyId, user.id, query.folder, query.cursor)),
+			...(await loadDocumentPage(
+				supabase,
+				params.familyId,
+				user.id,
+				query.folder,
+				query.cursor,
+				parseMemberFilter(url.searchParams)
+			)),
 			familyId: params.familyId,
 			currentUserId: user.id
 		};

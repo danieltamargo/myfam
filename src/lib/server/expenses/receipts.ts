@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 import { isExpenseReceiptPath } from './schemas';
+import { ScannedUploadError, uploadScannedObject } from '$lib/server/security/upload-storage';
 
 const BUCKET = 'expense-receipts';
 const MAX_RECEIPT_SIZE = 8 * 1024 * 1024;
@@ -22,6 +23,7 @@ export class ExpenseReceiptError extends Error {
 }
 
 export interface PreparedExpenseReceipt {
+	context: { collectionId: string; ownerId: string; expenseId?: string };
 	file: File | null;
 	previousPath: string | null;
 	finalPath: string | null;
@@ -32,7 +34,8 @@ export function prepareExpenseReceipt(
 	formData: FormData,
 	collectionId: string,
 	uploaderId: string,
-	previousPath: string | null
+	previousPath: string | null,
+	expenseId?: string
 ): PreparedExpenseReceipt {
 	if (previousPath && !isExpenseReceiptPath(previousPath, collectionId)) {
 		throw new ExpenseReceiptError(400, 'El recibo actual no pertenece a esta colección.');
@@ -52,7 +55,13 @@ export function prepareExpenseReceipt(
 	const removeReceipt = formData.get('remove_receipt') === 'true';
 	const finalPath = uploadedPath ?? (removeReceipt ? null : previousPath);
 	formData.set('receipt_path', finalPath ?? '');
-	return { file, previousPath, finalPath, uploadedPath };
+	return {
+		file,
+		previousPath,
+		finalPath,
+		uploadedPath,
+		context: { collectionId, ownerId: uploaderId, expenseId }
+	};
 }
 
 export async function uploadExpenseReceipt(
@@ -60,13 +69,18 @@ export async function uploadExpenseReceipt(
 	prepared: PreparedExpenseReceipt
 ): Promise<void> {
 	if (!prepared.file || !prepared.uploadedPath) return;
-	const { error } = await supabase.storage
-		.from(BUCKET)
-		.upload(prepared.uploadedPath, prepared.file, {
-			contentType: prepared.file.type,
-			upsert: false
-		});
-	if (error) throw new ExpenseReceiptError(500, 'No se pudo subir el recibo privado.');
+	try {
+		await uploadScannedObject(
+			supabase,
+			{ bucket: BUCKET, ...prepared.context },
+			prepared.uploadedPath,
+			prepared.file
+		);
+	} catch (caught) {
+		if (caught instanceof ScannedUploadError)
+			throw new ExpenseReceiptError(caught.status, caught.message);
+		throw new ExpenseReceiptError(503, 'No se pudo analizar el recibo de forma segura.');
+	}
 }
 
 async function removeReceiptPath(

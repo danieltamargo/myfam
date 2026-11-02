@@ -23,6 +23,22 @@ const purchase = (id: string, userId: string, quantity: number): WishlistPurchas
 });
 
 describe('summarizeWishlistCoordination', () => {
+	it('retains allocations after a target reduction without offering additional capacity', () => {
+		const summary = summarizeWishlistCoordination(
+			'item-1',
+			1,
+			'buyer',
+			[reservation('r1', 'buyer', 1)],
+			[purchase('p1', 'other', 2)]
+		);
+		expect(summary).toMatchObject({
+			remainingQuantity: 0,
+			reservedQuantity: 1,
+			purchasedQuantity: 2,
+			maxReservationQuantity: 0,
+			maxPurchaseQuantity: 0
+		});
+	});
 	it('cuenta compras y reservas como capacidad coordinada', () => {
 		const summary = summarizeWishlistCoordination(
 			'item-1',

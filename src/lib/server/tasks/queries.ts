@@ -36,6 +36,7 @@ export interface FamilyTaskRecord extends Omit<
 }
 
 export interface TaskPageData {
+	selectedMember: string;
 	view: TaskView;
 	members: TaskMember[];
 	groups: TaskGroup[];
@@ -75,7 +76,8 @@ export async function loadTaskPage(
 	familyId: string,
 	userId: string,
 	userRole: string,
-	view: TaskView
+	view: TaskView,
+	selectedMember = ''
 ): Promise<TaskPageData> {
 	const [membersResult, groupsResult, tasksResult, assigneesResult, mentionsResult] =
 		await Promise.all([
@@ -171,6 +173,7 @@ export async function loadTaskPage(
 			};
 		})
 		.filter((task) => {
+			if (selectedMember && !task.assigneeIds.includes(selectedMember)) return false;
 			const active = task.status === 'todo' || task.status === 'in_progress';
 			if (view === 'mine')
 				return active && (task.created_by === userId || task.assigneeIds.includes(userId));
@@ -180,5 +183,5 @@ export async function loadTaskPage(
 			return true;
 		});
 
-	return { view, members, groups, tasks };
+	return { view, members, groups, tasks, selectedMember };
 }

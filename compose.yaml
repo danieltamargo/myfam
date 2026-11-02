@@ -1,0 +1,25 @@
+services:
+  clamav:
+    extends:
+      file: compose.antivirus.yaml
+      service: clamav
+  app:
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?Set VITE_SUPABASE_URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?Set VITE_SUPABASE_ANON_KEY}
+    env_file: .env
+    environment:
+      ORIGIN: ${ORIGIN:?Set ORIGIN to the public application URL}
+      CLAMAV_HOST: ${CLAMAV_HOST:-clamav}
+      CLAMAV_PORT: ${CLAMAV_PORT:-3310}
+    depends_on:
+      clamav:
+        condition: service_started
+    ports:
+      - '127.0.0.1:3000:3000'
+    restart: unless-stopped
+
+volumes:
+  clamav-signatures:

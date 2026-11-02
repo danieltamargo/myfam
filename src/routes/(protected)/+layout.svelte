@@ -16,6 +16,7 @@
 				role: string;
 			} | null;
 			notifications: Array<any>;
+			isSuperAdmin: boolean;
 		};
 		children: any;
 	}
@@ -29,6 +30,7 @@
 		families={data.families}
 		activeFamily={data.activeFamily}
 		notifications={data.notifications}
+		isSuperAdmin={data.isSuperAdmin}
 	/>
 
 	<main class="flex-1">

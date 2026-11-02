@@ -41,6 +41,7 @@ export interface CalendarOccurrence {
 }
 
 export interface CalendarEventRecord extends Tables<'calendar_events'> {
+	origin: 'google' | 'outlook' | 'internal';
 	participantIds: string[];
 	reminderMinutes: number | null;
 	canManage: boolean;
@@ -137,6 +138,14 @@ export async function loadCalendarPage(
 
 	const occurrenceRows = occurrencesResult.data ?? [];
 	const eventIds = [...new Set(occurrenceRows.map((occurrence) => occurrence.event_id))];
+	const originsResult = eventIds.length
+		? await supabase.rpc('get_calendar_event_origins', {
+				p_family_id: familyId,
+				p_event_ids: eventIds
+			})
+		: { data: [], error: null };
+	assertQuery(originsResult.error, 'No se pudo cargar el origen de los eventos');
+	const origins = new Map((originsResult.data ?? []).map((row) => [row.event_id, row.origin]));
 	const [eventResult, participantResult, reminderResult] = eventIds.length
 		? await Promise.all([
 				supabase.from('calendar_events').select('*').in('id', eventIds),
@@ -175,9 +184,18 @@ export async function loadCalendarPage(
 
 	const events: CalendarEventRecord[] = (eventResult.data ?? []).map((event) => ({
 		...event,
+		origin:
+			origins.get(event.id) === 'google'
+				? 'google'
+				: origins.get(event.id) === 'outlook'
+					? 'outlook'
+					: 'internal',
 		participantIds: participantsByEvent.get(event.id) ?? [],
 		reminderMinutes: reminderByEvent.get(event.id) ?? null,
-		canManage: event.created_by === userId || userRole === 'owner' || userRole === 'admin'
+		canManage:
+			event.created_by === userId ||
+			(!['google', 'outlook'].includes(origins.get(event.id) ?? '') &&
+				(userRole === 'owner' || userRole === 'admin'))
 	}));
 
 	const occurrences: CalendarOccurrence[] = occurrenceRows.map((occurrence) => ({

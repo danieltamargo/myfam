@@ -7,6 +7,33 @@ import type {
 	ExpenseInput,
 	RecurringExpenseInput
 } from './schemas';
+import type { ExpenseSettlementInput } from './schemas';
+
+export async function recordExpenseSettlement(
+	supabase: SupabaseClient<Database>,
+	collectionId: string,
+	input: ExpenseSettlementInput
+): Promise<string> {
+	const { data, error } = await supabase.rpc('record_expense_settlement', {
+		p_collection_id: collectionId,
+		p_from_user_id: input.fromUserId,
+		p_to_user_id: input.toUserId,
+		p_amount_cents: input.amountCents,
+		p_idempotency_key: input.idempotencyKey
+	});
+	if (error?.code === '40001' || error?.code === 'PT409')
+		throw new ExpenseCommandError(
+			409,
+			'Los saldos cambiaron. Revisa las sugerencias actualizadas.'
+		);
+	if (error?.code === '22023' && error.message === 'Expense splits are incomplete')
+		throw new ExpenseCommandError(
+			400,
+			'Completa los repartos de todos los gastos antes de registrar reembolsos.'
+		);
+	if (error) throwExpenseCommandError(error, 'No se pudo registrar el reembolso.');
+	return data;
+}
 
 export class ExpenseCommandError extends Error {
 	constructor(
@@ -23,7 +50,7 @@ function throwExpenseCommandError(error: PostgrestError, fallback: string): neve
 		throw new ExpenseCommandError(403, 'No tienes permiso para realizar esta acción.');
 	if (error.code === 'P0002')
 		throw new ExpenseCommandError(404, 'La invitación ya no está disponible.');
-	if (error.code === '40001')
+	if (error.code === '40001' || error.code === 'PT409')
 		throw new ExpenseCommandError(
 			409,
 			'El gasto cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'
@@ -272,15 +299,13 @@ export async function deleteExpense(
 	expenseId: string,
 	version: number
 ): Promise<string | null> {
-	const { data, error } = await supabase
-		.from('expenses')
-		.delete()
-		.eq('collection_id', collectionId)
-		.eq('id', expenseId)
-		.eq('version', version)
-		.select('receipt_path')
-		.maybeSingle();
+	const { data, error } = await supabase.rpc('delete_expense_with_lock', {
+		p_collection_id: collectionId,
+		p_expense_id: expenseId,
+		p_version: version
+	});
+	if (error?.code === 'P0002')
+		throw new ExpenseCommandError(404, 'El gasto ya no está disponible.');
 	if (error) throwExpenseCommandError(error, 'No se pudo eliminar el gasto.');
-	if (!data) throw new ExpenseCommandError(409, 'El gasto ya cambió o dejó de estar disponible.');
-	return data.receipt_path;
+	return data;
 }

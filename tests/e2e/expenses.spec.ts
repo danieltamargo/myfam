@@ -13,11 +13,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
 	) as LocalSupabaseStatus;
@@ -183,6 +180,14 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 		]);
 		expect(seedError).toBeNull();
 
+		expect(
+			(
+				await admin
+					.from('profiles')
+					.update({ avatar_url: 'http://127.0.0.1:5173/missing-avatar.png' })
+					.eq('id', ownerId)
+			).error
+		).toBeNull();
 		await signIn(page, ownerEmail, password);
 		await page.goto(`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15`);
 		await expect(page.getByRole('heading', { name: `Casa ${suffix}` })).toBeVisible();
@@ -193,10 +198,15 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 
 		await page.waitForTimeout(750);
 		const categoryFilter = page.getByTestId('expenses-filter-category');
+		await page.getByTitle('Owner Gastos', { exact: true }).click();
+		await expect(
+			page.getByTitle('Owner Gastos', { exact: true }).getByText('OG', { exact: true })
+		).toBeVisible();
 		await categoryFilter.selectOption(foodCategory.id);
 		await expect(categoryFilter).toHaveValue(foodCategory.id);
 		await page.getByRole('button', { name: 'Aplicar filtros' }).click();
 		await expect(page).toHaveURL(new RegExp(`category=${foodCategory.id}`));
+		await expect(page).toHaveURL(new RegExp(`paid_by=${ownerId}`));
 		await expect(page.getByTestId('expenses-current-total')).toContainText('75,50');
 		await expect(page.getByText(`Electricidad ${suffix}`)).toHaveCount(0);
 
@@ -231,6 +241,7 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 		await createForm.getByLabel('Fecha').fill('2026-08-20');
 		await createForm.getByRole('button', { name: 'Añadir gasto' }).press('Enter');
 		await expect(page.getByText(`Farmacia ${suffix}`, { exact: true })).toBeVisible();
+		await expect(page).toHaveURL(/anchor=2026-08-15/);
 		await expect(page.getByTestId('expenses-current-total')).toContainText('143,75');
 
 		const { data: createdExpense, error: createdExpenseError } = await owner
@@ -249,7 +260,7 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 		expect(createdSplits!.reduce((sum, split) => sum + Number(split.amount), 0)).toBe(18.25);
 
 		await page.getByText('Programar un gasto recurrente', { exact: true }).press('Enter');
-		const recurringForm = page.locator('form[action="?/createRecurring"]');
+		const recurringForm = page.locator('form[action*="/createRecurring"]');
 		await recurringForm.getByLabel('Concepto').fill(`Internet ${suffix}`);
 		await recurringForm.getByLabel('Importe', { exact: true }).fill('12.00');
 		await recurringForm.getByLabel('Próxima fecha').fill('2026-08-25');
@@ -280,6 +291,93 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 		await page.reload();
 		await expect(page.getByTestId('expenses-current-total')).toContainText('155,75');
 		await expect(page.getByText(`Internet ${suffix}`, { exact: true }).first()).toBeVisible();
+		await expect(
+			page.getByText(
+				'Hay gastos con repartos incompletos. Completa sus repartos antes de registrar reembolsos.'
+			)
+		).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Registrar pago realizado' })).toHaveCount(0);
+
+		const { data: settlementCollectionId, error: settlementCollectionError } = await owner.rpc(
+			'create_expense_collection',
+			{
+				p_family_id: familyId!,
+				p_name: `Reembolsos ${suffix}`,
+				p_currency: 'EUR'
+			}
+		);
+		expect(settlementCollectionError).toBeNull();
+		expect(
+			(
+				await owner.rpc('invite_expense_collection_member', {
+					p_collection_id: settlementCollectionId!,
+					p_user_id: viewerId,
+					p_role: 'viewer'
+				})
+			).error
+		).toBeNull();
+		expect(
+			(
+				await viewer.rpc('accept_expense_collection_invitation', {
+					p_collection_id: settlementCollectionId!
+				})
+			).error
+		).toBeNull();
+		expect(
+			(
+				await owner.rpc('create_expense_with_splits', {
+					p_collection_id: settlementCollectionId!,
+					p_paid_by: ownerId,
+					p_description: 'Reparto con céntimos',
+					p_category_id: null as unknown as string,
+					p_notes: null as unknown as string,
+					p_receipt_path: null as unknown as string,
+					p_amount: 10.01,
+					p_occurred_on: '2026-08-20',
+					p_splits: [
+						{ user_id: ownerId, amount: 3.33 },
+						{ user_id: viewerId, amount: 6.68 }
+					]
+				})
+			).error
+		).toBeNull();
+		await page.goto(
+			`/family/${familyId}/expenses/${settlementCollectionId}?period=month&anchor=2026-08-15`
+		);
+
+		const settlementForm = page.locator('form[action*="/recordSettlement"]').first();
+		const settlementAction = await settlementForm.getAttribute('action');
+		const settlementPayload = await settlementForm
+			.locator('input[type="hidden"]')
+			.evaluateAll((inputs) =>
+				Object.fromEntries(
+					inputs.map((input) => [
+						(input as HTMLInputElement).name,
+						(input as HTMLInputElement).value
+					])
+				)
+			);
+		await settlementForm.getByRole('button', { name: 'Registrar pago realizado' }).click();
+		await expect(
+			page.getByText('Reembolso registrado. No se ha realizado ninguna transferencia bancaria.')
+		).toBeVisible();
+		await expect(page.getByText('No hay reembolsos pendientes.')).toBeVisible();
+		await expect(page).toHaveURL(/anchor=2026-08-15/);
+		const retry = await page.request.post(new URL(settlementAction!, page.url()).href, {
+			form: settlementPayload,
+			headers: { Origin: new URL(page.url()).origin }
+		});
+		expect(retry.status()).toBe(200);
+		const { data: recordedPayments, error: recordedPaymentsError } = await owner
+			.from('expense_settlements')
+			.select('id')
+			.eq('collection_id', settlementCollectionId!);
+		expect(recordedPaymentsError).toBeNull();
+		expect(recordedPayments).toHaveLength(1);
+		const { data: finalBalances } = await owner.rpc('get_expense_settlement_balances', {
+			p_collection_id: settlementCollectionId!
+		});
+		expect(finalBalances?.every((balance) => Number(balance.balance_cents) === 0)).toBe(true);
 	} finally {
 		if (familyId) await admin.from('families').delete().eq('id', familyId);
 		for (const userId of createdUserIds) await admin.auth.admin.deleteUser(userId);

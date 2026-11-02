@@ -24,6 +24,7 @@ export interface HabitRecord extends Omit<Tables<'family_habits'>, 'visibility'>
 }
 
 export interface HabitPageData {
+	selectedMember: string;
 	days: string[];
 	members: HabitMember[];
 	habits: HabitRecord[];
@@ -51,17 +52,20 @@ export async function loadHabitPage(
 	supabase: SupabaseClient<Database>,
 	familyId: string,
 	userId: string,
-	today = new Date()
+	today = new Date(),
+	selectedMember = ''
 ): Promise<HabitPageData> {
 	const days = habitWeek(today);
+	let habitsQuery = supabase
+		.from('family_habits')
+		.select('*')
+		.eq('family_id', familyId)
+		.is('archived_at', null)
+		.order('updated_at', { ascending: false });
+	if (selectedMember) habitsQuery = habitsQuery.eq('created_by', selectedMember);
 	const [memberResult, habitResult, completionResult] = await Promise.all([
 		supabase.from('family_members').select('user_id').eq('family_id', familyId).order('joined_at'),
-		supabase
-			.from('family_habits')
-			.select('*')
-			.eq('family_id', familyId)
-			.is('archived_at', null)
-			.order('updated_at', { ascending: false }),
+		habitsQuery,
 		supabase
 			.from('habit_completions')
 			.select('habit_id, completed_on')
@@ -111,6 +115,7 @@ export async function loadHabitPage(
 	}
 
 	return {
+		selectedMember,
 		days,
 		members: memberIds.map((id) => ({
 			id,

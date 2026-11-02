@@ -1,5 +1,7 @@
 # Auditoría final de MyFamily
 
+> Informe histórico de agosto. Consultar [PROJECT_AUDIT_2026-10-31.md](PROJECT_AUDIT_2026-10-31.md) para el alcance y estado actuales del MVP.
+
 - **Actualizada:** 15 de agosto de 2026
 - **Rama:** `codex/functional-roadmap`
 - **Base de cierre:** `dd21158` (`docs: close functional product roadmap`)

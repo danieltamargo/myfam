@@ -4,6 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import { getNavigationModules } from '$lib/config/modules';
 	import type { LayoutData } from './$types';
+	import BirthdayAlerts from '$lib/components/layout/BirthdayAlerts.svelte';
 
 	interface Props {
 		data: LayoutData;
@@ -21,6 +22,9 @@
 		}))
 	);
 	const settingsHref = $derived(`/family/${encodeURIComponent(data.family.id)}/settings/modules`);
+	const birthdaysHref = $derived(
+		`/family/${encodeURIComponent(data.family.id)}/settings/birthdays`
+	);
 
 	function isActive(href: string) {
 		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
@@ -54,8 +58,19 @@
 				<span aria-hidden="true" class="text-lg">⚙️</span>
 				Módulos
 			</a>
+			{#if data.moduleAccess.some((access) => access.moduleId === 'wishlist' && access.enabled)}
+				<a
+					role="tab"
+					href={resolve(...([birthdaysHref] as unknown as ['/']))}
+					aria-current={isActive(birthdaysHref) ? 'page' : undefined}
+					aria-selected={isActive(birthdaysHref)}
+					class="tab whitespace-nowrap"
+					class:tab-active={isActive(birthdaysHref)}>Cumpleaños</a
+				>
+			{/if}
 		</div>
 	</nav>
+	<BirthdayAlerts alerts={data.birthdayAlerts} errorMessage={data.birthdayAlertsError} />
 
 	<div>
 		{@render children()}

@@ -34,6 +34,12 @@ export type Database = {
   }
   public: {
     Tables: {
+      family_member_birthdays: {
+        Row: { family_id: string; user_id: string; month: number; day: number }
+        Insert: { family_id: string; user_id: string; month: number; day: number }
+        Update: { family_id?: string; user_id?: string; month?: number; day?: number }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -292,6 +298,97 @@ export type Database = {
           },
         ]
       }
+      calendar_external_event_links: {
+        Row: {
+          conflict: string | null
+          connection_id: string
+          direction: string
+          local_event_id: string | null
+          local_version: number
+          remote_deleted: boolean
+          remote_etag: string
+          remote_event_id: string
+        }
+        Insert: {
+          conflict?: string | null
+          connection_id: string
+          direction: string
+          local_event_id?: string | null
+          local_version: number
+          remote_deleted?: boolean
+          remote_etag: string
+          remote_event_id: string
+        }
+        Update: {
+          conflict?: string | null
+          connection_id?: string
+          direction?: string
+          local_event_id?: string | null
+          local_version?: number
+          remote_deleted?: boolean
+          remote_etag?: string
+          remote_event_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_external_event_links_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "external_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_external_event_links_local_event_id_fkey"
+            columns: ["local_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_oauth_states: {
+        Row: {
+          expires_at: string
+          family_id: string
+          nonce_hash: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          family_id: string
+          nonce_hash: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          family_id?: string
+          nonce_hash?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_oauth_states_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_oauth_states_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_oauth_states_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_categories: {
         Row: {
           collection_id: string
@@ -321,6 +418,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "expense_collections"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_collection_event_links: {
+        Row: {
+          collection_id: string
+          event_id: string
+          family_id: string
+        }
+        Insert: {
+          collection_id: string
+          event_id: string
+          family_id: string
+        }
+        Update: {
+          collection_id?: string
+          event_id?: string
+          family_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_collection_event_links_family_id_collection_id_fkey"
+            columns: ["family_id", "collection_id"]
+            isOneToOne: false
+            referencedRelation: "expense_collections"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "expense_collection_event_links_family_id_event_id_fkey"
+            columns: ["family_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["family_id", "id"]
           },
         ]
       }
@@ -444,6 +574,75 @@ export type Database = {
             columns: ["family_id"]
             isOneToOne: false
             referencedRelation: "families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_settlements: {
+        Row: {
+          amount_cents: number
+          collection_id: string
+          created_at: string
+          created_by: string
+          from_user_id: string
+          id: string
+          idempotency_key: string
+          to_user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          collection_id: string
+          created_at?: string
+          created_by: string
+          from_user_id: string
+          id?: string
+          idempotency_key: string
+          to_user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          collection_id?: string
+          created_at?: string
+          created_by?: string
+          from_user_id?: string
+          id?: string
+          idempotency_key?: string
+          to_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expense_settlements_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "expense_collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_settlements_collection_id_from_user_id_fkey"
+            columns: ["collection_id", "from_user_id"]
+            isOneToOne: false
+            referencedRelation: "expense_collection_members"
+            referencedColumns: ["collection_id", "user_id"]
+          },
+          {
+            foreignKeyName: "expense_settlements_collection_id_to_user_id_fkey"
+            columns: ["collection_id", "to_user_id"]
+            isOneToOne: false
+            referencedRelation: "expense_collection_members"
+            referencedColumns: ["collection_id", "user_id"]
+          },
+          {
+            foreignKeyName: "expense_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "expense_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -612,6 +811,8 @@ export type Database = {
           metadata: Json | null
           provider: string
           refresh_token: string | null
+          sync_lease_id: string | null
+          sync_lease_until: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -624,6 +825,8 @@ export type Database = {
           metadata?: Json | null
           provider: string
           refresh_token?: string | null
+          sync_lease_id?: string | null
+          sync_lease_until?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -636,6 +839,8 @@ export type Database = {
           metadata?: Json | null
           provider?: string
           refresh_token?: string | null
+          sync_lease_id?: string | null
+          sync_lease_until?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1201,6 +1406,7 @@ export type Database = {
           description: string | null
           family_id: string
           id: string
+          list_type: string
           title: string
           updated_at: string
           version: number
@@ -1213,6 +1419,7 @@ export type Database = {
           description?: string | null
           family_id: string
           id?: string
+          list_type?: string
           title: string
           updated_at?: string
           version?: number
@@ -1225,6 +1432,7 @@ export type Database = {
           description?: string | null
           family_id?: string
           id?: string
+          list_type?: string
           title?: string
           updated_at?: string
           version?: number
@@ -1256,6 +1464,8 @@ export type Database = {
       }
       family_members: {
         Row: {
+          can_configure_modules: boolean
+          can_manage_members: boolean
           family_id: string | null
           id: string
           joined_at: string | null
@@ -1263,6 +1473,8 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          can_configure_modules?: boolean
+          can_manage_members?: boolean
           family_id?: string | null
           id?: string
           joined_at?: string | null
@@ -1270,6 +1482,8 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          can_configure_modules?: boolean
+          can_manage_members?: boolean
           family_id?: string | null
           id?: string
           joined_at?: string | null
@@ -1783,6 +1997,7 @@ export type Database = {
           join_code: string | null
           max_players: number
           name: string
+          protocol_version: number
           started_at: string | null
           status: Database["public"]["Enums"]["room_status"]
         }
@@ -1798,6 +2013,7 @@ export type Database = {
           join_code?: string | null
           max_players?: number
           name: string
+          protocol_version?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["room_status"]
         }
@@ -1813,6 +2029,7 @@ export type Database = {
           join_code?: string | null
           max_players?: number
           name?: string
+          protocol_version?: number
           started_at?: string | null
           status?: Database["public"]["Enums"]["room_status"]
         }
@@ -1853,6 +2070,8 @@ export type Database = {
           room_id: string
           started_at: string
           status: string
+          turn_deadline: string | null
+          version: number
           winner_id: string | null
           winner_player_number: number | null
         }
@@ -1868,6 +2087,8 @@ export type Database = {
           room_id: string
           started_at?: string
           status?: string
+          turn_deadline?: string | null
+          version?: number
           winner_id?: string | null
           winner_player_number?: number | null
         }
@@ -1883,6 +2104,8 @@ export type Database = {
           room_id?: string
           started_at?: string
           status?: string
+          turn_deadline?: string | null
+          version?: number
           winner_id?: string | null
           winner_player_number?: number | null
         }
@@ -1986,6 +2209,39 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      gift_calendar_event_links: {
+        Row: {
+          event_id: string
+          family_id: string
+          item_id: string
+        }
+        Insert: {
+          event_id: string
+          family_id: string
+          item_id: string
+        }
+        Update: {
+          event_id?: string
+          family_id?: string
+          item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gift_calendar_event_links_family_id_event_id_fkey"
+            columns: ["family_id", "event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["family_id", "id"]
+          },
+          {
+            foreignKeyName: "gift_calendar_event_links_family_id_item_id_fkey"
+            columns: ["family_id", "item_id"]
+            isOneToOne: false
+            referencedRelation: "gift_items"
+            referencedColumns: ["family_id", "id"]
           },
         ]
       }
@@ -3196,8 +3452,16 @@ export type Database = {
         Args: { p_collection_id: string }
         Returns: undefined
       }
+      family_storage_has_capacity: {
+        Args: { p_bucket_id: string; p_name: string; p_size_bytes: number }
+        Returns: boolean
+      }
       accept_family_invitation: {
         Args: { p_invitation_id: string }
+        Returns: string
+      }
+      acquire_google_calendar_sync: {
+        Args: { p_connection_id: string; p_user_id: string }
         Returns: string
       }
       add_bot_to_room: {
@@ -3210,6 +3474,18 @@ export type Database = {
           p_quantity: number
           p_title: string
           p_unit: string
+        }
+        Returns: string
+      }
+      apply_google_calendar_event: {
+        Args: {
+          p_connection_id: string
+          p_etag: string
+          p_event: Json
+          p_expected_version?: number
+          p_force?: boolean
+          p_lease_id: string
+          p_remote_event_id: string
         }
         Returns: string
       }
@@ -3228,6 +3504,14 @@ export type Database = {
         }
         Returns: Json
       }
+      begin_mfa_recovery: {
+        Args: { p_code_hash: string; p_job_id: string; p_user_id: string }
+        Returns: boolean
+      }
+      bind_mfa_recovery_session: {
+        Args: { p_job_id: string; p_session_id: string; p_user_id: string }
+        Returns: undefined
+      }
       cancel_family_document_upload: {
         Args: { p_document_id: string }
         Returns: undefined
@@ -3235,6 +3519,10 @@ export type Database = {
       change_expense_collection_role: {
         Args: { p_collection_id: string; p_role: string; p_user_id: string }
         Returns: undefined
+      }
+      choose_family_game_color: {
+        Args: { p_choice: string; p_room_id: string; p_version: number }
+        Returns: number
       }
       complete_family_document_delete: {
         Args: { p_document_id: string }
@@ -3244,6 +3532,7 @@ export type Database = {
         Args: { p_document_id: string }
         Returns: number
       }
+      complete_my_mfa_recovery: { Args: never; Returns: undefined }
       copy_recipe_ingredients_to_list: {
         Args: { p_list_id: string; p_recipe_id: string }
         Returns: number
@@ -3292,6 +3581,20 @@ export type Database = {
         Returns: string
       }
       create_family: { Args: { p_name: string }; Returns: string }
+      create_family_game:
+        | {
+            Args: { p_family_id: string; p_name: string; p_opponent_id: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_family_id: string
+              p_game_type: string
+              p_name: string
+              p_opponent_id: string
+            }
+            Returns: string
+          }
       create_family_habit: {
         Args: {
           p_description: string
@@ -3368,13 +3671,37 @@ export type Database = {
         Args: { p_family_id: string; p_name: string }
         Returns: string
       }
+      create_typed_family_list: {
+        Args: {
+          p_description: string
+          p_family_id: string
+          p_list_type: string
+          p_member_ids: string[]
+          p_source_list_id?: string
+          p_title: string
+          p_visibility: string
+        }
+        Returns: string
+      }
       delete_calendar_event: {
         Args: { p_event_id: string; p_version: number }
         Returns: undefined
       }
+      delete_expense_with_lock: {
+        Args: {
+          p_collection_id: string
+          p_expense_id: string
+          p_version: number
+        }
+        Returns: string
+      }
       delete_family: { Args: { p_family_id: string }; Returns: undefined }
       delete_family_list_item: {
         Args: { p_item_id: string; p_version: number }
+        Returns: undefined
+      }
+      end_family_game: {
+        Args: { p_reason: string; p_room_id: string }
         Returns: undefined
       }
       extract_mentions_from_comment: {
@@ -3382,6 +3709,13 @@ export type Database = {
         Returns: string[]
       }
       generate_join_code: { Args: never; Returns: string }
+      get_calendar_event_origins: {
+        Args: { p_event_ids: string[]; p_family_id: string }
+        Returns: {
+          event_id: string
+          origin: string
+        }[]
+      }
       get_calendar_occurrences: {
         Args: {
           p_family_id: string
@@ -3440,6 +3774,13 @@ export type Database = {
         }
         Returns: Json
       }
+      get_expense_settlement_balances: {
+        Args: { p_collection_id: string }
+        Returns: {
+          balance_cents: number
+          user_id: string
+        }[]
+      }
       get_game_leaderboard: {
         Args: {
           p_family_id: string
@@ -3475,6 +3816,15 @@ export type Database = {
           updated_at: string
         }[]
       }
+      get_my_mfa_recovery_state: {
+        Args: never
+        Returns: {
+          allowed: boolean
+          pending: boolean
+          required: boolean
+          session_valid: boolean
+        }[]
+      }
       get_my_profile: {
         Args: never
         Returns: {
@@ -3489,6 +3839,10 @@ export type Database = {
       }
       get_unread_notification_count: {
         Args: { user_uuid: string }
+        Returns: number
+      }
+      guess_family_wordle: {
+        Args: { p_guess: string; p_room_id: string; p_version: number }
         Returns: number
       }
       has_user_purchased_item: {
@@ -3510,6 +3864,19 @@ export type Database = {
       leave_expense_collection: {
         Args: { p_collection_id: string }
         Returns: undefined
+      }
+      mark_gift_item_received: {
+        Args: { p_item_id: string; p_version: number }
+        Returns: number
+      }
+      move_family_game: {
+        Args: {
+          p_col: number
+          p_room_id: string
+          p_row: number
+          p_version: number
+        }
+        Returns: number
       }
       prepare_family_document_delete: {
         Args: { p_document_id: string; p_version: number }
@@ -3535,6 +3902,33 @@ export type Database = {
         Args: { p_item_id: string; p_quantity?: number }
         Returns: string
       }
+      react_family_game: {
+        Args: { p_room_id: string; p_version: number }
+        Returns: number
+      }
+      read_family_game_signal: { Args: { p_room_id: string }; Returns: boolean }
+      ready_family_game: { Args: { p_room_id: string }; Returns: undefined }
+      record_expense_settlement: {
+        Args: {
+          p_amount_cents: number
+          p_collection_id: string
+          p_from_user_id: string
+          p_idempotency_key: string
+          p_to_user_id: string
+        }
+        Returns: string
+      }
+      record_google_calendar_export: {
+        Args: {
+          p_connection_id: string
+          p_etag: string
+          p_lease_id: string
+          p_local_event_id: string
+          p_local_version: number
+          p_remote_event_id: string
+        }
+        Returns: undefined
+      }
       reject_family_invitation: {
         Args: { p_invitation_id: string }
         Returns: undefined
@@ -3548,6 +3942,10 @@ export type Database = {
         Args: { p_family_id: string; p_target_user_id: string }
         Returns: undefined
       }
+      replace_my_mfa_recovery_codes: {
+        Args: { p_hashes: string[] }
+        Returns: undefined
+      }
       reserve_gift_item: {
         Args: { p_item_id: string; p_quantity?: number; p_status?: string }
         Returns: string
@@ -3556,9 +3954,39 @@ export type Database = {
         Args: { p_document_id: string }
         Returns: number
       }
+      reveal_received_gift_buyers: {
+        Args: { p_item_id: string }
+        Returns: {
+          buyer_id: string
+          display_name: string
+          purchased_at: string
+          quantity: number
+        }[]
+      }
       revoke_expense_collection_member: {
         Args: { p_collection_id: string; p_user_id: string }
         Returns: undefined
+      }
+      save_wishlist_item: {
+        Args: {
+          p_calendar_change: string
+          p_calendar_event_id: string
+          p_category_ids: string[]
+          p_currency: string
+          p_description: string
+          p_desired_quantity: number
+          p_family_id: string
+          p_image_path: string
+          p_item_id: string
+          p_links: string[]
+          p_name: string
+          p_owner_id: string
+          p_price: number
+          p_priority: number
+          p_status: string
+          p_version: number
+        }
+        Returns: string
       }
       schedule_family_meal: {
         Args: {
@@ -3569,6 +3997,10 @@ export type Database = {
           p_recipe_id: string
         }
         Returns: string
+      }
+      set_expense_collection_event: {
+        Args: { p_change: string; p_collection_id: string; p_event_id: string }
+        Returns: undefined
       }
       set_family_habit_completion: {
         Args: {
@@ -3581,6 +4013,19 @@ export type Database = {
       set_family_list_item_completed: {
         Args: { p_completed: boolean; p_item_id: string; p_version: number }
         Returns: number
+      }
+      set_family_list_type: {
+        Args: { p_list_id: string; p_list_type: string; p_version: number }
+        Returns: undefined
+      }
+      set_family_member_capabilities: {
+        Args: {
+          p_can_configure_modules: boolean
+          p_can_manage_members: boolean
+          p_family_id: string
+          p_target_user_id: string
+        }
+        Returns: undefined
       }
       set_family_module_preference: {
         Args: { p_enabled: boolean; p_family_id: string; p_module_name: string }
@@ -3612,6 +4057,7 @@ export type Database = {
         Args: { p_active: boolean; p_collection_id: string; p_rule_id: string }
         Returns: undefined
       }
+      start_family_game: { Args: { p_room_id: string }; Returns: string }
       transfer_expense_collection_ownership: {
         Args: { p_collection_id: string; p_new_owner_id: string }
         Returns: undefined
@@ -3698,7 +4144,12 @@ export type Database = {
       }
     }
     Enums: {
-      game_type: "tic_tac_toe" | "connect_four" | "wordle"
+      game_type:
+        | "tic_tac_toe"
+        | "connect_four"
+        | "wordle"
+        | "reaction"
+        | "color"
       room_status: "waiting" | "in_progress" | "finished" | "cancelled"
     }
     CompositeTypes: {
@@ -3830,7 +4281,7 @@ export const Constants = {
   },
   public: {
     Enums: {
-      game_type: ["tic_tac_toe", "connect_four", "wordle"],
+      game_type: ["tic_tac_toe", "connect_four", "wordle", "reaction", "color"],
       room_status: ["waiting", "in_progress", "finished", "cancelled"],
     },
   },

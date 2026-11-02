@@ -16,7 +16,7 @@ function throwTaskCommandError(error: PostgrestError, fallback: string): never {
 	if (error.code === '42501')
 		throw new TaskCommandError(403, 'No tienes permiso para modificar esta tarea.');
 	if (error.code === 'P0002') throw new TaskCommandError(404, 'La tarea ya no está disponible.');
-	if (error.code === '40001')
+	if (error.code === '40001' || error.code === 'PT409')
 		throw new TaskCommandError(
 			409,
 			'La tarea cambió mientras la editabas. Recarga la página e inténtalo de nuevo.'

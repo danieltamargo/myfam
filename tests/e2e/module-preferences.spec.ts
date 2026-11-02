@@ -12,11 +12,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
 	) as LocalSupabaseStatus;
@@ -69,6 +66,26 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 }, testInfo) => {
 	test.setTimeout(120_000);
 	page.setDefaultTimeout(12_000);
+	await page.addInitScript(() => {
+		const addEventListener = window.addEventListener.bind(window);
+		window.addEventListener = (
+			type: string,
+			listener: EventListenerOrEventListenerObject,
+			options?: boolean | AddEventListenerOptions
+		) => {
+			if (type !== 'visibilitychange' || typeof listener !== 'function') {
+				return addEventListener(type, listener, options);
+			}
+			addEventListener(
+				type,
+				async (event) => {
+					await listener.call(window, event);
+					window.dispatchEvent(new Event('e2e:visibility-settled'));
+				},
+				options
+			);
+		};
+	});
 	const status = getLocalSupabaseStatus();
 	const admin = createClient<Database>(status.API_URL, status.SECRET_KEY, {
 		auth: { autoRefreshToken: false, persistSession: false }
@@ -132,7 +149,7 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 			page.getByRole('heading', { name: 'Elige qué necesita tu familia' })
 		).toBeVisible();
 		await expect(page.getByText('Siempre activo')).toHaveCount(2);
-		await expect(page.getByText('No disponible')).toBeVisible();
+		await expect(page.getByRole('heading', { name: 'Juegos', exact: true })).toBeVisible();
 		await expect(page.getByRole('tab', { name: 'Calendario' })).toBeVisible();
 
 		await page.getByRole('button', { name: 'Desactivar Calendario' }).click();
@@ -141,6 +158,30 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 		const disabledResponse = await page.goto(`/family/${familyId}/calendar`);
 		expect(disabledResponse?.status()).toBe(404);
 
+		const theme = await page.locator('html').getAttribute('data-theme');
+		expect(theme).not.toBeNull();
+		await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
+		await expect(page.locator('html')).toHaveAttribute(
+			'data-theme',
+			theme === 'myfam-dark' ? 'myfam-light' : 'myfam-dark'
+		);
+		let calendarRevalidations = 0;
+		const countCalendarRevalidation = (request: import('@playwright/test').Request) => {
+			if (new URL(request.url()).pathname === `/family/${familyId}/calendar/__data.json`) {
+				calendarRevalidations++;
+			}
+		};
+		page.on('request', countCalendarRevalidation);
+		await page.evaluate(async () => {
+			await new Promise<void>((resolve) => {
+				window.addEventListener('e2e:visibility-settled', () => resolve(), { once: true });
+				window.dispatchEvent(new Event('visibilitychange'));
+			});
+			await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+		});
+		expect(calendarRevalidations).toBe(0);
+		page.off('request', countCalendarRevalidation);
+
 		await page.goto(`/family/${familyId}/settings/modules`);
 		await page.getByRole('button', { name: 'Activar Calendario' }).click();
 		await expect(page.getByRole('status')).toContainText('Calendario está activo.');
@@ -148,12 +189,25 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 		await expect(page.getByRole('heading', { name: 'Calendario familiar' })).toBeVisible();
 
 		const gamesResponse = await page.goto(`/family/${familyId}/games`);
-		expect(gamesResponse?.status()).toBe(404);
+		expect(gamesResponse?.status()).toBe(200);
+		await expect(page.getByRole('heading', { name: 'Juegos en familia' })).toBeVisible();
+		expect(
+			(
+				await owner.rpc('set_family_module_preference', {
+					p_family_id: familyId!,
+					p_module_name: 'games',
+					p_enabled: false
+				})
+			).error
+		).toBeNull();
+		expect((await page.goto(`/family/${familyId}/games`))?.status()).toBe(404);
 
 		await page.context().clearCookies();
 		await signIn(page, memberEmail, password);
 		await page.goto(`/family/${familyId}/settings/modules`);
-		await expect(page.getByText('Solo owner y admin pueden cambiarla.')).toBeVisible();
+		await expect(page.getByRole('note')).toContainText(
+			'miembros con permiso para configurar módulos'
+		);
 		await expect(page.getByRole('button', { name: 'Desactivar Calendario' })).toBeDisabled();
 		expect(
 			(
@@ -164,6 +218,51 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 				})
 			).error?.code
 		).toBe('42501');
+
+		await page.context().clearCookies();
+		await signIn(page, ownerEmail, password);
+		await page.goto(`/family/${familyId}/members`);
+		await page.getByRole('button', { name: 'Invite Member', exact: true }).click();
+		await expect(page.getByRole('heading', { name: 'Invite Family Member' })).toBeVisible();
+		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+		const capabilityForm = page.locator('form[action="?/setCapabilities"]').filter({
+			has: page.locator(`input[name="userId"][value="${createdUserIds[1]}"]`)
+		});
+		await capabilityForm.getByLabel('Configurar módulos').check();
+		await capabilityForm.getByRole('button', { name: 'Guardar permisos' }).click();
+		await expect(page.getByText('Permisos guardados.')).toBeVisible();
+		expect(
+			(
+				await owner
+					.from('family_members')
+					.select('can_configure_modules')
+					.eq('family_id', familyId!)
+					.eq('user_id', createdUserIds[1]!)
+					.single()
+			).data?.can_configure_modules
+		).toBe(true);
+		await page.context().clearCookies();
+		await signIn(page, memberEmail, password);
+		await page.goto(`/family/${familyId}/settings/modules`);
+		await page.getByRole('button', { name: 'Desactivar Calendario' }).click();
+		await expect(page.getByRole('status')).toContainText('Calendario está desactivado.');
+		await page.getByRole('button', { name: 'Activar Calendario' }).click();
+		await expect(page.getByRole('status')).toContainText('Calendario está activo.');
+		await page.goto(`/family/${familyId}/members`);
+		await expect(page.getByRole('button', { name: 'Invite Member' })).toHaveCount(0);
+		await expect(page.getByRole('button', { name: 'Guardar permisos' })).toHaveCount(0);
+		expect(
+			(
+				await owner.rpc('set_family_member_capabilities', {
+					p_family_id: familyId!,
+					p_target_user_id: createdUserIds[1]!,
+					p_can_manage_members: false,
+					p_can_configure_modules: false
+				})
+			).error
+		).toBeNull();
+		await page.goto(`/family/${familyId}/settings/modules`);
+		await expect(page.getByRole('button', { name: 'Desactivar Calendario' })).toBeDisabled();
 
 		if (testInfo.project.name === 'mobile-chromium') {
 			const bodyWidth = await page.locator('body').evaluate((element) => element.scrollWidth);

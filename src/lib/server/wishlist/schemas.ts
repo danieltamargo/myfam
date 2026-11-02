@@ -28,11 +28,14 @@ export interface WishlistItemInput {
 	links: string[];
 	imagePath: string | null;
 	eventIds: string[];
+	calendarChange: 'keep' | 'replace' | 'clear';
+	calendarEventId: string | null;
 }
 
 export interface WishlistItemContext {
 	familyId: string;
 	ownerId: string;
+	itemId?: string;
 }
 
 export interface WishlistCoordinationInput {
@@ -113,6 +116,15 @@ export function parseWishlistItemForm(
 	const links = uniqueTextValues(formData, 'links');
 	const imagePath = textValue(formData, 'image_url');
 	const eventIds = uniqueTextValues(formData, 'event_ids');
+	const calendarSelection = textValue(formData, 'calendar_event_id') || '';
+	const calendarChange =
+		calendarSelection === '__keep__' || !formData.has('calendar_event_id')
+			? 'keep'
+			: calendarSelection
+				? 'replace'
+				: 'clear';
+	if (calendarChange === 'replace' && !UUID_PATTERN.test(calendarSelection))
+		errors.calendar_event_id = 'El evento de calendario no es válido.';
 
 	if (!name) errors.name = 'El nombre es obligatorio.';
 	else if (name.length > WISHLIST_LIMITS.name)
@@ -165,7 +177,9 @@ export function parseWishlistItemForm(
 			status: statusValue as WishlistItemStatus,
 			links,
 			imagePath: imagePath || null,
-			eventIds
+			eventIds,
+			calendarChange,
+			calendarEventId: calendarChange === 'replace' ? calendarSelection : null
 		}
 	};
 }

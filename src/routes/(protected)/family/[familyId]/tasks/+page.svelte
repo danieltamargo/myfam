@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import type { PageProps } from './$types';
@@ -85,6 +86,17 @@
 			{showCreate ? 'Cerrar formulario' : '+ Nueva tarea'}
 		</button>
 	</header>
+
+	<form method="GET" class="rounded-box border border-base-300 bg-base-100 p-3 sm:p-4">
+		<input type="hidden" name="view" value={data.view} />
+		<MemberRadioFilter
+			name="member"
+			label="Responsable"
+			members={data.members}
+			value={data.selectedMember}
+			autoSubmit
+		/>
+	</form>
 
 	{#if form?.error}
 		<div role="alert" class="alert alert-soft alert-error">
@@ -251,7 +263,9 @@
 		{#each views as view (view.id)}
 			<a
 				class="tab whitespace-nowrap {data.view === view.id ? 'tab-active' : ''}"
-				href={resolve(`/family/${data.familyId}/tasks?view=${view.id}`)}
+				href={resolve(
+					`/family/${data.familyId}/tasks?view=${view.id}&member=${data.selectedMember}`
+				)}
 			>
 				{view.label}
 			</a>

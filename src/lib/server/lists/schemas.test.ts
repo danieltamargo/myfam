@@ -5,6 +5,21 @@ const memberId = '10000000-0000-4000-8000-000000000001';
 const listId = '10000000-0000-4000-8000-000000000002';
 
 describe('list schemas', () => {
+	it('mantiene otros para formularios anteriores y rechaza tipos o fuentes inválidos', () => {
+		const form = new FormData();
+		form.set('title', 'Casa');
+		form.set('visibility', 'private');
+		expect(parseFamilyListForm(form, new Set())).toMatchObject({
+			success: true,
+			data: { listType: 'other', sourceListId: null }
+		});
+		form.set('list_type', 'inventado');
+		form.set('source_list_id', 'invalid');
+		expect(parseFamilyListForm(form, new Set())).toMatchObject({
+			success: false,
+			errors: { list_type: expect.any(String), source_list_id: expect.any(String) }
+		});
+	});
 	it('conserva membresía explícita solo para una lista seleccionada', () => {
 		const form = new FormData();
 		form.set('title', 'Compra semanal');

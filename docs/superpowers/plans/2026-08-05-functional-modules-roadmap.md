@@ -1,5 +1,7 @@
 # Functional Modules Roadmap Implementation Plan
 
+> Alcance histórico. Las decisiones incompatibles, incluida la exclusión de Juegos, quedan sustituidas por [2026-10-31-mvp.md](2026-10-31-mvp.md). Se conserva la evidencia del trabajo anterior.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Convertir MyFamily en un producto familiar funcional, con Wishlist como caso de uso principal, Gastos como segundo pilar y el resto de módulos organizativos construidos sobre una base segura, verificable y preparada para añadir gamificación, juegos y planes de pago más adelante.

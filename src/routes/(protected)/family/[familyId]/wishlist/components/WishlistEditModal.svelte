@@ -2,15 +2,18 @@
 	import { onMount } from 'svelte';
 	import WishlistItemForm from '$lib/components/wishlist/WishlistItemForm.svelte';
 	import type { WishlistEventCategoryDto, WishlistItemDto } from '$lib/server/wishlist/presenters';
+	import type { CalendarEventOption } from '$lib/server/calendar/resource-links';
 
 	let {
 		item,
 		eventCategories,
+		calendarEvents,
 		todosEventId,
 		onClose
 	}: {
 		item: WishlistItemDto | null;
 		eventCategories: WishlistEventCategoryDto[];
+		calendarEvents: CalendarEventOption[];
 		todosEventId: string;
 		onClose: () => void;
 	} = $props();
@@ -51,6 +54,7 @@
 		<WishlistItemForm
 			{item}
 			{eventCategories}
+			{calendarEvents}
 			{todosEventId}
 			onSuccess={onClose}
 			onCancel={onClose}

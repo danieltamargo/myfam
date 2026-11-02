@@ -19,6 +19,29 @@ function getAuthenticatorLevel(token: string): string | null {
 	}
 }
 
+function getServiceKey(): string {
+	const namedKeys = Deno.env.get('SUPABASE_SECRET_KEYS');
+	if (namedKeys) {
+		let keys: unknown;
+		try {
+			keys = JSON.parse(namedKeys);
+		} catch {
+			throw new Error('Invalid server key configuration');
+		}
+		if (
+			keys &&
+			typeof keys === 'object' &&
+			'default' in keys &&
+			typeof keys.default === 'string' &&
+			keys.default
+		) {
+			return keys.default;
+		}
+		throw new Error('Default server key is not configured');
+	}
+	return Deno.env.get('SUPABASE_SECRET_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+}
+
 Deno.serve(async (req) => {
 	// CORS headers
 	if (req.method === 'OPTIONS') {
@@ -30,19 +53,21 @@ Deno.serve(async (req) => {
 			}
 		});
 	}
+	if (req.method !== 'POST') {
+		return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+			status: 405,
+			headers: { 'Content-Type': 'application/json', Allow: 'POST, OPTIONS' }
+		});
+	}
 
 	try {
 		// Create Supabase client with service role
-		const supabaseAdmin = createClient(
-			Deno.env.get('SUPABASE_URL') ?? '',
-			Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-			{
-				auth: {
-					autoRefreshToken: false,
-					persistSession: false
-				}
+		const supabaseAdmin = createClient(Deno.env.get('SUPABASE_URL') ?? '', getServiceKey(), {
+			auth: {
+				autoRefreshToken: false,
+				persistSession: false
 			}
-		);
+		});
 
 		// Get user from authorization header
 		const authHeader = req.headers.get('Authorization');
@@ -77,6 +102,22 @@ Deno.serve(async (req) => {
 			});
 		}
 
+		const caller = createClient(
+			Deno.env.get('SUPABASE_URL') ?? '',
+			Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+			{
+				global: { headers: { Authorization: `Bearer ${token}` } },
+				auth: { autoRefreshToken: false, persistSession: false }
+			}
+		);
+		const { data: profile, error: accessError } = await caller.rpc('get_my_profile').maybeSingle();
+		if (accessError || !profile || profile.id !== user.id) {
+			return new Response(JSON.stringify({ error: 'Account is not authorized' }), {
+				status: 403,
+				headers: { 'Content-Type': 'application/json' }
+			});
+		}
+
 		// Check if user is sole owner of any family
 		const { data: ownedFamilies, error: familiesError } = await supabaseAdmin
 			.from('family_members')
@@ -93,11 +134,17 @@ Deno.serve(async (req) => {
 
 		if (ownedFamilies && ownedFamilies.length > 0) {
 			for (const owned of ownedFamilies) {
-				const { data: owners } = await supabaseAdmin
+				const { data: owners, error: ownersError } = await supabaseAdmin
 					.from('family_members')
 					.select('id')
 					.eq('family_id', owned.family_id)
 					.eq('role', 'owner');
+				if (ownersError || !owners) {
+					return new Response(JSON.stringify({ error: 'Could not verify family ownership' }), {
+						status: 500,
+						headers: { 'Content-Type': 'application/json' }
+					});
+				}
 
 				if (owners && owners.length === 1) {
 					return new Response(
@@ -133,15 +180,3 @@ Deno.serve(async (req) => {
 		);
 	}
 });
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/delete-account' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/

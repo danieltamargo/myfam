@@ -17,7 +17,7 @@ function throwListCommandError(error: PostgrestError, fallback: string): never {
 		throw new ListCommandError(403, 'No tienes permiso para modificar esta lista.');
 	if (error.code === 'P0002')
 		throw new ListCommandError(404, 'La lista o el artículo ya no están disponibles.');
-	if (error.code === '40001')
+	if (error.code === '40001' || error.code === 'PT409')
 		throw new ListCommandError(
 			409,
 			'La lista cambió mientras la usabas. Se recargará para conservar los cambios.'
@@ -41,15 +41,31 @@ export async function createFamilyList(
 	familyId: string,
 	input: FamilyListInput
 ): Promise<string> {
-	const { data, error } = await supabase.rpc('create_family_list', {
+	const { data, error } = await supabase.rpc('create_typed_family_list', {
 		p_family_id: familyId,
 		p_title: input.title,
 		p_description: nullableRpc(input.description),
 		p_visibility: input.visibility,
-		p_member_ids: input.memberIds
+		p_member_ids: input.memberIds,
+		p_list_type: input.listType,
+		p_source_list_id: nullableRpc(input.sourceListId)
 	});
 	if (error) throwListCommandError(error, 'No se pudo crear la lista.');
 	return data;
+}
+
+export async function setFamilyListType(
+	supabase: SupabaseClient<Database>,
+	listId: string,
+	version: number,
+	listType: string
+): Promise<void> {
+	const { error } = await supabase.rpc('set_family_list_type', {
+		p_list_id: listId,
+		p_version: version,
+		p_list_type: listType
+	});
+	if (error) throwListCommandError(error, 'No se pudo cambiar el tipo de lista.');
 }
 
 export async function addFamilyListItem(

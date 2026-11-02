@@ -3,7 +3,7 @@
 ## Estados
 
 - `core`: siempre disponible y no deshabilitable por una familia.
-- `available`: publicado; owner/admin decide si aparece y si sus rutas aceptan acceso.
+- `available`: publicado; owner/admin o un miembro con capacidad delegada decide si aparece y si sus rutas aceptan acceso.
 - `preview`: reservado para una futura vista informativa, sin acceso funcional actual.
 - `disabled`: bloqueado globalmente, aunque exista una fila familiar con `enabled = true`.
 
@@ -12,9 +12,9 @@
 | Módulo | Estado global | Preferencia familiar | Comportamiento |
 | --- | --- | --- | --- |
 | Miembros | `core` | No | Personas, invitaciones y roles |
-| Wishlist | `core` | No | Deseos y coordinación anti-spoiler |
+| Wishlist | `core` | No | Deseos, recibido, histórico privado y revelado explícito |
 | Gastos | `available` | Sí | Colecciones privadas, análisis, repartos y recurrencias |
-| Calendario | `available` | Sí | Eventos, recurrencias y participantes |
+| Calendario | `available` | Sí | Eventos, recurrencias y conexión opcional con Google de sincronización manual |
 | Tareas | `available` | Sí | Responsables, vencimientos y estados |
 | Listas | `available` | Sí | Listas compartidas o privadas |
 | Notas | `available` | Sí | Visibilidad familiar, privada o seleccionada |
@@ -22,7 +22,7 @@
 | Comidas | `available` | Sí | Recetas y planificación semanal |
 | Hábitos | `available` | Sí | Seguimiento privado o seleccionado |
 | Documentos | `available` | Sí | Archivos privados con acceso explícito |
-| Juegos | `disabled` | No | Conservado para una fase futura; responde 404 |
+| Juegos | `available` | Sí | Tres en raya, Wordle, reacción y colores con protocolo de servidor; código heredado bloqueado |
 
 ## Resolución de acceso
 
@@ -39,7 +39,7 @@ La navegación usa el mismo resultado, pero cada loader, action y endpoint vuelv
 
 ## Administración
 
-Owner y admin pueden cambiar módulos opcionales desde `Configuración → Módulos`. Los miembros ven el estado en modo lectura. Miembros/Wishlist no muestran interruptor y Juegos no puede activarse.
+Owner, admin y miembros con `can_configure_modules` pueden cambiar módulos opcionales desde `Configuración → Módulos`. Solo owner delega esa capacidad. El resto de miembros ve el estado en modo lectura. Miembros/Wishlist no muestran interruptor; Juegos es opcional y solo utiliza su protocolo nuevo.
 
 ## Añadir un módulo
 

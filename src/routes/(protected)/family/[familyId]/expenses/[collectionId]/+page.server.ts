@@ -12,6 +12,7 @@ import {
 	setRecurringExpenseRuleActive,
 	updateExpense
 } from '$lib/server/expenses/commands';
+import { recordExpenseSettlement } from '$lib/server/expenses/commands';
 import {
 	ExpenseQueryError,
 	loadExpenseCollectionPage,
@@ -37,6 +38,7 @@ import {
 	parseRecurringExpenseForm,
 	type ExpenseValidationErrors
 } from '$lib/server/expenses/schemas';
+import { parseExpenseSettlementForm } from '$lib/server/expenses/schemas';
 
 function invalidForm(errors: ExpenseValidationErrors) {
 	return fail(400, {
@@ -113,6 +115,28 @@ export const load: PageServerLoad = async ({
 };
 
 const moduleActions: Actions = {
+	recordSettlement: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		const parsed = parseExpenseSettlementForm(await request.formData());
+		if (!parsed.success) return invalidForm(parsed.errors);
+		try {
+			const context = await loadActionContext(
+				supabase,
+				params.familyId,
+				params.collectionId,
+				user.id
+			);
+			await recordExpenseSettlement(supabase, context.collection.id, parsed.data);
+			return {
+				success: true,
+				message: 'Reembolso registrado. No se ha realizado ninguna transferencia bancaria.',
+				settlementRecorded: true
+			};
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo registrar el reembolso.');
+		}
+	},
 	createExpense: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -178,7 +202,13 @@ const moduleActions: Actions = {
 
 		let prepared: PreparedExpenseReceipt;
 		try {
-			prepared = prepareExpenseReceipt(formData, params.collectionId, user.id, previousPath);
+			prepared = prepareExpenseReceipt(
+				formData,
+				params.collectionId,
+				user.id,
+				previousPath,
+				identity.data.expenseId
+			);
 		} catch (caught) {
 			return commandFailure(caught, 'No se pudo preparar el recibo.');
 		}

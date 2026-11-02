@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseMemberFilter } from './schemas';
 import {
 	parseDocumentAccessForm,
 	parseDocumentIdentity,
@@ -82,4 +83,11 @@ describe('document schemas', () => {
 			cursor: '2026-08-07T10:00:00.000Z'
 		});
 	});
+});
+
+it('acepta una persona válida e ignora filtros malformados', () => {
+	expect(parseMemberFilter(new URLSearchParams({ member: memberId }))).toBe(memberId);
+	for (const member of ['', 'invalid', 'or=(id.gt.0)']) {
+		expect(parseMemberFilter(new URLSearchParams({ member }))).toBe('');
+	}
 });

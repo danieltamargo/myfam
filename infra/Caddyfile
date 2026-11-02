@@ -1,0 +1,25 @@
+{
+  admin off
+  email {$ACME_EMAIL}
+  servers {
+    timeouts {
+      read_header 10s
+      read_body 2m
+      read_body_idle 30s
+      idle 2m
+    }
+  }
+}
+
+{$APP_DOMAIN} {
+  encode zstd gzip
+  header Strict-Transport-Security "max-age=86400"
+  request_body {
+    max_size 16MB
+  }
+  reverse_proxy app:3000 {
+    transport http {
+      response_header_timeout 90s
+    }
+  }
+}

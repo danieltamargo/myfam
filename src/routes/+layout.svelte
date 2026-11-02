@@ -20,10 +20,14 @@
 	const supabase = createClient();
 
 	onMount(() => {
-		const { data: authListener } = supabase.auth.onAuthStateChange(async (event, _session) => {
-			// Only invalidate on actual auth events, don't use session data
-			if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-				invalidate('supabase:auth');
+		const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+			if (
+				(event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') &&
+				session?.access_token !== data.session?.access_token
+			) {
+				void invalidate('supabase:auth').catch(() => {
+					console.error('Could not refresh authentication state.');
+				});
 			}
 		});
 

@@ -16,14 +16,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: npm
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
+
+      - name: VPS configuration tests
+        run: pnpm test:vps-config
+
+      - name: Guided deployment and administrator bootstrap tests
+        run: pnpm test:deploy
+
+      - name: Shell script syntax
+        run: bash -n scripts/deploy.sh scripts/server-report.sh
 
       - name: Set up Supabase CLI
         uses: supabase/setup-cli@v2
@@ -34,6 +46,9 @@ jobs:
       - name: Start Supabase and apply migrations
         run: supabase start
 
+      - name: Start antivirus
+        run: docker compose -f compose.antivirus.yaml up -d --wait --wait-timeout 600
+
       - name: Export local Supabase environment
         run: |
           supabase status -o env \
@@ -43,25 +58,31 @@ jobs:
             >> "$GITHUB_ENV"
 
       - name: Static checks
-        run: npm run check
+        run: pnpm check
 
       - name: Lint
-        run: npm run lint
+        run: pnpm lint
 
       - name: Unit tests
-        run: npm run test:unit
+        run: pnpm test:unit
+
+      - name: Backup integrity tests
+        run: pnpm test:backup
+
+      - name: Backup maintenance failure tests
+        run: pnpm test:backup-cycle
+
+      - name: Real antivirus integration
+        run: pnpm test:av
 
       - name: Database tests
-        run: npm run test:db
+        run: pnpm test:db
 
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: End-to-end tests
-        run: npm run test:e2e -- --project=chromium
-
-      - name: Production build
-        run: npm run build
+        run: pnpm test:e2e
 
       - name: Upload Playwright report
         if: always()

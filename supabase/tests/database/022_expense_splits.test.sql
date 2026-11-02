@@ -173,13 +173,18 @@ reset role;
 
 select is(public.process_due_recurring_expenses('2026-03-31'), 3, 'processor creates every due monthly occurrence');
 select is(
-  (select array_agg(occurred_on order by occurred_on) from public.expenses where recurring_rule_id is not null),
+  (select array_agg(occurred_on order by occurred_on) from public.expenses
+    where collection_id = '22000000-2000-4000-8000-000000000001'
+      and recurring_rule_id is not null),
   array['2026-01-31'::date, '2026-02-28'::date, '2026-03-31'::date],
   'month-end recurrence preserves the intended calendar day'
 );
 select is(public.process_due_recurring_expenses('2026-03-31'), 0, 'processing the same window twice is idempotent');
 select is(
-  (select sum(split.amount) from public.expense_splits as split join public.expenses as expense on expense.id = split.expense_id where expense.recurring_rule_id is not null),
+  (select sum(split.amount) from public.expense_splits as split
+    join public.expenses as expense on expense.id = split.expense_id
+    where expense.collection_id = '22000000-2000-4000-8000-000000000001'
+      and expense.recurring_rule_id is not null),
   30.03::numeric,
   'generated occurrences copy exact split templates'
 );

@@ -4,10 +4,18 @@
 	import type { WishlistEventCategoryDto, WishlistItemDto } from '$lib/server/wishlist/presenters';
 	import { onMount, tick, untrack } from 'svelte';
 	import WishlistItemDetails from './WishlistItemDetails.svelte';
+	import type { CalendarEventOption } from '$lib/server/calendar/resource-links';
 
 	type FieldErrors = Partial<
 		Record<
-			'name' | 'description' | 'price' | 'currency' | 'desired_quantity' | 'links' | 'image',
+			| 'name'
+			| 'description'
+			| 'price'
+			| 'currency'
+			| 'desired_quantity'
+			| 'links'
+			| 'image'
+			| 'calendar_event_id',
 			string
 		>
 	>;
@@ -20,12 +28,14 @@
 	let {
 		item,
 		eventCategories,
+		calendarEvents,
 		todosEventId,
 		onSuccess,
 		onCancel
 	}: {
 		item: WishlistItemDto | null;
 		eventCategories: WishlistEventCategoryDto[];
+		calendarEvents: CalendarEventOption[];
 		todosEventId: string;
 		onSuccess: () => void;
 		onCancel: () => void;
@@ -44,7 +54,8 @@
 			imageSrc: item?.image_src ?? null,
 			eventIds: selectedEvents.length > 0 ? selectedEvents : todosEventId ? [todosEventId] : [],
 			links: (item?.links ?? []).map((value, index) => ({ id: `link-${index}`, value })),
-			advancedOpen: Boolean(item?.image_url || item?.links.length)
+			advancedOpen: Boolean(item?.image_url || item?.links.length),
+			calendarSelection: item ? '__keep__' : ''
 		};
 	});
 	let name = $state(initial.name);
@@ -57,6 +68,7 @@
 	let removeImage = $state(false);
 	let imagePreviewUrl = $state<string | null>(initial.imageSrc);
 	let eventIds = $state<string[]>(initial.eventIds);
+	let calendarSelection = $state(initial.calendarSelection);
 	let nextLinkId = initial.links.length;
 	let links = $state<LinkField[]>(initial.links);
 	let advancedOpen = $state(initial.advancedOpen);
@@ -364,6 +376,41 @@
 						{#if selected}<input type="hidden" name="event_ids" value={event.id} />{/if}
 					{/each}
 				</div>
+			</section>
+
+			<section class="rounded-box bg-base-200 p-4">
+				<label class="form-control" for="wishlist-calendar-event">
+					<span class="mb-2 text-sm font-semibold">Evento del calendario (opcional)</span>
+					<select
+						id="wishlist-calendar-event"
+						name="calendar_event_id"
+						class="select w-full"
+						bind:value={calendarSelection}
+						aria-invalid={Boolean(fieldErrors.calendar_event_id)}
+					>
+						{#if item}<option value="__keep__"
+								>{item.calendar_event
+									? `Mantener: ${item.calendar_event.title}`
+									: 'No cambiar asociación'}</option
+							>{/if}
+						<option value="">Sin evento: regalo genérico</option>
+						{#each calendarEvents as event (event.id)}
+							<option value={event.id}
+								>{event.title} · {new Intl.DateTimeFormat('es-ES', {
+									dateStyle: 'short',
+									timeZone: event.timezone
+								}).format(new Date(event.starts_at))}</option
+							>
+						{/each}
+					</select>
+				</label>
+				<p class="mt-2 text-xs text-base-content/65">
+					Solo aparecen eventos que puedes ver. El evento mantiene su propia privacidad aunque
+					compartas este regalo.
+				</p>
+				{#if fieldErrors.calendar_event_id}<p role="alert" class="mt-1 text-sm text-error">
+						{fieldErrors.calendar_event_id}
+					</p>{/if}
 			</section>
 
 			<details

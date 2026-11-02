@@ -45,7 +45,17 @@ export function summarizeWishlistCoordination(
 		myPurchaseQuantity,
 		myReservationQuantity,
 		reservationCount: itemReservations.length,
-		maxPurchaseQuantity: remainingQuantity + myReservationQuantity + myPurchaseQuantity,
-		maxReservationQuantity: remainingQuantity + myReservationQuantity
+		maxPurchaseQuantity: Math.max(
+			0,
+			desiredQuantity -
+				reservedQuantity -
+				purchasedQuantity +
+				myReservationQuantity +
+				myPurchaseQuantity
+		),
+		maxReservationQuantity: Math.max(
+			0,
+			desiredQuantity - reservedQuantity - purchasedQuantity + myReservationQuantity
+		)
 	};
 }

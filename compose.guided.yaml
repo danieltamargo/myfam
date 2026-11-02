@@ -1,0 +1,50 @@
+services:
+  app:
+    image: ${APP_IMAGE:?Set the deployment image}
+    build:
+      context: .
+      args:
+        VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:?Set the public Supabase URL}
+        VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:?Set the public key}
+    env_file:
+      - path: ${APP_ENV_FILE:?Set the private application environment path}
+        format: raw
+    environment:
+      ORIGIN: ${ORIGIN:?Set the public application URL}
+      ADDRESS_HEADER: x-forwarded-for
+      XFF_DEPTH: '1'
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: '3310'
+    ports:
+      - '127.0.0.1:3000:3000'
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 768m
+    pids_limit: 128
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      clamav:
+        condition: service_healthy
+  clamav:
+    extends:
+      file: compose.antivirus.yaml
+      service: clamav
+    ports: !reset []
+volumes:
+  clamav-signatures:

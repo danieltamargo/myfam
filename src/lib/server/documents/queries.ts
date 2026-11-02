@@ -23,6 +23,7 @@ export interface FamilyDocumentRecord extends Omit<Tables<'family_documents'>, '
 }
 
 export interface DocumentPageData {
+	selectedMember: string;
 	members: DocumentMember[];
 	documents: FamilyDocumentRecord[];
 	folders: string[];
@@ -67,7 +68,8 @@ export async function loadDocumentPage(
 	familyId: string,
 	userId: string,
 	selectedFolder: string | null,
-	cursor: string | null
+	cursor: string | null,
+	selectedMember = ''
 ): Promise<DocumentPageData> {
 	let documentsQuery = supabase
 		.from('family_documents')
@@ -79,6 +81,7 @@ export async function loadDocumentPage(
 		.order('updated_at', { ascending: false })
 		.order('id', { ascending: false })
 		.limit(DOCUMENT_LIMITS.pageSize + 1);
+	if (selectedMember) documentsQuery = documentsQuery.eq('owner_id', selectedMember);
 	if (selectedFolder) documentsQuery = documentsQuery.eq('folder_name', selectedFolder);
 	if (cursor) documentsQuery = documentsQuery.lt('updated_at', cursor);
 
@@ -153,5 +156,5 @@ export async function loadDocumentPage(
 		)
 	].sort((left, right) => left.localeCompare(right, 'es'));
 	const nextCursor = hasNextPage ? (documents.at(-1)?.updated_at ?? null) : null;
-	return { members, documents, folders, selectedFolder, nextCursor };
+	return { members, documents, folders, selectedFolder, nextCursor, selectedMember };
 }

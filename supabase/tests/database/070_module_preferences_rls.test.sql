@@ -68,11 +68,9 @@ select throws_ok(
 	'Only available modules have a family preference',
 	'core Wishlist cannot be disabled through the preference API'
 );
-select throws_ok(
+select lives_ok(
 	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'games', true)$$,
-	'22023',
-	'Only available modules have a family preference',
-	'globally disabled Games cannot be enabled through the preference API'
+	'owner can enable the secure games module through the preference API'
 );
 select throws_ok(
 	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000002', 'notes', false)$$,

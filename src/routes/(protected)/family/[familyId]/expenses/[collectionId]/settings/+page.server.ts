@@ -14,6 +14,7 @@ import {
 	updateExpenseCollection
 } from '$lib/server/expenses/commands';
 import { ExpenseQueryError, loadExpenseSettings } from '$lib/server/expenses/queries';
+import { loadVisibleCalendarEventOptions } from '$lib/server/calendar/resource-links';
 import {
 	parseExpenseCategoryForm,
 	parseExpenseCollectionForm,
@@ -46,7 +47,22 @@ export const load: PageServerLoad = async ({ parent, locals: { supabase, safeGet
 	if (!user) throw error(401, 'Unauthorized');
 	const { expenseCollection } = await parent();
 	try {
-		return await loadExpenseSettings(supabase, expenseCollection);
+		const [settings, calendarEvents, association] = await Promise.all([
+			loadExpenseSettings(supabase, expenseCollection),
+			loadVisibleCalendarEventOptions(supabase, expenseCollection.familyId),
+			supabase
+				.from('expense_collection_event_links')
+				.select('event_id')
+				.eq('collection_id', expenseCollection.id)
+				.maybeSingle()
+		]);
+		if (association.error)
+			throw new ExpenseQueryError('No se pudo cargar la asociación con calendario.');
+		return {
+			...settings,
+			calendarEvents,
+			calendarEvent: calendarEvents.find((event) => event.id === association.data?.event_id) ?? null
+		};
 	} catch (caught) {
 		if (caught instanceof ExpenseQueryError) console.error(caught.message);
 		else console.error('Unexpected expense settings query failure', caught);
@@ -55,6 +71,30 @@ export const load: PageServerLoad = async ({ parent, locals: { supabase, safeGet
 };
 
 const moduleActions: Actions = {
+	setCalendarEvent: async ({ request, params, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Autenticación requerida.' });
+		const form = await request.formData();
+		const selection = form.get('calendar_event_id');
+		if (typeof selection !== 'string')
+			return fail(400, { error: 'Selecciona una acción de calendario.' });
+		const change = selection === '__keep__' ? 'keep' : selection ? 'replace' : 'clear';
+		if (change === 'replace') {
+			const parsed = parseExpenseUuidField(form, 'calendar_event_id');
+			if (!parsed.success) return invalidForm(parsed.errors);
+		}
+		const { error: associationError } = await supabase.rpc('set_expense_collection_event', {
+			p_collection_id: params.collectionId,
+			p_change: change,
+			p_event_id: (change === 'replace' ? selection : null) as string
+		});
+		if (associationError)
+			return fail(associationError.code === '42501' ? 403 : 400, {
+				error:
+					'No se pudo cambiar la asociación. Debes gestionar la colección y poder ver el evento de esta misma familia.'
+			});
+		return { success: true, message: 'Asociación del calendario actualizada.' };
+	},
 	updateCollection: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });

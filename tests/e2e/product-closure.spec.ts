@@ -13,11 +13,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
 	) as LocalSupabaseStatus;
@@ -253,6 +250,20 @@ test('cierra la matriz operativa con tres usuarios, dos familias y dos coleccion
 		expect(signedInCarol.error).toBeNull();
 		expect(signedInCarol.data.session?.access_token).toBeTruthy();
 
+		for (const authorization of [null, 'Bearer invalid-token']) {
+			const headers: Record<string, string> = { apikey: status.ANON_KEY };
+			if (authorization) headers.Authorization = authorization;
+			const unauthorized = await fetch(`${status.API_URL}/functions/v1/delete-account`, {
+				method: 'POST',
+				headers
+			});
+			expect(unauthorized.status).toBe(401);
+		}
+		const invalidMethod = await fetch(`${status.API_URL}/functions/v1/delete-account`, {
+			headers: { Authorization: `Bearer ${signedInCarol.data.session!.access_token}` }
+		});
+		expect(invalidMethod.status).toBe(405);
+
 		const aal1Response = await fetch(`${status.API_URL}/functions/v1/delete-account`, {
 			method: 'POST',
 			headers: {
@@ -284,7 +295,8 @@ test('cierra la matriz operativa con tres usuarios, dos familias y dos coleccion
 				'Content-Type': 'application/json'
 			}
 		});
-		expect(aal2Response.status).toBe(200);
+		const deletionResult = await aal2Response.json();
+		expect(aal2Response.status, deletionResult.error ?? 'Account deletion').toBe(200);
 		expect((await admin.auth.admin.getUserById(carolId)).data.user).toBeNull();
 	} finally {
 		for (const userId of createdUserIds) await admin.auth.admin.deleteUser(userId);

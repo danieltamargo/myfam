@@ -300,7 +300,7 @@ select throws_ok(
     p_visibility => 'family',
     p_participant_ids => array[]::uuid[]
   )$$,
-  '40001',
+  'PT409',
   'Calendar event changed concurrently',
   'stale calendar update is rejected'
 );

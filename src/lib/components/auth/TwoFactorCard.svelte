@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
 
 	const supabase = createClient();
 
@@ -44,8 +46,8 @@
 				isEnabled = true;
 				factorId = verifiedFactor.id;
 			}
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 		} finally {
 			loading = false;
 		}
@@ -94,8 +96,8 @@
 				secret = data.totp.secret;
 				factorId = data.id;
 			}
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 		} finally {
 			enrolling = false;
 		}
@@ -126,8 +128,8 @@
 				success = '';
 				checkMFAStatus();
 			}, 1500);
-		} catch (err: any) {
-			error = err.message || 'Invalid code. Please try again.';
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 			verifyCode = '';
 		} finally {
 			verifying = false;
@@ -157,7 +159,7 @@
 				code: disableCode
 			});
 
-			if (verifyError) throw new Error('Invalid code');
+			if (verifyError) throw verifyError;
 
 			// Si el código es correcto, deshabilitamos
 			const { error: unenrollError } = await supabase.auth.mfa.unenroll({
@@ -174,8 +176,8 @@
 				closeDisableModal();
 				success = '';
 			}, 1500);
-		} catch (err: any) {
-			error = err.message || 'Could not disable 2FA. Please try again.';
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 			disableCode = '';
 		} finally {
 			disabling = false;
@@ -249,6 +251,7 @@
 
 		<div class="mt-4 card-actions justify-end">
 			{#if isEnabled}
+				<a href={resolve('/profile/recovery')} class="btn btn-outline">Códigos de recuperación</a>
 				<button onclick={openDisableModal} class="btn btn-outline btn-error" disabled={loading}>
 					Disable 2FA
 				</button>
@@ -322,7 +325,11 @@
 				<button onclick={() => (showInfoModal = false)} class="btn">Close</button>
 			</div>
 		</div>
-		<div class="modal-backdrop" onclick={() => (showInfoModal = false)}></div>
+		<button
+			class="modal-backdrop"
+			aria-label="Close information"
+			onclick={() => (showInfoModal = false)}
+		></button>
 	</dialog>
 {/if}
 
@@ -431,7 +438,7 @@
 				</div>
 			{/if}
 		</div>
-		<div class="modal-backdrop" onclick={closeEnableModal}></div>
+		<button class="modal-backdrop" aria-label="Close setup" onclick={closeEnableModal}></button>
 	</dialog>
 {/if}
 
@@ -486,7 +493,7 @@
 						inputmode="numeric"
 						disabled={disabling}
 					/>
-					<label class="label">
+					<label class="label" for="disable_code">
 						<span class="label-text-alt text-base-content/60">
 							Open your authenticator app to get the code
 						</span>
@@ -510,6 +517,10 @@
 				</button>
 			</div>
 		</div>
-		<div class="modal-backdrop" onclick={closeDisableModal}></div>
+		<button
+			class="modal-backdrop"
+			aria-label="Close disable confirmation"
+			onclick={closeDisableModal}
+		></button>
 	</dialog>
 {/if}

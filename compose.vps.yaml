@@ -1,0 +1,76 @@
+services:
+  app:
+    image: ${APP_IMAGE:?Set an immutable application image tag or digest}
+    env_file: ${APP_ENV_FILE:?Set a protected absolute environment file path}
+    environment:
+      ORIGIN: https://${APP_DOMAIN:?Set the application domain}
+      ADDRESS_HEADER: x-forwarded-for
+      XFF_DEPTH: '1'
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: '3310'
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    cpus: '1.0'
+    mem_limit: 768m
+    pids_limit: 128
+    stop_grace_period: 30s
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    depends_on:
+      clamav:
+        condition: service_healthy
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  clamav:
+    extends:
+      file: compose.antivirus.yaml
+      service: clamav
+    ports: !reset []
+    pids_limit: 256
+    logging: *logging
+  proxy:
+    image: caddy:2.11.7-alpine
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set the application domain}
+      ACME_EMAIL: ${ACME_EMAIL:?Set certificate contact email}
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./infra/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    cpus: '0.5'
+    mem_limit: 128m
+    pids_limit: 64
+    depends_on:
+      app:
+        condition: service_healthy
+    logging: *logging
+
+volumes:
+  clamav-signatures:
+  caddy-data:
+  caddy-config:

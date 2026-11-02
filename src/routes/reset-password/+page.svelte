@@ -1,7 +1,10 @@
 <script lang="ts">
+	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { invitationSession } from '$lib/auth/invitation';
 
 	const supabase = createClient();
 
@@ -14,6 +17,25 @@
 	let checking = $state(true);
 
 	onMount(async () => {
+		const incomingFragment = window.location.hash;
+		const invitedSession = invitationSession(window.location.hash);
+		if (incomingFragment && !invitedSession) {
+			window.history.replaceState(null, '', window.location.pathname + window.location.search);
+			error =
+				'El enlace de bienvenida ha caducado o no es válido. Solicita uno nuevo al administrador.';
+			checking = false;
+			return;
+		}
+		if (invitedSession) {
+			window.history.replaceState(null, '', window.location.pathname + window.location.search);
+			const { error: invitationError } = await supabase.auth.setSession(invitedSession);
+			if (invitationError) {
+				error =
+					'El enlace de bienvenida ha caducado o no es válido. Solicita uno nuevo al administrador.';
+				checking = false;
+				return;
+			}
+		}
 		// Verificar si el usuario tiene una sesión válida (viene del link del email)
 		const {
 			data: { session }
@@ -41,8 +63,8 @@
 			return;
 		}
 
-		if (password.length < 6) {
-			error = 'Password must be at least 6 characters';
+		if (password.length < 12) {
+			error = 'Password must be at least 12 characters';
 			loading = false;
 			return;
 		}
@@ -54,7 +76,7 @@
 		loading = false;
 
 		if (updateError) {
-			error = updateError.message;
+			error = safeAuthError(updateError, 'reset');
 			return;
 		}
 
@@ -62,7 +84,7 @@
 
 		// Redirigir al login después de 2 segundos
 		setTimeout(() => {
-			goto('/login');
+			goto(resolve('/login'));
 		}, 2000);
 	}
 </script>
@@ -86,7 +108,7 @@
 				</div>
 
 				<div class="mt-4 card-actions justify-center">
-					<a href="/forgot-password" class="btn btn-primary"> Request New Link </a>
+					<a href={resolve('/forgot-password')} class="btn btn-primary"> Request New Link </a>
 				</div>
 			{:else}
 				{#if error}
@@ -114,14 +136,15 @@
 								type="password"
 								id="password"
 								bind:value={password}
+								minlength={12}
 								placeholder="••••••••"
 								class="input-bordered input"
 								required
 								disabled={loading}
 							/>
-							<label class="label">
-								<span class="label-text-alt">At least 6 characters</span>
-							</label>
+							<p class="label">
+								<span class="label-text-alt">At least 12 characters</span>
+							</p>
 						</div>
 
 						<div class="form-control">
@@ -148,7 +171,7 @@
 					</form>
 
 					<div class="mt-4 text-center text-sm">
-						<a href="/login" class="link link-primary">Back to Login</a>
+						<a href={resolve('/login')} class="link link-primary">Back to Login</a>
 					</div>
 				{/if}
 			{/if}

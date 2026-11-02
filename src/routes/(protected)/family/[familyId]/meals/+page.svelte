@@ -2,10 +2,24 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import type { PageProps } from './$types';
+	import type { SubmitFunction } from '@sveltejs/kit';
 
 	let { data, form }: PageProps = $props();
 	let showRecipeForm = $state(false);
 	let showMealForm = $state(false);
+	let actionFeedback = $state<{ familyId: string; message: string } | null>(null);
+	const retainedMessage = $derived(
+		actionFeedback?.familyId === data.familyId ? actionFeedback.message : ''
+	);
+	const rememberActionResult: SubmitFunction = () => {
+		const familyId = data.familyId;
+		actionFeedback = null;
+		return async ({ result, update }) => {
+			await update();
+			if (result.type === 'success' && typeof result.data?.message === 'string')
+				actionFeedback = { familyId, message: result.data.message };
+		};
+	};
 	const ingredientExample = '2 | kg | Patatas\n1 | l | Caldo\nSal';
 
 	const mealTypes = [
@@ -84,8 +98,10 @@
 
 	{#if form?.error}
 		<div role="alert" class="alert alert-soft alert-error"><span>{form.error}</span></div>
-	{:else if form?.message}
-		<div role="status" class="alert alert-soft alert-success"><span>{form.message}</span></div>
+	{:else if form?.message || retainedMessage}
+		<div role="status" class="alert alert-soft alert-success">
+			<span>{form?.message || retainedMessage}</span>
+		</div>
 	{/if}
 
 	{#if showRecipeForm}
@@ -100,7 +116,12 @@
 					Una receta sencilla y reutilizable por toda la familia.
 				</p>
 			</div>
-			<form method="POST" action="?/createRecipe" use:enhance class="space-y-5">
+			<form
+				method="POST"
+				action="?/createRecipe"
+				use:enhance={rememberActionResult}
+				class="space-y-5"
+			>
 				<div class="grid gap-4 md:grid-cols-2">
 					<label class="form-control md:col-span-2">
 						<span class="label-text mb-1 font-medium">Nombre</span>
@@ -159,7 +180,7 @@
 			<form
 				method="POST"
 				action="?/scheduleMeal"
-				use:enhance
+				use:enhance={rememberActionResult}
 				class="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-5"
 			>
 				<label class="form-control xl:col-span-2">
@@ -249,7 +270,12 @@
 									{#if entry.notes}<p class="mt-1 text-xs text-base-content/60">
 											{entry.notes}
 										</p>{/if}
-									<form method="POST" action="?/removeMeal" use:enhance class="mt-1 text-right">
+									<form
+										method="POST"
+										action="?/removeMeal"
+										use:enhance={rememberActionResult}
+										class="mt-1 text-right"
+									>
 										<input type="hidden" name="entry_id" value={entry.id} />
 										<button class="btn btn-ghost btn-xs" type="submit">Quitar</button>
 									</form>
@@ -315,7 +341,7 @@
 								<form
 									method="POST"
 									action="?/copyIngredients"
-									use:enhance
+									use:enhance={rememberActionResult}
 									class="mt-auto flex flex-col gap-2 sm:flex-row"
 								>
 									<input type="hidden" name="recipe_id" value={recipe.id} />

@@ -130,10 +130,10 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 	games: {
 		id: 'games',
 		label: 'Juegos',
-		description: 'Conservado para una fase futura; no está disponible.',
+		description: 'Tres en raya, Wordle compartido, reacción y acertar el color entre familiares.',
 		icon: '🎮',
-		availability: 'disabled',
-		familyCanDisable: false,
+		availability: 'available',
+		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'games')
 	}
 };

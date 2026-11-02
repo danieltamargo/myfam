@@ -207,7 +207,7 @@ select throws_ok(
     'private',
     array[]::uuid[]
   )$$,
-  '40001',
+  'PT409',
   'Family note changed concurrently',
   'stale note update is rejected'
 );
@@ -226,7 +226,7 @@ select ok(
 );
 select throws_ok(
   $$select public.set_family_note_archived('50000000-3000-4000-8000-000000000003', 2, false)$$,
-  '40001',
+  'PT409',
   'Family note changed concurrently',
   'stale archive mutation is rejected'
 );

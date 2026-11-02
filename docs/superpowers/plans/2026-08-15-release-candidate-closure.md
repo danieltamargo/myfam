@@ -1,5 +1,7 @@
 # Plan de cierre de la release candidate local
 
+> Alcance histórico. El MVP solicitado el 31 de octubre de 2026 se sigue en [2026-10-31-mvp.md](2026-10-31-mvp.md); este cierre no acredita sus requisitos nuevos.
+
 - **Fecha:** 15 de agosto de 2026
 - **Rama:** `codex/functional-roadmap`
 - **Estado:** completado

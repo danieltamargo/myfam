@@ -12,11 +12,8 @@ interface LocalSupabaseStatus {
 }
 
 function getLocalSupabaseStatus(): LocalSupabaseStatus {
-	const executable = process.platform === 'win32' ? 'powershell.exe' : 'npx';
-	const args =
-		process.platform === 'win32'
-			? ['-NoProfile', '-Command', 'npx supabase status -o json']
-			: ['supabase', 'status', '-o', 'json'];
+	const executable = 'supabase';
+	const args = ['status', '-o', 'json'];
 	return JSON.parse(
 		execFileSync(executable, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
 	) as LocalSupabaseStatus;
@@ -198,6 +195,16 @@ test('crea un evento recurrente privado, lo filtra y protege sus recordatorios',
 		).toBeVisible();
 		await expect(eventDetail.getByText('Repetición diaria', { exact: true })).toBeVisible();
 		await expect(eventDetail.getByText('🔔 30 min antes', { exact: true })).toBeVisible();
+		const keyboardFilter = page.getByRole('radio', { name: 'Miembro sin acceso', exact: true });
+		await expect(keyboardFilter).toBeEnabled();
+		await keyboardFilter.focus();
+		await page.keyboard.press('Space');
+		await expect(page).toHaveURL(new RegExp(`participant=${memberId}`));
+		await expect(page).toHaveURL(/view=agenda/);
+		await expect(page.getByText(eventName, { exact: true })).toHaveCount(0);
+		await page.getByTitle('Invitada Calendario', { exact: true }).click();
+		await expect(page).toHaveURL(new RegExp(`participant=${selectedId}`));
+		await expect(page.getByText(eventName, { exact: true }).first()).toBeVisible();
 
 		const { data: processed, error: reminderError } = await admin.rpc(
 			'process_calendar_reminders',

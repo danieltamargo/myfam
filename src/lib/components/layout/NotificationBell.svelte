@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import { invalidateAll } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { createClient } from '$lib/supabase';
 
@@ -22,9 +20,10 @@
 	let { notifications, userId }: Props = $props();
 
 	let showOnlyUnread = $state(true);
-	let unreadCount = $derived(notifications.filter((n) => !n.read).length);
 	let showDropdown = $state(false);
-	let localNotifications = $state<Notification[]>(notifications);
+	let localNotifications = $derived<Notification[]>(notifications);
+	let unreadCount = $derived(localNotifications.filter((n) => !n.read).length);
+	let notificationError = $state('');
 
 	// Filtered notifications based on toggle
 	let filteredNotifications = $derived(
@@ -33,33 +32,56 @@
 
 	const supabase = createClient();
 
+	async function refreshNotifications() {
+		try {
+			const { data, error } = await supabase
+				.from('notifications')
+				.select('id, type, title, message, link, read, created_at')
+				.eq('user_id', userId)
+				.order('created_at', { ascending: false })
+				.limit(50);
+			if (error) {
+				notificationError = 'No se pudieron actualizar las notificaciones.';
+				return;
+			}
+			notificationError = '';
+			localNotifications = data ?? [];
+		} catch {
+			notificationError = 'No se pudieron actualizar las notificaciones.';
+		}
+	}
+
 	// Subscribe to real-time notifications
 	onMount(() => {
-		const channel = supabase
-			.channel('notifications')
-			.on(
-				'postgres_changes',
-				{
-					event: '*',
-					schema: 'public',
-					table: 'notifications',
-					filter: `user_id=eq.${userId}`
-				},
-				async (payload) => {
-					console.log('Notification change:', payload);
-					await invalidateAll();
-				}
-			)
-			.subscribe();
+		const channel = supabase.channel('notifications').on(
+			'postgres_changes',
+			{
+				event: '*',
+				schema: 'public',
+				table: 'notifications',
+				filter: `user_id=eq.${userId}`
+			},
+			refreshNotifications
+		);
+		let active = true;
+		void supabase.realtime
+			.setAuth()
+			.then(() => {
+				if (!active) return;
+				channel.subscribe((status) => {
+					if (status === 'SUBSCRIBED') void refreshNotifications();
+					else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')
+						notificationError = 'No se pudieron conectar las notificaciones.';
+				});
+			})
+			.catch(() => {
+				if (active) notificationError = 'No se pudieron conectar las notificaciones.';
+			});
 
 		return () => {
+			active = false;
 			supabase.removeChannel(channel);
 		};
-	});
-
-	// Update local notifications when props change
-	$effect(() => {
-		localNotifications = notifications;
 	});
 
 	async function markAsRead(notificationId: string) {
@@ -68,9 +90,8 @@
 			.update({ read: true })
 			.eq('id', notificationId);
 
-		if (!error) {
-			await invalidateAll();
-		}
+		if (error) notificationError = 'No se pudo marcar la notificación.';
+		else await refreshNotifications();
 	}
 
 	async function markAllAsRead() {
@@ -80,17 +101,15 @@
 			.eq('user_id', userId)
 			.eq('read', false);
 
-		if (!error) {
-			await invalidateAll();
-		}
+		if (error) notificationError = 'No se pudieron marcar las notificaciones.';
+		else await refreshNotifications();
 	}
 
 	async function deleteNotification(notificationId: string) {
 		const { error } = await supabase.from('notifications').delete().eq('id', notificationId);
 
-		if (!error) {
-			await invalidateAll();
-		}
+		if (error) notificationError = 'No se pudo eliminar la notificación.';
+		else await refreshNotifications();
 	}
 
 	function formatDate(dateString: string): string {
@@ -140,6 +159,8 @@
 	<button
 		type="button"
 		class="btn btn-circle btn-ghost"
+		aria-label="Notificaciones"
+		aria-expanded={showDropdown}
 		onclick={() => (showDropdown = !showDropdown)}
 	>
 		<div class="indicator">
@@ -168,6 +189,7 @@
 		<div
 			class="absolute top-full right-0 z-100 mt-2 flex max-h-125 w-96 flex-col overflow-hidden rounded-box border border-base-300 bg-base-200 shadow-xl"
 		>
+			{#if notificationError}<p class="alert alert-error" role="alert">{notificationError}</p>{/if}
 			<!-- Header -->
 			<div class="border-b border-base-300 p-4">
 				<div class="mb-3 flex items-center justify-between">

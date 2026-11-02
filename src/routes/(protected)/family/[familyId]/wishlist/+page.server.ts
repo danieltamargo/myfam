@@ -7,12 +7,18 @@ import {
 	deleteWishlistComment,
 	deleteWishlistItem,
 	purchaseWishlistItem,
+	receiveWishlistItem,
+	revealReceivedWishlistBuyers,
 	releaseWishlistItem,
 	reserveWishlistItem,
 	updateWishlistItem,
 	WishlistCommandError
 } from '$lib/server/wishlist/commands';
-import { loadWishlistQueryData, WishlistQueryError } from '$lib/server/wishlist/queries';
+import {
+	loadWishlistQueryData,
+	loadReceivedWishlistHistory,
+	WishlistQueryError
+} from '$lib/server/wishlist/queries';
 import { presentWishlistData } from '$lib/server/wishlist/presenters';
 import {
 	finalizeWishlistImage,
@@ -64,14 +70,27 @@ async function rollbackAfterFailure(
 	return imageFailure(caught) ?? commandFailure(caught, fallback);
 }
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({
+	params,
+	url,
+	locals: { supabase, safeGetSession }
+}) => {
 	requireModuleAvailable('wishlist');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 
 	try {
+		const showHistory = url.searchParams.get('view') === 'history';
 		const queryData = await loadWishlistQueryData(supabase, params.familyId);
-		return presentWishlistData(queryData, user.id);
+		const history = showHistory
+			? await loadReceivedWishlistHistory(
+					supabase,
+					params.familyId,
+					user.id,
+					url.searchParams.get('history_page')
+				)
+			: { receivedItems: [], historyPage: 1, historyHasNext: false };
+		return { ...presentWishlistData(queryData, user.id), ...history, showHistory };
 	} catch (caught) {
 		if (caught instanceof WishlistQueryError) console.error(caught.message);
 		else console.error('Unexpected wishlist query failure', caught);
@@ -80,6 +99,36 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 };
 
 const moduleActions: Actions = {
+	receiveItem: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		const formData = await request.formData();
+		const item = parseUuidField(formData, 'item_id');
+		const version = parseVersionField(formData);
+		if (!item.success) return invalidForm(item.errors);
+		if (!version.success) return invalidForm(version.errors);
+		try {
+			await receiveWishlistItem(supabase, item.data, version.data);
+			return { success: true, message: 'Regalo recibido. Puedes verlo en tu histórico.' };
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo marcar el regalo como recibido.');
+		}
+	},
+	revealBuyers: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		const item = parseUuidField(await request.formData(), 'item_id');
+		if (!item.success) return invalidForm(item.errors);
+		try {
+			return {
+				success: true,
+				revealedItemId: item.data,
+				revealedBuyers: await revealReceivedWishlistBuyers(supabase, item.data)
+			};
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo revelar quién compró el regalo.');
+		}
+	},
 	createItem: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
@@ -119,7 +168,7 @@ const moduleActions: Actions = {
 		if (!version.success) return invalidForm(version.errors);
 		let prepared: PreparedWishlistImage;
 		try {
-			const context = { familyId: params.familyId, ownerId: user.id };
+			const context = { familyId: params.familyId, ownerId: user.id, itemId: item.data };
 			const previousPath = await loadWishlistImagePath(supabase, context, item.data);
 			prepared = prepareWishlistImage(formData, context, previousPath);
 		} catch (caught) {

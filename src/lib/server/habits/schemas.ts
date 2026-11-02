@@ -116,3 +116,8 @@ export function parseHabitId(formData: FormData): HabitValidationResult<{ habitI
 		? { success: true, data: { habitId } }
 		: { success: false, errors: { habit_id: 'El hábito seleccionado no es válido.' } };
 }
+
+export function parseMemberFilter(searchParams: URLSearchParams): string {
+	const member = searchParams.get('member') ?? '';
+	return UUID_PATTERN.test(member) ? member : '';
+}

@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { resolve } from '$app/paths';
 	import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
 	import type { ActionData, PageData } from './$types';
 	import type { CalendarEventRecord, CalendarOccurrence } from '$lib/server/calendar/queries';
+	import GoogleCalendarConnections from '$lib/components/calendar/GoogleCalendarConnections.svelte';
+	import MicrosoftCalendarConnections from '$lib/components/calendar/MicrosoftCalendarConnections.svelte';
+	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let allDay = $state(false);
@@ -14,6 +18,10 @@
 	const selectedOccurrence = $derived(
 		data.occurrences.find((occurrence) => occurrence.eventId === selectedEventId) ?? null
 	);
+	function originLabel(eventId: string): string {
+		const origin = data.events.find((event) => event.id === eventId)?.origin;
+		return origin === 'google' ? 'Google Calendar' : origin === 'outlook' ? 'Outlook' : 'MyFamily';
+	}
 
 	const gridDays = $derived(
 		Array.from({ length: 42 }, (_, index) => {
@@ -94,7 +102,7 @@
 			if (value) params.set(key, value);
 			else params.delete(key);
 		}
-		return `?${params.toString()}`;
+		return `/family/${encodeURIComponent(data.family.id)}/calendar?${params.toString()}`;
 	}
 
 	function nextDate(day: string): string {
@@ -154,6 +162,17 @@
 		<div class="alert alert-success" role="status"><span>{form.message}</span></div>
 	{/if}
 
+	<GoogleCalendarConnections
+		panel={data.googleCalendar}
+		events={data.events}
+		currentUserId={data.currentUserId}
+	/>
+	<MicrosoftCalendarConnections
+		panel={data.microsoftCalendar}
+		events={data.events}
+		currentUserId={data.currentUserId}
+	/>
+
 	<section
 		class="rounded-box border border-base-300 bg-base-100 p-3 sm:p-4"
 		aria-label="Controles del calendario"
@@ -162,16 +181,18 @@
 			<div class="flex flex-wrap items-center gap-2">
 				<a
 					class="btn btn-square btn-ghost btn-sm"
-					href={calendarHref({ date: shiftAnchor(-1), event: null })}
+					href={resolve(calendarHref({ date: shiftAnchor(-1), event: null }) as '/')}
 					aria-label="Periodo anterior">←</a
 				>
 				<a
 					class="btn btn-ghost btn-sm"
-					href={calendarHref({ date: new Date().toISOString().slice(0, 10), event: null })}>Hoy</a
+					href={resolve(
+						calendarHref({ date: new Date().toISOString().slice(0, 10), event: null }) as '/'
+					)}>Hoy</a
 				>
 				<a
 					class="btn btn-square btn-ghost btn-sm"
-					href={calendarHref({ date: shiftAnchor(1), event: null })}
+					href={resolve(calendarHref({ date: shiftAnchor(1), event: null }) as '/')}
 					aria-label="Periodo siguiente">→</a
 				>
 				<h2 class="ml-1 text-lg font-semibold capitalize">
@@ -181,33 +202,24 @@
 
 			<form method="GET" class="flex flex-col gap-2 sm:flex-row sm:items-center">
 				<input type="hidden" name="date" value={data.query.anchor} />
+				<input type="hidden" name="view" value={data.query.view} />
 				<div class="join" aria-label="Vista del calendario">
-					<button
+					<a
 						class="btn join-item btn-sm {data.query.view === 'month' ? 'btn-active' : ''}"
-						name="view"
-						value="month"
-						type="submit">Mes</button
+						href={resolve(calendarHref({ view: 'month' }) as '/')}>Mes</a
 					>
-					<button
+					<a
 						class="btn join-item btn-sm {data.query.view === 'agenda' ? 'btn-active' : ''}"
-						name="view"
-						value="agenda"
-						type="submit">Agenda</button
+						href={resolve(calendarHref({ view: 'agenda' }) as '/')}>Agenda</a
 					>
 				</div>
-				<label class="select w-full select-sm sm:w-52" aria-label="Filtrar por participante">
-					<select
-						name="participant"
-						onchange={(event) => event.currentTarget.form?.requestSubmit()}
-					>
-						<option value="">Toda la familia</option>
-						{#each data.members as member (member.id)}
-							<option value={member.id} selected={data.query.participantId === member.id}
-								>{member.displayName}</option
-							>
-						{/each}
-					</select>
-				</label>
+				<MemberRadioFilter
+					name="participant"
+					label="Filtrar por participante"
+					members={data.members}
+					value={data.query.participantId ?? ''}
+					autoSubmit
+				/>
 			</form>
 		</div>
 	</section>
@@ -246,9 +258,9 @@
 						<div class="space-y-1">
 							{#each dayEvents.slice(0, 3) as occurrence (`${occurrence.eventId}-${occurrence.start}`)}
 								<a
-									href={calendarHref({ event: occurrence.eventId })}
+									href={resolve(calendarHref({ event: occurrence.eventId }) as '/')}
 									class="block truncate rounded-md border-l-2 border-primary bg-primary/10 px-1.5 py-1 text-[11px] font-medium hover:bg-primary/20 focus-visible:outline-2 focus-visible:outline-primary sm:text-xs"
-									title={`${occurrence.title} · ${formatEventTime(occurrence)}`}
+									title={`${occurrence.title} · ${formatEventTime(occurrence)} · ${originLabel(occurrence.eventId)}`}
 								>
 									<span class="hidden sm:inline"
 										>{occurrence.allDay
@@ -288,7 +300,7 @@
 				<div class="space-y-2">
 					{#each data.occurrences as occurrence (`${occurrence.eventId}-${occurrence.start}`)}
 						<a
-							href={calendarHref({ event: occurrence.eventId })}
+							href={resolve(calendarHref({ event: occurrence.eventId }) as '/')}
 							class="flex gap-4 rounded-box border border-base-300 bg-base-100 p-4 transition hover:border-primary/40 hover:bg-base-200/40 focus-visible:outline-2 focus-visible:outline-primary"
 						>
 							<div class="w-14 shrink-0 text-center">
@@ -302,6 +314,7 @@
 							<div class="min-w-0 flex-1 border-l border-base-200 pl-4">
 								<div class="flex flex-wrap items-center gap-2">
 									<h3 class="truncate font-semibold">{occurrence.title}</h3>
+									<span class="badge badge-ghost badge-sm">{originLabel(occurrence.eventId)}</span>
 									{#if occurrence.visibility === 'selected_members'}<span
 											class="badge badge-soft badge-sm">Privado</span
 										>{/if}
@@ -327,6 +340,7 @@
 				<div class="flex items-start justify-between gap-4">
 					<div>
 						<div class="mb-2 flex flex-wrap gap-2">
+							<span class="badge badge-ghost">Origen: {originLabel(selectedEvent.id)}</span>
 							<span class="badge badge-soft badge-primary"
 								>{selectedOccurrence.allDay
 									? 'Todo el día'
@@ -343,7 +357,7 @@
 					</div>
 					<a
 						class="btn btn-circle btn-ghost btn-sm"
-						href={calendarHref({ event: null })}
+						href={resolve(calendarHref({ event: null }) as '/')}
 						aria-label="Cerrar detalle">✕</a
 					>
 				</div>

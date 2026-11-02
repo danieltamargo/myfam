@@ -1,4 +1,5 @@
 <script lang="ts">
+	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import type { SubmitFunction } from '@sveltejs/kit';
@@ -61,6 +62,7 @@
 
 	function notesQuery(noteId?: string, filter = data.filter): string {
 		const params = new SvelteURLSearchParams({ filter });
+		if (data.selectedMember) params.set('member', data.selectedMember);
 		if (data.search) params.set('search', data.search);
 		if (noteId) params.set('note', noteId);
 		return params.toString();
@@ -95,6 +97,18 @@
 		>
 	</header>
 
+	<form method="GET" class="rounded-box border border-base-300 bg-base-100 p-3 sm:p-4">
+		<input type="hidden" name="filter" value={data.filter} />
+		{#if data.search}<input type="hidden" name="search" value={data.search} />{/if}
+		<MemberRadioFilter
+			name="member"
+			label="Autor"
+			members={data.members}
+			value={data.selectedMember}
+			autoSubmit
+		/>
+	</form>
+
 	{#if form?.error}
 		<div role="alert" class="alert alert-soft alert-error"><span>{form.error}</span></div>
 	{:else if form?.message}
@@ -104,6 +118,7 @@
 	<section class="rounded-box border border-base-300 bg-base-100 p-3 sm:p-4">
 		<form method="GET" class="flex flex-col gap-2 sm:flex-row">
 			<input type="hidden" name="filter" value={data.filter} />
+			<input type="hidden" name="member" value={data.selectedMember} />
 			<label class="input min-w-0 flex-1">
 				<span aria-hidden="true">⌕</span>
 				<input
@@ -119,7 +134,9 @@
 			{#if data.search}
 				<a
 					class="btn btn-ghost"
-					href={resolve(`/family/${data.familyId}/notes?filter=${data.filter}`)}>Limpiar</a
+					href={resolve(
+						`/family/${data.familyId}/notes?filter=${data.filter}&member=${data.selectedMember}`
+					)}>Limpiar</a
 				>
 			{/if}
 		</form>

@@ -42,7 +42,7 @@
 				<a href={resolve('/login')} class="btn hidden btn-ghost sm:inline-flex"
 					>{m['nav.login']()}</a
 				>
-				<a href={resolve('/register')} class="btn btn-primary">{m['nav.create_account']()}</a>
+				<a href={resolve('/login')} class="btn btn-primary">{m['nav.login']()}</a>
 			</div>
 		</nav>
 	</header>
@@ -75,8 +75,8 @@
 					</p>
 
 					<div class="mt-9 flex flex-col gap-3 sm:flex-row">
-						<a href={resolve('/register')} class="btn btn-lg btn-primary sm:min-w-56">
-							{m['hero.cta_primary']()}
+						<a href={resolve('/login')} class="btn btn-lg btn-primary sm:min-w-56">
+							{m['nav.login']()}
 						</a>
 						<a href="#modules" class="btn btn-outline btn-lg sm:min-w-48">
 							{m['hero.cta_secondary']()}
@@ -285,9 +285,7 @@
 						{m['cta.description']()}
 					</p>
 					<div class="mt-8 flex flex-col gap-3 sm:flex-row">
-						<a href={resolve('/register')} class="btn btn-lg btn-primary"
-							>{m['cta.button_primary']()}</a
-						>
+						<a href={resolve('/login')} class="btn btn-lg btn-primary">{m['nav.login']()}</a>
 						<a href={resolve('/login')} class="btn text-neutral-content btn-outline btn-lg"
 							>{m['cta.button_secondary']()}</a
 						>

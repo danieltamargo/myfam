@@ -21,6 +21,32 @@ function validForm(): FormData {
 }
 
 describe('parseWishlistItemForm', () => {
+	it('preserves an opaque association unless the user explicitly changes it', () => {
+		const form = validForm();
+		form.set('calendar_event_id', '__keep__');
+		expect(parseWishlistItemForm(form, { familyId, ownerId })).toMatchObject({
+			success: true,
+			data: { calendarChange: 'keep', calendarEventId: null }
+		});
+		form.set('calendar_event_id', '');
+		expect(parseWishlistItemForm(form, { familyId, ownerId })).toMatchObject({
+			success: true,
+			data: { calendarChange: 'clear', calendarEventId: null }
+		});
+		form.set('calendar_event_id', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd');
+		expect(parseWishlistItemForm(form, { familyId, ownerId })).toMatchObject({
+			success: true,
+			data: { calendarChange: 'replace', calendarEventId: 'dddddddd-dddd-4ddd-8ddd-dddddddddddd' }
+		});
+	});
+	it('rejects an invalid calendar reference before saving', () => {
+		const form = validForm();
+		form.set('calendar_event_id', 'not-a-uuid');
+		expect(parseWishlistItemForm(form, { familyId, ownerId })).toMatchObject({
+			success: false,
+			errors: { calendar_event_id: expect.any(String) }
+		});
+	});
 	it('normalizes a valid item and keeps only non-empty HTTPS links', () => {
 		const result = parseWishlistItemForm(validForm(), { familyId, ownerId });
 
@@ -36,7 +62,9 @@ describe('parseWishlistItemForm', () => {
 				status: 'active',
 				links: ['https://example.com/bici'],
 				imagePath: `${familyId}/${ownerId}/bike.webp`,
-				eventIds: ['cccccccc-cccc-4ccc-8ccc-cccccccccccc']
+				eventIds: ['cccccccc-cccc-4ccc-8ccc-cccccccccccc'],
+				calendarChange: 'keep',
+				calendarEventId: null
 			}
 		});
 	});

@@ -14,9 +14,11 @@
 		collection: ExpenseCollectionSummary;
 		currentUserId: string;
 		canManage: boolean;
+		actionQuery: string;
 	}
 
-	let { expenses, categories, members, collection, currentUserId, canManage }: Props = $props();
+	let { expenses, categories, members, collection, currentUserId, canManage, actionQuery }: Props =
+		$props();
 	let editAmounts = $state<Record<string, string>>({});
 	const activeMembers = $derived(members.filter((member) => member.status === 'active'));
 
@@ -95,12 +97,16 @@
 						</td>
 						<td class="text-right">
 							<div class="flex justify-end gap-1">
-								{#if expense.receiptUrl}<a
+								{#if expense.receiptUrl}
+									<!-- eslint-disable svelte/no-navigation-without-resolve -- Storage returns an absolute signed URL. -->
+									<a
 										class="btn btn-ghost btn-xs"
 										href={expense.receiptUrl}
 										target="_blank"
 										rel="noreferrer">Recibo</a
-									>{/if}
+									>
+									<!-- eslint-enable svelte/no-navigation-without-resolve -->
+								{/if}
 								{#if canEdit(expense.created_by) && !collection.archivedAt}<a
 										class="btn btn-ghost btn-xs"
 										href={`#editar-${expense.id}`}>Editar</a
@@ -118,7 +124,7 @@
 									<div class="collapse-content">
 										<form
 											method="POST"
-											action="?/updateExpense"
+											action={`?${actionQuery}&/updateExpense`}
 											enctype="multipart/form-data"
 											class="grid gap-3 pt-2 md:grid-cols-6"
 										>
@@ -230,7 +236,7 @@
 										</form>
 										<form
 											method="POST"
-											action="?/deleteExpense"
+											action={`?${actionQuery}&/deleteExpense`}
 											class="mt-3 flex justify-end border-t border-base-300 pt-3"
 										>
 											<input type="hidden" name="expense_id" value={expense.id} /><input

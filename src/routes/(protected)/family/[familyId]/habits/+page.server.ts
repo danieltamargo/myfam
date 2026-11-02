@@ -9,6 +9,7 @@ import {
 } from '$lib/server/habits/commands';
 import { loadHabitFormContext, loadHabitPage, HabitQueryError } from '$lib/server/habits/queries';
 import {
+	parseMemberFilter,
 	parseHabitCompletion,
 	parseHabitForm,
 	parseHabitId,
@@ -29,13 +30,23 @@ function commandFailure(caught: unknown, fallback: string) {
 	return fail(500, { error: fallback });
 }
 
-export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
+export const load: PageServerLoad = async ({
+	params,
+	url,
+	locals: { supabase, safeGetSession }
+}) => {
 	await requireModuleAvailable(supabase, params.familyId, 'habits');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 	try {
 		return {
-			...(await loadHabitPage(supabase, params.familyId, user.id)),
+			...(await loadHabitPage(
+				supabase,
+				params.familyId,
+				user.id,
+				undefined,
+				parseMemberFilter(url.searchParams)
+			)),
 			familyId: params.familyId,
 			currentUserId: user.id
 		};

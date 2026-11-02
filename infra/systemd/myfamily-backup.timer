@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily MyFamily backup window
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+Unit=myfamily-backup.service
+
+[Install]
+WantedBy=timers.target

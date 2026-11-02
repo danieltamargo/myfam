@@ -1,5 +1,9 @@
 # Svelte MCP Agent
 
+## Project preference
+
+Apply anti-slop in `during` mode in this project. This project preference was explicitly requested by the user; it does not change the global preference.
+
 You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
 
 ## Available MCP Tools:
@@ -1878,3 +1882,39 @@ Validator class changes the color of form elements to error or success based on 
 
 #### Rules
 - Use with `input`, `select`, `textarea`
+# Directrices de producto y ejecución (31 de octubre de 2026)
+
+Estas directrices prevalecen sobre decisiones históricas de planes anteriores.
+
+- Objetivo: MVP familiar desplegable en un VPS sencillo y ejecutable localmente con Docker. Mantener SvelteKit y Supabase; no introducir infraestructura distribuida sin necesidad demostrada.
+- Usar pnpm, Node 24 y el lockfile versionado. No regenerar package-lock.json ni introducir comandos npm en automatizaciones nuevas.
+- Prioridad de producto: Wishlist sin spoilers, autenticación, familias/permisos, listas, finanzas y eventos; después minijuegos. Consultar `docs/superpowers/plans/2026-10-31-mvp.md` y actualizar su estado con evidencia al avanzar.
+- Wishlist: deseos genéricos o vinculados a eventos; compras y reservas confidenciales frente al destinatario; recibido retira el regalo de vistas activas para todos; histórico del destinatario con revelación explícita del comprador. La importación inicial partirá de un Excel aportado por el usuario, una pestaña por persona y email, con vista previa y ejecución idempotente. Los regalos tachados se importarán como comprados con comprador desconocido, sin inventar usuarios ni enviar invitaciones sin autorización.
+- Familias: creación, invitaciones y roles; permisos modulares para gestionar miembros y configuración. La pertenencia familiar no concede acceso a recursos privados. Validar siempre servidor y RLS.
+- Finanzas: reparto por participantes, saldos y reembolsos sugeridos, enlace a eventos. Registrar una liquidación no equivale a transferir dinero; no afirmar que se ha pagado sin integración real y confirmación.
+- Listas: privadas, familiares o compartidas con personas concretas; pendientes arriba, marcados abajo, deshacer y vista de últimos marcados.
+- Eventos: calendario interno y calendarios conectados con origen distinguible. Por defecto, un evento privado solo lo ve su audiencia autorizada; no exponer título ni descripción a otros familiares. Esta interpretación conservadora debe revisarse si el usuario concreta su frase pendiente sobre eventos privados.
+- Minijuegos objetivo: Wordle, tres en raya, reacción y acertar el color en tiempo real. La congelación histórica de Juegos no cancela este requisito: no habilitarlo hasta cerrar aislamiento, autoridad de servidor y pruebas.
+- Cuando una vista muestre varios familiares, usar avatares como filtros accesibles, con nombre, selección perceptible y navegación por teclado, siguiendo los patrones existentes.
+- SaaS futuro: separar publicación global, activación familiar, autorización y derechos del paquete. No tratar un toggle como prueba de pago ni añadir cobros al MVP.
+- Seguridad: revisar BAC/aislamiento entre familias, inyección/XSS/CSRF, sesiones/MFA, límites de solicitudes y autenticación, archivos y secretos. El límite de la aplicación no cubre las APIs directas de Supabase. No afirmar protección frente a DDoS o malware sin controles operativos comprobados.
+- Mantener la barrera MFA también en RLS, Storage y RPC privilegiadas: una sesión AAL1 con factor verificado no puede recuperar datos ni mutar recursos directamente. Al añadir tablas o funciones, ampliar la cobertura de `095_direct_mfa.test.sql`; no confiar solo en el hook de SvelteKit ni en que una función sea `SECURITY DEFINER`.
+- Aplicar antislop durante implementación y revisión general, utilizando la instalación global y respetando la dirección visual existente.
+- Trabajar autónomamente por bloques verificables. Se autoriza delegación y paralelismo cuando los archivos y las dependencias lo permitan. Usar GPT 6 Luna con esfuerzo ligero para tareas sencillas, GPT 6.1 Sol ligero para moderadas y GPT 6.1 medio para complejas (usar la variante disponible e informar de diferencias). Reservar GPT 6 Astra medio para planificación excepcionalmente extensa y compleja.
+- Buscar skills pertinentes; reutilizar las instaladas antes de añadir otras y revisar procedencia e instrucciones. No instalar dependencias ni skills por acumulación.
+- No marcar hitos completos por existencia de código o por informes históricos. Registrar comandos actuales, resultados y bloqueos; no borrar bases de datos con datos del usuario para verificar.
+- Para cerrar la suite E2E, ejecutar escritorio y móvil sobre una compilación de producción en una única pasada, sin reintentos. Las repeticiones focales sirven para diagnosticar, pero no acreditan una pasada completa.
+- Evitar revalidaciones por avisos Auth con el mismo token y coordinar las actualizaciones en tiempo real con la navegación. No sustituir recorridos reales por llamadas API para ocultar fallos de navegación.
+
+## Validación Svelte y privacidad del código
+
+El analizador oficial también puede ejecutarse localmente: `pnpm dlx @sveltejs/mcp@0.1.28 svelte-autofixer <archivo.svelte> --svelte-version <versión-instalada>`. Usar rutas de archivo evita interpolar runes en la consola. Cuando no haya autorización para enviar código privado al MCP remoto, utilizar esta alternativa local del mismo analizador y conservar sus resultados. La consulta de documentación pública no requiere transmitir código del repositorio.
+
+## Recuperación, sugerencias y operación
+
+- Las sugerencias de listas se calculan solo con el histórico que la persona puede ver. Mantener el cálculo local: no enviar texto, nombres ni elementos a la nube ni a servicios de IA.
+- La recuperación MFA usa hashes únicamente y exige una barrera de sesión vigente; no simular AAL2 ni concederlo por completar la recuperación.
+- Ensayar restauraciones en un destino aislado. Mantener configuración y secretos fuera de las copias compartibles y del repositorio.
+- No afirmar que están configurados OAuth, cuentas externas de recuperación/admin, copias fuera del VPS, despliegue VPS ni temporizadores mientras no exista evidencia de su configuración y prueba.
+- Mantener la cuota combinada de archivos por familia en la frontera de Storage y su bloqueo transaccional. La RPC privada de diagnóstico no autoriza subidas; los buckets gestionados no admiten versionado. No exigir permisos de propietario sobre tablas gestionadas de Supabase para una migración estándar.
+- En Auth/MFA, usar mensajes seguros por códigos permitidos y respuestas genéricas de registro/recuperación; no mostrar errores internos del proveedor. El comprobador VPS solo valida configuración local y no acredita credenciales, DNS, SMTP ni despliegue real.

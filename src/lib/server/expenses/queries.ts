@@ -4,6 +4,7 @@ import type { Database, Json, Tables } from '$lib/types/database';
 import type { ExpenseFilterState } from './filters';
 import type { ExpenseCollectionRole } from './schemas';
 import { signExpenseReceiptUrls } from './receipts';
+import { suggestSettlements } from '$lib/expenses/settlements';
 
 export class ExpenseQueryError extends Error {
 	constructor(message: string) {
@@ -85,6 +86,23 @@ export interface ExpensePageData {
 	filters: ExpenseFilterState;
 	dashboard: ExpenseDashboard;
 	balances: ExpenseBalance[];
+	settlementWarning: string | null;
+	settlementSuggestions: {
+		fromUserId: string;
+		toUserId: string;
+		amountCents: number;
+		fromLabel: string;
+		toLabel: string;
+		idempotencyKey: string;
+		canRecord: boolean;
+	}[];
+	settlements: {
+		id: string;
+		fromLabel: string;
+		toLabel: string;
+		amountCents: number;
+		createdAt: string;
+	}[];
 	recurringRules: RecurringExpenseRule[];
 }
 
@@ -93,6 +111,24 @@ export interface ExpenseDashboardBreakdown {
 	label: string;
 	color: string | null;
 	total: number;
+}
+
+export async function loadExpenseSettlementBalances(
+	supabase: SupabaseClient<Database>,
+	collectionId: string
+) {
+	const result = await supabase.rpc('get_expense_settlement_balances', {
+		p_collection_id: collectionId
+	});
+	if (result.error?.code === '22023' && result.error.message === 'Expense splits are incomplete') {
+		return {
+			balances: [],
+			warning:
+				'Hay gastos con repartos incompletos. Completa sus repartos antes de registrar reembolsos.'
+		};
+	}
+	assertQuery(result.error, 'No se pudieron cargar los saldos globales');
+	return { balances: result.data ?? [], warning: null };
 }
 
 export interface ExpenseSeriesPoint {
@@ -308,7 +344,9 @@ export async function loadExpenseCollectionPage(
 		dashboardResult,
 		balancesResult,
 		recurringRulesResult,
-		recurringSplitsResult
+		recurringSplitsResult,
+		settlementBalancesResult,
+		settlementsResult
 	] = await Promise.all([
 		loadMembers(supabase, collection.id),
 		supabase
@@ -341,7 +379,15 @@ export async function loadExpenseCollectionPage(
 		supabase
 			.from('recurring_expense_splits')
 			.select('rule_id, user_id, amount')
+			.eq('collection_id', collection.id),
+		loadExpenseSettlementBalances(supabase, collection.id),
+		supabase
+			.from('expense_settlements')
+			.select('*')
 			.eq('collection_id', collection.id)
+			.order('created_at', { ascending: false })
+			.order('id', { ascending: false })
+			.limit(20)
 	]);
 	assertQuery(categoriesResult.error, 'No se pudieron cargar las categorías');
 	assertQuery(expensesResult.error, 'No se pudieron cargar los gastos');
@@ -349,6 +395,7 @@ export async function loadExpenseCollectionPage(
 	assertQuery(balancesResult.error, 'No se pudieron calcular los balances');
 	assertQuery(recurringRulesResult.error, 'No se pudieron cargar los gastos recurrentes');
 	assertQuery(recurringSplitsResult.error, 'No se pudieron cargar los repartos recurrentes');
+	assertQuery(settlementsResult.error, 'No se pudieron cargar los reembolsos registrados');
 	const categories = categoriesResult.data ?? [];
 	const rows = expensesResult.data ?? [];
 	const hasMore = rows.length > pageSize;
@@ -413,6 +460,31 @@ export async function loadExpenseCollectionPage(
 		owed: Number(balance.owed),
 		balance: Number(balance.balance)
 	}));
+	const memberLabel = (id: string) =>
+		memberMap.get(id)?.profile.displayName ?? 'Participante anterior';
+	const settlementSuggestions = suggestSettlements(
+		settlementBalancesResult.balances.map((row) => ({
+			userId: row.user_id,
+			balanceCents: Number(row.balance_cents)
+		}))
+	).map((suggestion) => ({
+		...suggestion,
+		fromLabel: memberLabel(suggestion.fromUserId),
+		toLabel: memberLabel(suggestion.toUserId),
+		idempotencyKey: crypto.randomUUID(),
+		canRecord:
+			!collection.archivedAt &&
+			(collection.role === 'owner' ||
+				collection.role === 'manager' ||
+				(collection.role === 'contributor' && suggestion.fromUserId === userId))
+	}));
+	const settlements = (settlementsResult.data ?? []).map((row) => ({
+		id: row.id,
+		fromLabel: memberLabel(row.from_user_id),
+		toLabel: memberLabel(row.to_user_id),
+		amountCents: Number(row.amount_cents),
+		createdAt: row.created_at
+	}));
 	return {
 		collection,
 		members,
@@ -424,6 +496,9 @@ export async function loadExpenseCollectionPage(
 		filters,
 		dashboard,
 		balances,
+		settlementSuggestions,
+		settlementWarning: settlementBalancesResult.warning,
+		settlements,
 		recurringRules
 	};
 }

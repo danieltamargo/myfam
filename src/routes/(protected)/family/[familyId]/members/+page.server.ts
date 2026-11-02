@@ -1,6 +1,10 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
-import { requireAal2 } from '$lib/server/auth/authorization';
+import {
+	hasFamilyCapability,
+	requireFamilyCapability,
+	requireAal2
+} from '$lib/server/auth/authorization';
 import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
@@ -16,6 +20,8 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 			user_id,
 			role,
 			joined_at,
+			can_manage_members,
+			can_configure_modules,
 			profile:profiles(
 				display_name,
 				avatar_url
@@ -25,15 +31,23 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 		.eq('family_id', familyId)
 		.order('joined_at', { ascending: true });
 
+	const currentMembership = members?.find((member) => member.user_id === user?.id);
+	const canManageMembers =
+		!!currentMembership && hasFamilyCapability(currentMembership, 'manage_members');
+
 	// Get pending invitations
-	const { data: invitations } = await supabase.rpc('get_managed_family_invitations', {
-		p_family_id: familyId
-	});
+	const { data: invitations } = canManageMembers
+		? await supabase.rpc('get_managed_family_invitations', {
+				p_family_id: familyId
+			})
+		: { data: [] };
 
 	return {
 		members: (members || []).map((m) => ({
 			userId: m.user_id,
 			role: m.role,
+			canManageMembers: m.can_manage_members,
+			canConfigureModules: m.can_configure_modules,
 			joinedAt: m.joined_at,
 			displayName: (m.profile as any)?.display_name || 'Unknown User',
 			avatarUrl: (m.profile as any)?.avatar_url
@@ -44,28 +58,38 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
 				...invitation,
 				invited_user: { email: invitation.invited_email }
 			})),
+		canManageMembers,
 		currentUserId: user?.id
 	};
 };
 
 const moduleActions: Actions = {
+	setCapabilities: async ({ request, params, locals }) => {
+		const { role } = await requireFamilyCapability(locals, params.familyId, 'manage_members');
+		if (role !== 'owner')
+			return fail(403, { message: 'Solo el propietario puede delegar permisos.' });
+		const formData = await request.formData();
+		const userId = formData.get('userId');
+		if (typeof userId !== 'string') return fail(400, { message: 'Miembro no válido.' });
+		const { error } = await locals.supabase.rpc('set_family_member_capabilities', {
+			p_family_id: params.familyId,
+			p_target_user_id: userId,
+			p_can_manage_members: formData.get('manageMembers') === 'on',
+			p_can_configure_modules: formData.get('configureModules') === 'on'
+		});
+		if (error)
+			return fail(error.code === '42501' ? 403 : 400, {
+				message: 'No se pudieron guardar los permisos.'
+			});
+		return { success: true, message: 'Permisos guardados.' };
+	},
 	inviteMember: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { message: 'Unauthorized' });
 
 		const { familyId } = params;
 
-		// Check if user has permission to invite (owner or admin)
-		const { data: membership } = await supabase
-			.from('family_members')
-			.select('role')
-			.eq('family_id', familyId)
-			.eq('user_id', user.id)
-			.single();
-
-		if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-			return fail(403, { message: 'You do not have permission to invite members' });
-		}
+		await requireFamilyCapability({ supabase, safeGetSession }, familyId, 'manage_members');
 
 		const formData = await request.formData();
 		const email = formData.get('email') as string;
@@ -159,17 +183,7 @@ const moduleActions: Actions = {
 
 		const { familyId } = params;
 
-		// Check if user is owner
-		const { data: membership } = await supabase
-			.from('family_members')
-			.select('role')
-			.eq('family_id', familyId)
-			.eq('user_id', user.id)
-			.single();
-
-		if (!membership || membership.role !== 'owner') {
-			return fail(403, { message: 'Only owners can remove members' });
-		}
+		await requireFamilyCapability({ supabase, safeGetSession }, familyId, 'manage_members');
 
 		const formData = await request.formData();
 		const targetUserId = formData.get('userId') as string;

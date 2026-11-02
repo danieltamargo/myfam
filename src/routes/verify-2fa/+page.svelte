@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { safeInternalPath } from '$lib/auth/redirects';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import { resolve } from '$app/paths';
 
 	const supabase = createClient();
 
@@ -22,7 +24,7 @@
 
 		if (!session) {
 			// Si no hay sesión, redirigir a login
-			goto('/login');
+			goto(resolve('/login'));
 			return;
 		}
 
@@ -38,7 +40,7 @@
 
 		if (!verifiedFactor) {
 			// Si no hay 2FA configurado, continuar al destino interno solicitado
-			goto(returnTo);
+			goto(resolve(returnTo as '/dashboard'));
 			return;
 		}
 
@@ -75,9 +77,9 @@
 			if (verifyError) throw verifyError;
 
 			// Éxito - volver al destino interno solicitado
-			goto(returnTo);
-		} catch (err: any) {
-			error = err.message || 'Invalid code. Please try again.';
+			goto(resolve(returnTo as '/dashboard'));
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 			code = '';
 		} finally {
 			loading = false;
@@ -86,15 +88,13 @@
 
 	async function handleLogout() {
 		await supabase.auth.signOut();
-		goto('/login');
+		goto(resolve('/login'));
 	}
 
-	// Auto-submit cuando se complete el código
-	$effect(() => {
-		if (code.length === 6 && !loading) {
-			verifyCode(new Event('submit'));
-		}
-	});
+	function handleCodeInput(event: Event) {
+		code = (event.currentTarget as HTMLInputElement).value;
+		if (code.length === 6 && !loading) verifyCode(new Event('submit'));
+	}
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-base-200">
@@ -115,17 +115,18 @@
 						<div class="flex justify-center">
 							<input
 								type="text"
-								bind:value={code}
+								value={code}
+								oninput={handleCodeInput}
+								id="verification-code"
 								placeholder="000000"
 								class="input-bordered input input-lg w-full text-center font-mono text-3xl tracking-[0.5em]"
 								maxlength="6"
 								pattern="[0-9]*"
 								inputmode="numeric"
-								autofocus
 								disabled={loading}
 							/>
 						</div>
-						<label class="label">
+						<label class="label" for="verification-code">
 							<span class="label-text-alt mx-auto">Code from your authenticator app</span>
 						</label>
 					</div>
@@ -146,6 +147,9 @@
 
 				<div class="space-y-2 text-center">
 					<p class="text-sm text-base-content/70">Can't access your authenticator app?</p>
+					<a href={resolve('/recover-2fa')} class="btn btn-outline btn-sm"
+						>Usar un código de recuperación</a
+					>
 					<button onclick={handleLogout} class="btn btn-ghost btn-sm">
 						Sign out and try again
 					</button>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { onMount } from 'svelte';
 
@@ -35,8 +36,8 @@
 				isEnabled = true;
 				factorId = verifiedFactor.id;
 			}
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 		} finally {
 			loading = false;
 		}
@@ -60,8 +61,8 @@
 				secret = data.totp.secret;
 				factorId = data.id;
 			}
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 		} finally {
 			enrolling = false;
 		}
@@ -97,8 +98,8 @@
 				success = '';
 				checkMFAStatus();
 			}, 2000);
-		} catch (err: any) {
-			error = err.message || 'Invalid code. Please try again.';
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 		} finally {
 			verifying = false;
 		}
@@ -130,8 +131,8 @@
 			setTimeout(() => {
 				success = '';
 			}, 2000);
-		} catch (err: any) {
-			error = err.message;
+		} catch (err: unknown) {
+			error = safeAuthError(err, 'mfa');
 		} finally {
 			loading = false;
 		}

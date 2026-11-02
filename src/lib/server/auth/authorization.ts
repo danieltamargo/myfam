@@ -3,6 +3,38 @@ import type { SupabaseClient, User } from '@supabase/supabase-js';
 import type { Database } from '$lib/types/database';
 
 export type FamilyRole = 'owner' | 'admin' | 'member';
+export type FamilyCapability = 'manage_members' | 'configure_modules';
+
+export function hasFamilyCapability(
+	membership: { role: string; can_manage_members?: boolean; can_configure_modules?: boolean },
+	capability: FamilyCapability
+): boolean {
+	return (
+		membership.role === 'owner' ||
+		membership.role === 'admin' ||
+		(capability === 'manage_members'
+			? membership.can_manage_members === true
+			: membership.can_configure_modules === true)
+	);
+}
+
+export async function requireFamilyCapability(
+	locals: AuthLocals,
+	familyId: string,
+	capability: FamilyCapability
+) {
+	const user = await requireAuthenticated(locals);
+	const { data, error: membershipError } = await locals.supabase
+		.from('family_members')
+		.select('role, can_manage_members, can_configure_modules')
+		.eq('family_id', familyId)
+		.eq('user_id', user.id)
+		.maybeSingle();
+	if (membershipError) throw error(500, 'No se pudo comprobar la autorización familiar');
+	if (!data || !hasFamilyCapability(data, capability))
+		throw error(403, 'No tienes permisos para realizar esta operación');
+	return { user, role: data.role as FamilyRole };
+}
 
 type AuthLocals = Pick<App.Locals, 'safeGetSession' | 'supabase'>;
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import GiftComments from '$lib/components/wishlist/GiftComments.svelte';
 	import WishlistCoordination from '$lib/components/wishlist/WishlistCoordination.svelte';
 	import WishlistItemDetails from '$lib/components/wishlist/WishlistItemDetails.svelte';
@@ -28,6 +30,8 @@
 		getComments: (itemId: string) => WishlistCommentDto[];
 		onClose: () => void;
 	} = $props();
+	let receiving = $state(false);
+	let receiveError = $state('');
 
 	function focusDialog(element: HTMLDivElement) {
 		const frame = requestAnimationFrame(() => element.focus());
@@ -97,11 +101,61 @@
 						events={getItemEvents(item)}
 						ownerName={item.profiles.display_name}
 					/>
+					{#if item.calendar_event}
+						<p class="mt-3 text-sm">
+							Evento: <a
+								class="link"
+								href={resolve(`/family/${item.family_id}/calendar?event=${item.calendar_event.id}`)}
+								>{item.calendar_event.title}</a
+							>
+						</p>
+					{/if}
 
 					{#if isOwner}
 						<div class="mt-4 alert alert-info" role="status">
 							<span>La coordinación está oculta para proteger la sorpresa.</span>
 						</div>
+						{#if item.status === 'active'}
+							<form
+								method="POST"
+								action="?/receiveItem"
+								class="mt-4 space-y-2"
+								use:enhance={({ cancel }) => {
+									if (receiving) {
+										cancel();
+										return;
+									}
+									receiving = true;
+									receiveError = '';
+									return async ({ result, update }) => {
+										try {
+											await update();
+											if (result.type === 'success') onClose();
+											else
+												receiveError =
+													'data' in result && typeof result.data?.error === 'string'
+														? result.data.error
+														: 'No se pudo marcar como recibido.';
+										} catch {
+											receiveError = 'No se pudo confirmar el cambio. Recarga la wishlist.';
+										} finally {
+											receiving = false;
+										}
+									};
+								}}
+							>
+								<input type="hidden" name="item_id" value={item.id} />
+								<input type="hidden" name="version" value={item.version} />
+								<p class="text-sm text-base-content/65">
+									Al recibirlo, se retirará de las listas y quedará en tu histórico sin revelar el
+									comprador.
+								</p>
+								<button type="submit" class="btn btn-primary" disabled={receiving}
+									>Marcar como recibido</button
+								>
+								{#if receiveError}<p role="alert" class="text-sm text-error">{receiveError}</p>{/if}
+							</form>
+						{/if}
 					{:else}
 						<div class="mt-5">
 							<WishlistCoordination

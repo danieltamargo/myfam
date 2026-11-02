@@ -3,6 +3,13 @@ import { sequence } from '@sveltejs/kit/hooks';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '$lib/types/database';
 import { paraglideMiddleware } from '$lib/paraglide/server.js';
+import { handleProtectedRoutes } from '$lib/server/auth/protected';
+import { handleSecurityHeaders } from '$lib/server/security/headers';
+import {
+	handleMutationRateLimit,
+	handleIdentityMutationRateLimit
+} from '$lib/server/security/rate-limit';
+import { createSafeSessionReader } from '$lib/server/auth/session';
 
 // Handle 1: Paraglide i18n
 const handleParaglide: Handle = ({ event, resolve }) =>
@@ -34,26 +41,7 @@ const handleSupabase: Handle = async ({ event, resolve }) => {
 		}
 	);
 
-	event.locals.safeGetSession = async () => {
-		const {
-			data: { session }
-		} = await event.locals.supabase.auth.getSession();
-
-		if (!session) {
-			return { session: null, user: null };
-		}
-
-		const {
-			data: { user },
-			error
-		} = await event.locals.supabase.auth.getUser();
-
-		if (error) {
-			return { session: null, user: null };
-		}
-
-		return { session, user };
-	};
+	event.locals.safeGetSession = createSafeSessionReader(event.locals.supabase);
 
 	return resolve(event, {
 		filterSerializedResponseHeaders(name) {
@@ -63,4 +51,11 @@ const handleSupabase: Handle = async ({ event, resolve }) => {
 };
 
 // Sequence the handles
-export const handle = sequence(handleParaglide, handleSupabase);
+export const handle = sequence(
+	handleSecurityHeaders,
+	handleMutationRateLimit,
+	handleParaglide,
+	handleSupabase,
+	handleIdentityMutationRateLimit,
+	handleProtectedRoutes
+);

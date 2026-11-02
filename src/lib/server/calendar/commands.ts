@@ -17,7 +17,7 @@ function throwCalendarCommandError(error: PostgrestError, fallback: string): nev
 		throw new CalendarCommandError(403, 'No tienes permiso para realizar esta acción.');
 	if (error.code === 'P0002')
 		throw new CalendarCommandError(404, 'El evento ya no está disponible.');
-	if (error.code === '40001')
+	if (error.code === '40001' || error.code === 'PT409')
 		throw new CalendarCommandError(
 			409,
 			'El evento cambió mientras lo editabas. Recarga la página e inténtalo de nuevo.'

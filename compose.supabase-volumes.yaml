@@ -1,0 +1,14 @@
+services:
+  db:
+    volumes:
+      - supabase-database:/var/lib/postgresql/data
+  storage:
+    volumes:
+      - supabase-storage:/var/lib/storage
+  imgproxy:
+    volumes:
+      - supabase-storage:/var/lib/storage
+
+volumes:
+  supabase-database:
+  supabase-storage:

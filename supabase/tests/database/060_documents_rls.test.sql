@@ -1,4 +1,6 @@
 begin;
+-- Match Storage API's transaction context while exercising its RLS policies.
+set local storage.allow_delete_query = 'true';
 
 create extension if not exists pgtap with schema extensions;
 select no_plan();
@@ -103,8 +105,8 @@ values
     '60000000-0000-4000-8000-000000000003'
   );
 
-insert into storage.objects (bucket_id, name, owner_id)
-select 'family-documents', storage_path, owner_id
+insert into storage.objects (bucket_id, name, owner_id, metadata)
+select 'family-documents', storage_path, owner_id, jsonb_build_object('size', size_bytes)
 from public.family_documents;
 
 select has_table('public', 'family_documents', 'private document metadata table exists');
@@ -284,13 +286,18 @@ select throws_ok(
   null,
   'storage rejects any forged or user-selected object path'
 );
-select lives_ok(
+select throws_ok(
   $$insert into storage.objects (bucket_id, name, owner_id)
     select 'family-documents', storage_path, owner_id
     from public.family_documents
     where display_name = 'Póliza nueva'$$,
-  'pending owner can upload only to the reserved object path'
+  '42501', null, 'pending owner cannot bypass antivirus with a direct upload'
 );
+reset role;
+insert into storage.objects (bucket_id, name, owner_id, metadata)
+  select 'family-documents', storage_path, owner_id, jsonb_build_object('size', size_bytes) from public.family_documents
+  where display_name = 'Póliza nueva';
+set local role authenticated;
 select is(
   public.complete_family_document_upload(
     (select id from public.family_documents where display_name = 'Póliza nueva')

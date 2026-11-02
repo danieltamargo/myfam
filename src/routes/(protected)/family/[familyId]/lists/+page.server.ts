@@ -6,6 +6,7 @@ import {
 	createFamilyList,
 	deleteFamilyListItem,
 	ListCommandError,
+	setFamilyListType,
 	setFamilyListItemCompleted
 } from '$lib/server/lists/commands';
 import { ListQueryError, loadListFormContext, loadListPage } from '$lib/server/lists/queries';
@@ -15,6 +16,7 @@ import {
 	parseListItemIdentity,
 	type ListValidationErrors
 } from '$lib/server/lists/schemas';
+import { LIST_TYPES, type ListType } from '$lib/lists/suggestions';
 
 function invalidForm(errors: ListValidationErrors) {
 	return fail(400, {
@@ -51,6 +53,22 @@ export const load: PageServerLoad = async ({
 };
 
 const moduleActions: Actions = {
+	setType: async ({ request, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		const formData = await request.formData();
+		const identity = parseListItemIdentity(formData);
+		if (!identity.success) return invalidForm(identity.errors);
+		const listType = formData.get('list_type');
+		if (typeof listType !== 'string' || !LIST_TYPES.includes(listType as ListType))
+			return fail(400, { error: 'El tipo de lista no es válido.' });
+		try {
+			await setFamilyListType(supabase, identity.data.itemId, identity.data.version, listType);
+			return { success: true, message: 'Tipo de lista actualizado.' };
+		} catch (caught) {
+			return commandFailure(caught, 'No se pudo cambiar el tipo de lista.');
+		}
+	},
 	createList: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });

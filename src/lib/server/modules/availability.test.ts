@@ -43,10 +43,14 @@ describe('module availability matrix', () => {
 		).toMatchObject({ enabled: true, reason: 'enabled' });
 	});
 
-	it('keeps Games disabled even if a family row says enabled', () => {
+	it('requires family opt-in for the secure games module', () => {
 		expect(resolveModuleAccess('games', [{ module_name: 'games', enabled: true }])).toMatchObject({
+			enabled: true,
+			reason: 'enabled'
+		});
+		expect(resolveModuleAccess('games', [])).toMatchObject({
 			enabled: false,
-			reason: 'globally-disabled'
+			reason: 'family-disabled'
 		});
 	});
 

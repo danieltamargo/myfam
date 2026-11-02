@@ -229,7 +229,7 @@ select is(
 );
 select throws_ok(
   $$select public.set_family_task_status('40000000-3000-4000-8000-000000000001', 2, 'completed')$$,
-  '40001',
+  'PT409',
   'Family task changed concurrently',
   'stale task status mutation is rejected'
 );
@@ -264,7 +264,7 @@ select is(
 );
 select throws_ok(
   $$select public.set_family_list_item_completed('40000000-5000-4000-8000-000000000001', 1, false)$$,
-  '40001',
+  'PT409',
   'Family list item changed concurrently',
   'stale optimistic list mutation is rejected'
 );

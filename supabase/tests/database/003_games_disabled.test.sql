@@ -17,14 +17,14 @@ select is(
     from pg_policies
     where schemaname = 'public'
       and tablename = 'game_rooms'
-      and policyname = 'games_disabled_all'
-      and permissive = 'RESTRICTIVE'
+      and policyname = 'family_game_rooms_read'
+      and permissive = 'PERMISSIVE'
       and 'authenticated' = any(roles)
-      and qual = 'false'
-      and with_check = 'false'
+      and cmd = 'SELECT'
+      and qual like '%can_read_family_game%'
   ),
   1,
-  'game_rooms has one restrictive deny policy'
+  'game_rooms has only authorized protocol reads'
 );
 
 select is(
@@ -33,14 +33,14 @@ select is(
     from pg_policies
     where schemaname = 'public'
       and tablename = 'room_participants'
-      and policyname = 'games_disabled_all'
-      and permissive = 'RESTRICTIVE'
+      and policyname = 'family_game_participants_read'
+      and permissive = 'PERMISSIVE'
       and 'authenticated' = any(roles)
-      and qual = 'false'
-      and with_check = 'false'
+      and cmd = 'SELECT'
+      and qual like '%can_read_family_game%'
   ),
   1,
-  'room_participants has one restrictive deny policy'
+  'room_participants has only authorized protocol reads'
 );
 
 select is(
@@ -49,14 +49,14 @@ select is(
     from pg_policies
     where schemaname = 'public'
       and tablename = 'game_sessions'
-      and policyname = 'games_disabled_all'
-      and permissive = 'RESTRICTIVE'
+      and policyname = 'family_game_sessions_read'
+      and permissive = 'PERMISSIVE'
       and 'authenticated' = any(roles)
-      and qual = 'false'
-      and with_check = 'false'
+      and cmd = 'SELECT'
+      and qual like '%can_read_family_game%'
   ),
   1,
-  'game_sessions has one restrictive deny policy'
+  'game_sessions has only authorized protocol reads'
 );
 
 select is(
@@ -65,14 +65,14 @@ select is(
     from pg_policies
     where schemaname = 'public'
       and tablename = 'game_moves'
-      and policyname = 'games_disabled_all'
-      and permissive = 'RESTRICTIVE'
+      and policyname = 'family_game_moves_read'
+      and permissive = 'PERMISSIVE'
       and 'authenticated' = any(roles)
-      and qual = 'false'
-      and with_check = 'false'
+      and cmd = 'SELECT'
+      and qual like '%can_read_family_game%'
   ),
   1,
-  'game_moves has one restrictive deny policy'
+  'game_moves has only authorized protocol reads'
 );
 
 select is(
@@ -107,10 +107,10 @@ select is(
   'game_achievements has one restrictive deny policy'
 );
 
-select ok(not has_table_privilege('authenticated', 'public.game_rooms', 'select'), 'authenticated cannot select game_rooms');
-select ok(not has_table_privilege('authenticated', 'public.room_participants', 'select'), 'authenticated cannot select room_participants');
-select ok(not has_table_privilege('authenticated', 'public.game_sessions', 'select'), 'authenticated cannot select game_sessions');
-select ok(not has_table_privilege('authenticated', 'public.game_moves', 'select'), 'authenticated cannot select game_moves');
+select ok(not has_table_privilege('authenticated', 'public.game_rooms', 'insert,update,delete'), 'authenticated cannot directly mutate game_rooms');
+select ok(not has_table_privilege('authenticated', 'public.room_participants', 'insert,update,delete'), 'authenticated cannot directly mutate room_participants');
+select ok(not has_table_privilege('authenticated', 'public.game_sessions', 'insert,update,delete'), 'authenticated cannot directly mutate game_sessions');
+select ok(not has_table_privilege('authenticated', 'public.game_moves', 'insert,update,delete'), 'authenticated cannot directly mutate game_moves');
 select ok(not has_table_privilege('authenticated', 'public.game_stats', 'select'), 'authenticated cannot select game_stats');
 select ok(not has_table_privilege('authenticated', 'public.game_achievements', 'select'), 'authenticated cannot select game_achievements');
 

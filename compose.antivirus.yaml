@@ -1,0 +1,35 @@
+services:
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:3310:3310'
+    volumes:
+      - clamav-signatures:/var/lib/clamav
+    environment:
+      CLAMD_CONF_MaxThreads: '1'
+      CLAMD_CONF_MaxQueue: '4'
+      CLAMD_CONF_StreamMaxLength: '16M'
+      CLAMD_CONF_MaxFileSize: '16M'
+      CLAMD_CONF_MaxScanSize: '64M'
+      CLAMD_CONF_MaxRecursion: '16'
+      CLAMD_CONF_MaxFiles: '1000'
+      CLAMD_CONF_MaxScanTime: '30000'
+      CLAMD_CONF_ReadTimeout: '30'
+      CLAMD_CONF_CommandReadTimeout: '10'
+      CLAMD_CONF_ConcurrentDatabaseReload: 'no'
+      CLAMD_CONF_AlertEncrypted: 'yes'
+      CLAMD_CONF_AlertExceedsMax: 'yes'
+      FRESHCLAM_CHECKS: '12'
+    cpus: '1.0'
+    mem_limit: 4g
+    mem_reservation: 3g
+    healthcheck:
+      test: ['CMD', 'clamdcheck.sh']
+      interval: 20s
+      timeout: 10s
+      start_period: 6m
+      retries: 15
+
+volumes:
+  clamav-signatures:
