@@ -556,11 +556,11 @@
 											>{/each}</select
 									></label
 								>
-								<fieldset class="md:col-span-6">
+								<fieldset class="min-w-0 md:col-span-6">
 									<legend class="mb-2 font-medium">Participantes</legend>
 									<div class="flex flex-wrap gap-2">
 										{#each data.members as member (member.id)}<label
-												class="label cursor-pointer gap-2 rounded-field border border-base-300 px-3 py-2"
+												class="label max-w-full cursor-pointer gap-2 rounded-field border border-base-300 px-3 py-2 whitespace-normal"
 												><input
 													class="checkbox checkbox-sm"
 													type="checkbox"
@@ -613,7 +613,11 @@
 					La zona horaria conserva la hora local incluso al cambiar al horario de verano.
 				</p>
 			</div>
-			<form method="POST" action="?/createEvent" class="grid gap-4 md:grid-cols-6">
+			<form
+				method="POST"
+				action="?/createEvent"
+				class="grid grid-cols-1 gap-4 md:grid-cols-6 [&_.form-control]:min-w-0 [&_.input]:w-full [&_.select]:w-full"
+			>
 				<label class="form-control md:col-span-4" for="calendar-title"
 					><span class="label-text mb-2 font-medium">Título</span><input
 						id="calendar-title"
@@ -742,11 +746,11 @@
 							>{/each}</select
 					></label
 				>
-				<fieldset class="md:col-span-6">
+				<fieldset class="min-w-0 md:col-span-6">
 					<legend class="mb-2 font-medium">Participantes</legend>
 					<div class="flex flex-wrap gap-2">
 						{#each data.members as member (member.id)}<label
-								class="label cursor-pointer gap-2 rounded-field border border-base-300 px-3 py-2"
+								class="label max-w-full cursor-pointer gap-2 rounded-field border border-base-300 px-3 py-2 whitespace-normal"
 								><input
 									class="checkbox checkbox-sm checkbox-primary"
 									type="checkbox"

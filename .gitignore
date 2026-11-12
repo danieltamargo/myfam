@@ -28,6 +28,8 @@ project.inlang/cache/
 
 # Local Supabase state (may contain local credentials)
 supabase/.temp/
+/docs/Lista de regalos .xlsx
+/supabase/seed.private.json
 
 # Local agent and browser tooling
 .claude/skills/

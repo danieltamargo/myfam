@@ -41,12 +41,12 @@ test('CSP blocks injected scripts and event handlers while the application hydra
 	});
 	await page.goto('/login');
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'myfam-dark');
-	await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeEnabled();
+	await expect(page.getByRole('button', { name: 'Iniciar sesión', exact: true })).toBeEnabled();
 	await expect(page.locator('#csp-injected-image')).toBeAttached();
 	await expect(page.locator('html')).toHaveAttribute('data-blocked-inline', /script-src-elem/);
 	await expect(page.locator('html')).toHaveAttribute('data-blocked-inline', /script-src-attr/);
 	await expect(page.locator('html')).not.toHaveAttribute('data-injected-script');
 	await expect(page.locator('html')).not.toHaveAttribute('data-injected-handler');
-	await page.getByRole('button', { name: 'Toggle theme' }).click();
+	await page.getByRole('button', { name: 'Cambiar tema' }).click();
 	await expect(page.locator('html')).toHaveAttribute('data-theme', 'myfam-light');
 });

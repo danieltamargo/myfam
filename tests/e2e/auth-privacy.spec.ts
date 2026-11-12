@@ -1,5 +1,20 @@
 import { expect, test } from '@playwright/test';
 
+test('the locale switch persists across access pages', async ({ page }) => {
+	await page.goto('/login');
+	await expect(
+		page.getByRole('heading', { name: 'Te damos la bienvenida a MyFamily' })
+	).toBeVisible();
+	await page.getByLabel('Idioma', { exact: true }).selectOption('en');
+	await expect(page.getByRole('heading', { name: 'Welcome to MyFamily' })).toBeVisible();
+	await page.getByRole('link', { name: 'Forgot password?' }).click();
+	await expect(page.getByRole('heading', { name: 'Forgot password' })).toBeVisible();
+	await page.reload();
+	await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+	await page.getByLabel('Language', { exact: true }).selectOption('es');
+	await expect(page.getByRole('heading', { name: 'Recuperar contraseña' })).toBeVisible();
+});
+
 test('access forms keep provider details private and recovery responses uniform', async ({
 	page
 }) => {
@@ -16,12 +31,12 @@ test('access forms keep provider details private and recovery responses uniform'
 		})
 	);
 	await page.goto('/login');
-	await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeEnabled();
-	await page.getByLabel('Email', { exact: true }).fill('privacy@example.test');
-	await page.getByLabel('Password', { exact: true }).fill('Synthetic-password-2026!');
-	await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+	await expect(page.getByRole('button', { name: 'Iniciar sesión', exact: true })).toBeEnabled();
+	await page.getByLabel('Correo electrónico', { exact: true }).fill('privacy@example.test');
+	await page.getByLabel('Contraseña', { exact: true }).fill('Synthetic-password-2026!');
+	await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
 	await expect(
-		page.getByText('Unable to sign in. Check your email and password and try again.')
+		page.getByText('No se pudo iniciar sesión. Revisa tu correo y contraseña e inténtalo de nuevo.')
 	).toBeVisible();
 	await expect(page.locator('body')).not.toContainText(privateDetail);
 
@@ -40,11 +55,13 @@ test('access forms keep provider details private and recovery responses uniform'
 	for (const code of ['user_not_found', null]) {
 		recoveryCode = code;
 		await page.goto('/forgot-password');
-		await expect(page.getByRole('button', { name: 'Send Reset Link' })).toBeEnabled();
-		await page.getByLabel('Email', { exact: true }).fill('privacy@example.test');
-		await page.getByRole('button', { name: 'Send Reset Link' }).click();
+		await expect(page.getByRole('button', { name: 'Enviar enlace' })).toBeEnabled();
+		await page.getByLabel('Correo electrónico', { exact: true }).fill('privacy@example.test');
+		await page.getByRole('button', { name: 'Enviar enlace' }).click();
 		await expect(
-			page.getByText('If an account matches that email, you will receive a password reset link.')
+			page.getByText(
+				'Si hay una cuenta asociada a ese correo, recibirás un enlace para restablecer la contraseña.'
+			)
 		).toBeVisible();
 		await expect(page.locator('body')).not.toContainText(privateDetail);
 	}

@@ -5,6 +5,8 @@
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { invitationSession } from '$lib/auth/invitation';
+	import * as m from '$paraglide/messages';
+	import { getLocale } from '$paraglide/runtime';
 
 	const supabase = createClient();
 
@@ -21,8 +23,7 @@
 		const invitedSession = invitationSession(window.location.hash);
 		if (incomingFragment && !invitedSession) {
 			window.history.replaceState(null, '', window.location.pathname + window.location.search);
-			error =
-				'El enlace de bienvenida ha caducado o no es válido. Solicita uno nuevo al administrador.';
+			error = m['auth.welcome_link_error']();
 			checking = false;
 			return;
 		}
@@ -30,8 +31,7 @@
 			window.history.replaceState(null, '', window.location.pathname + window.location.search);
 			const { error: invitationError } = await supabase.auth.setSession(invitedSession);
 			if (invitationError) {
-				error =
-					'El enlace de bienvenida ha caducado o no es válido. Solicita uno nuevo al administrador.';
+				error = m['auth.welcome_link_error']();
 				checking = false;
 				return;
 			}
@@ -44,7 +44,7 @@
 		if (session) {
 			validToken = true;
 		} else {
-			error = 'Invalid or expired reset link. Please request a new one.';
+			error = m['auth.reset_link_error']();
 		}
 
 		checking = false;
@@ -58,13 +58,13 @@
 
 		// Validar contraseñas
 		if (password !== confirmPassword) {
-			error = 'Passwords do not match';
+			error = m['auth.password_mismatch']();
 			loading = false;
 			return;
 		}
 
 		if (password.length < 12) {
-			error = 'Password must be at least 12 characters';
+			error = m['auth.password_length']();
 			loading = false;
 			return;
 		}
@@ -76,7 +76,7 @@
 		loading = false;
 
 		if (updateError) {
-			error = safeAuthError(updateError, 'reset');
+			error = safeAuthError(updateError, 'reset', getLocale());
 			return;
 		}
 
@@ -89,40 +89,42 @@
 	}
 </script>
 
-<div class="flex min-h-screen items-center justify-center bg-base-200">
-	<div class="card w-96 bg-base-100 shadow-xl">
+<div class="flex min-h-dvh items-center justify-center bg-base-200 px-4 pt-6 pb-20">
+	<div class="card w-full max-w-sm bg-base-100 shadow-xl">
 		<div class="card-body">
-			<h2 class="card-title text-2xl font-bold">Reset Password</h2>
-			<p class="text-sm text-base-content/70">Enter your new password below.</p>
+			<h1 class="card-title text-2xl font-bold">{m['auth.reset_title']()}</h1>
+			<p class="text-sm text-base-content/70">{m['auth.reset_intro']()}</p>
 
 			{#if checking}
 				<div class="flex justify-center py-8">
 					<span class="loading loading-lg loading-spinner"></span>
 				</div>
 			{:else if !validToken}
-				<div class="mt-4 alert alert-error">
+				<div class="mt-4 alert alert-error" role="alert">
 					<div class="flex flex-col gap-2">
-						<span class="font-semibold">Invalid or Expired Link</span>
+						<span class="font-semibold">{m['auth.invalid_link']()}</span>
 						<span class="text-sm">{error}</span>
 					</div>
 				</div>
 
 				<div class="mt-4 card-actions justify-center">
-					<a href={resolve('/forgot-password')} class="btn btn-primary"> Request New Link </a>
+					<a href={resolve('/forgot-password')} class="btn btn-primary"
+						>{m['auth.request_link']()}</a
+					>
 				</div>
 			{:else}
 				{#if error}
-					<div class="mt-4 alert alert-error">
+					<div class="mt-4 alert alert-error" role="alert">
 						<span>{error}</span>
 					</div>
 				{/if}
 
 				{#if success}
-					<div class="mt-4 alert alert-success">
+					<div class="mt-4 alert alert-success" role="status">
 						<div class="flex flex-col gap-2">
-							<span class="font-semibold">Password Updated!</span>
+							<span class="font-semibold">{m['auth.password_updated']()}</span>
 							<span class="text-sm">
-								Your password has been successfully changed. Redirecting to login...
+								{m['auth.password_redirect']()}
 							</span>
 						</div>
 					</div>
@@ -130,7 +132,7 @@
 					<form onsubmit={handleSubmit} class="mt-4 flex flex-col gap-4">
 						<div class="form-control">
 							<label class="label" for="password">
-								<span class="label-text">New Password</span>
+								<span class="label-text">{m['auth.new_password']()}</span>
 							</label>
 							<input
 								type="password"
@@ -138,25 +140,27 @@
 								bind:value={password}
 								minlength={12}
 								placeholder="••••••••"
-								class="input-bordered input"
+								class="input w-full"
+								autocomplete="new-password"
 								required
 								disabled={loading}
 							/>
 							<p class="label">
-								<span class="label-text-alt">At least 12 characters</span>
+								<span class="label-text-alt">{m['auth.password_length']()}</span>
 							</p>
 						</div>
 
 						<div class="form-control">
 							<label class="label" for="confirmPassword">
-								<span class="label-text">Confirm New Password</span>
+								<span class="label-text">{m['auth.confirm_password']()}</span>
 							</label>
 							<input
 								type="password"
 								id="confirmPassword"
 								bind:value={confirmPassword}
 								placeholder="••••••••"
-								class="input-bordered input"
+								class="input w-full"
+								autocomplete="new-password"
 								required
 								disabled={loading}
 							/>
@@ -166,12 +170,12 @@
 							{#if loading}
 								<span class="loading loading-spinner"></span>
 							{/if}
-							Update Password
+							{m['auth.update_password']()}
 						</button>
 					</form>
 
 					<div class="mt-4 text-center text-sm">
-						<a href={resolve('/login')} class="link link-primary">Back to Login</a>
+						<a href={resolve('/login')} class="link link-primary">{m['auth.back_to_login']()}</a>
 					</div>
 				{/if}
 			{/if}

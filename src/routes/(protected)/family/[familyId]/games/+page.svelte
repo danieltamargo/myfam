@@ -129,12 +129,12 @@
 						required
 					/></label
 				>
-				<fieldset>
+				<fieldset class="min-w-0">
 					<legend class="mb-3 font-semibold">Con quién quieres jugar</legend>
 					<div class="flex flex-wrap gap-3">
 						{#each opponents as member (member.user_id)}
 							<label
-								class="flex cursor-pointer items-center gap-3 rounded-box border border-base-300 p-3 has-checked:border-primary has-checked:bg-primary/10"
+								class="flex max-w-full min-w-0 cursor-pointer items-center gap-3 rounded-box border border-base-300 p-3 has-checked:border-primary has-checked:bg-primary/10"
 							>
 								<input
 									type="radio"
@@ -152,7 +152,8 @@
 										class="flex h-10 w-10 items-center justify-center rounded-full bg-base-200"
 										aria-hidden="true">{member.profile?.display_name?.charAt(0) || '?'}</span
 									>{/if}
-								<span>{member.profile?.display_name || 'Familiar'}</span>
+								<span class="min-w-0 break-words">{member.profile?.display_name || 'Familiar'}</span
+								>
 							</label>
 						{/each}
 					</div>

@@ -5,6 +5,7 @@
 	import { activeFamily } from '$lib/stores/familyStore';
 	import NotificationBell from './NotificationBell.svelte';
 	import { resolve } from '$app/paths';
+	import * as m from '$paraglide/messages';
 
 	interface Props {
 		user?: {
@@ -55,11 +56,11 @@
 		goto('/login');
 	}
 
-	const navItems = [
-		{ href: '/dashboard', label: 'Dashboard', icon: '🏠' },
-		{ href: '/families', label: 'My Families', icon: '👨‍👩‍👧‍👦' },
-		{ href: '/profile', label: 'Profile Settings', icon: '⚙️' }
-	];
+	const navItems = $derived([
+		{ href: '/dashboard', label: m['app_nav.dashboard'](), icon: '🏠' },
+		{ href: '/families', label: m['app_nav.families'](), icon: '👨‍👩‍👧‍👦' },
+		{ href: '/profile', label: m['app_nav.profile'](), icon: '⚙️' }
+	]);
 
 	const isActive = (href: string) => {
 		return $page.url.pathname === href || $page.url.pathname.startsWith(href + '/');
@@ -89,9 +90,9 @@
 	<div class="navbar-center min-w-0 flex-1">
 		{#if $activeFamily}
 			<div class="dropdown max-w-full min-w-0">
-				<div
-					tabindex="0"
-					role="button"
+				<button
+					type="button"
+					aria-label={m['app_nav.switch_family']()}
 					class="btn max-w-full min-w-0 gap-1 px-2 btn-ghost sm:gap-2 sm:px-4"
 				>
 					<span class="shrink-0 text-lg">👨‍👩‍👧‍👦</span>
@@ -110,13 +111,13 @@
 							d="M19 9l-7 7-7-7"
 						/>
 					</svg>
-				</div>
+				</button>
 				<ul
 					tabindex="-1"
 					class="dropdown-content menu left-1/2 z-[1] mt-2 w-64 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-box bg-base-200 p-2 shadow"
 				>
 					<li class="menu-title">
-						<span>Switch Family</span>
+						<span>{m['app_nav.switch_family']()}</span>
 					</li>
 					{#each families as family (family.id)}
 						<li>
@@ -124,8 +125,14 @@
 								onclick={() => selectFamily(family.id)}
 								class="flex justify-between {family.id === $activeFamily?.id ? 'active' : ''}"
 							>
-								<span>{family.name}</span>
-								<span class="badge badge-sm">{family.role}</span>
+								<span class="min-w-0 truncate">{family.name}</span>
+								<span class="badge badge-sm">
+									{family.role === 'owner'
+										? m['app_nav.owner']()
+										: family.role === 'admin'
+											? m['app_nav.admin_role']()
+											: m['app_nav.member']()}
+								</span>
 							</button>
 						</li>
 					{/each}
@@ -145,7 +152,7 @@
 								<line x1="12" y1="5" x2="12" y2="19"></line>
 								<line x1="5" y1="12" x2="19" y2="12"></line>
 							</svg>
-							Manage Families
+							{m['app_nav.manage_families']()}
 						</a>
 					</li>
 				</ul>
@@ -163,7 +170,7 @@
 			<div class="dropdown dropdown-end">
 				<button
 					type="button"
-					aria-label="Abrir menú de usuario"
+					aria-label={m['app_nav.user_menu']()}
 					class="btn avatar btn-circle btn-ghost"
 				>
 					<div class="w-10 rounded-full ring ring-primary ring-offset-2 ring-offset-base-100">
@@ -202,7 +209,7 @@
 					{#if isSuperAdmin}
 						<li>
 							<a href={resolve('/admin')} class={isActive('/admin') ? 'active' : ''}
-								>Administración</a
+								>{m['app_nav.admin']()}</a
 							>
 						</li>
 					{/if}
@@ -210,7 +217,7 @@
 					<li>
 						<button onclick={signOut} class="text-error">
 							<span>🚪</span>
-							Sign Out
+							{m['app_nav.sign_out']()}
 						</button>
 					</li>
 				</ul>

@@ -2,6 +2,8 @@
 	import { enhance } from '$app/forms';
 	import { onMount } from 'svelte';
 	import ConfirmationModal from '$lib/components/modals/ConfirmationModal.svelte';
+	import * as m from '$paraglide/messages';
+	import { getLocale } from '$paraglide/runtime';
 
 	interface Props {
 		data: {
@@ -24,7 +26,9 @@
 
 	let { data, form }: Props = $props();
 
-	let showInviteModal = $state(false);
+	let inviteDialog = $state<HTMLDialogElement>();
+	let inviting = $state(false);
+	let inviteError = $state('');
 	let ready = $state(false);
 	onMount(() => {
 		ready = true;
@@ -43,7 +47,7 @@
 
 	function resetInviteForm() {
 		inviteEmail = '';
-		showInviteModal = false;
+		inviteError = '';
 	}
 
 	function openDeleteModal(userId: string, displayName: string) {
@@ -100,17 +104,15 @@
 </script>
 
 <div>
-	<div class="mb-6 flex items-center justify-between gap-2">
+	<div class="mb-6 flex flex-wrap items-center justify-between gap-3">
 		<div>
-			<h2 class="text-2xl font-bold">Family Members</h2>
-			<p class="text-base-content/70">
-				This is your crew <span class="text-base-content">👨‍👩‍👧‍👦</span>
-			</p>
+			<h1 class="text-2xl font-bold">{m['members.title']()}</h1>
+			<p class="text-base-content/70">{m['members.intro']()}</p>
 		</div>
 		{#if canManageMembers}
 			<button
 				disabled={!ready}
-				onclick={() => (showInviteModal = true)}
+				onclick={() => inviteDialog?.showModal()}
 				class="btn gap-2 btn-primary"
 			>
 				<svg
@@ -126,7 +128,7 @@
 					<line x1="12" y1="5" x2="12" y2="19"></line>
 					<line x1="5" y1="12" x2="19" y2="12"></line>
 				</svg>
-				Invite Member
+				{m['members.invite']()}
 			</button>
 		{/if}
 	</div>
@@ -146,7 +148,7 @@
 	<!-- Pending Invitations -->
 	{#if data.invitations.length > 0 && canManageMembers}
 		<div class="mb-8">
-			<h3 class="mb-3 text-lg font-semibold">Pending Invitations</h3>
+			<h2 class="mb-3 text-lg font-semibold">{m['members.pending']()}</h2>
 			<div class="space-y-2">
 				{#each data.invitations as invitation (invitation.id)}
 					<div class="alert alert-info">
@@ -197,17 +199,25 @@
 						<!-- Member Info -->
 						<div class="absolute top-2 right-2 badge {roleColors[member.role]} gap-2 px-2 py-1">
 							<span>{roleIcons[member.role]}</span>
-							{member.role}
+							{member.role === 'owner'
+								? m['app_nav.owner']()
+								: member.role === 'admin'
+									? m['app_nav.admin_role']()
+									: m['app_nav.member']()}
 						</div>
 						{#if member.userId === data.currentUserId}
-							<span class="absolute top-2 left-2 text-sm text-base-content/70">(You)</span>
+							<span class="absolute top-2 left-2 text-sm text-base-content/70"
+								>{m['members.you']()}</span
+							>
 						{/if}
-						<div>
-							<h3 class="text-lg font-semibold">
+						<div class="min-w-0">
+							<h3 class="text-lg font-semibold break-words">
 								{member.displayName}
 							</h3>
 							<p class="text-sm text-base-content/70">
-								Joined {new Date(member.joinedAt).toLocaleDateString()}
+								{m['families.joined']({
+									date: new Date(member.joinedAt).toLocaleDateString(getLocale())
+								})}
 							</p>
 						</div>
 					</div>
@@ -341,56 +351,81 @@
 </div>
 
 <!-- Invite Member Modal -->
-{#if showInviteModal}
-	<div class="modal-open modal">
+{#if canManageMembers}
+	<dialog
+		class="modal"
+		bind:this={inviteDialog}
+		aria-labelledby="invite-member-title"
+		onclose={resetInviteForm}
+	>
 		<div class="modal-box">
-			<h3 class="mb-4 text-lg font-bold">Invite Family Member</h3>
+			<h2 id="invite-member-title" class="mb-4 text-lg font-bold">{m['members.invite']()}</h2>
 
 			<form
 				method="POST"
 				action="?/inviteMember"
-				use:enhance={() => {
+				use:enhance={({ cancel }) => {
+					if (inviting) {
+						cancel();
+						return;
+					}
+					inviting = true;
+					inviteError = '';
 					return async ({ result, update }) => {
-						await update();
-						if (result.type === 'success') {
-							resetInviteForm();
+						try {
+							if (result.type === 'success') {
+								await update();
+								inviteDialog?.close();
+							} else {
+								inviteError =
+									result.type === 'failure' && typeof result.data?.message === 'string'
+										? result.data.message
+										: m['members.invite_error']();
+							}
+						} catch {
+							inviteError = m['members.invite_error']();
+						} finally {
+							inviting = false;
 						}
 					};
 				}}
 			>
 				<div class="form-control">
 					<label class="label" for="email">
-						<span class="label-text">Email Address</span>
+						<span class="label-text">{m['auth.email']()}</span>
 					</label>
 					<input
 						id="email"
 						name="email"
 						type="email"
 						placeholder="user@example.com"
-						class="input-bordered input"
+						class="input w-full"
 						bind:value={inviteEmail}
+						aria-describedby="invite-account-hint"
+						autocomplete="email"
+						maxlength={254}
 						required
 					/>
-					<label class="label mt-2" for="email">
-						<span class="label-text-alt text-sm text-base-content/40"
-							>The user must have an account to receive the invitation</span
-						>
-					</label>
+					<p id="invite-account-hint" class="mt-2 text-sm text-base-content/70">
+						{m['members.invite_hint']()}
+					</p>
 				</div>
+				{#if inviteError}<p class="mt-3 text-sm text-error" role="alert">{inviteError}</p>{/if}
 
 				<div class="modal-action">
-					<button type="button" class="btn btn-ghost" onclick={resetInviteForm}> Cancel </button>
-					<button type="submit" class="btn btn-primary"> Send Invitation </button>
+					<button type="button" class="btn btn-ghost" onclick={() => inviteDialog?.close()}
+						>{m['families.cancel']()}</button
+					>
+					<button type="submit" class="btn btn-primary" disabled={inviting}>
+						{inviting ? m['members.sending']() : m['members.send']()}
+					</button>
 				</div>
 			</form>
 		</div>
-		<button
-			type="button"
-			class="modal-backdrop cursor-default"
-			aria-label="Close invitation dialog"
-			onclick={resetInviteForm}
-		></button>
-	</div>
+		<form method="dialog" class="modal-backdrop">
+			<button aria-label={m['families.cancel']()} tabindex="-1" aria-hidden="true"></button>
+		</form>
+	</dialog>
 {/if}
 
 <!-- Hidden form for member deletion -->

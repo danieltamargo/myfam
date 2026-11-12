@@ -6,6 +6,7 @@ import {
 	requireAal2
 } from '$lib/server/auth/authorization';
 import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
+import * as m from '$paraglide/messages';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase, safeGetSession } }) => {
 	requireModuleAvailable('members');
@@ -85,31 +86,32 @@ const moduleActions: Actions = {
 	},
 	inviteMember: async ({ request, params, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
-		if (!user) return fail(401, { message: 'Unauthorized' });
+		if (!user) return fail(401, { message: m['members.invite_unauthorized']() });
 
 		const { familyId } = params;
 
 		await requireFamilyCapability({ supabase, safeGetSession }, familyId, 'manage_members');
 
 		const formData = await request.formData();
-		const email = formData.get('email') as string;
+		const input = formData.get('email');
+		const email = typeof input === 'string' ? input.trim() : '';
 
-		if (!email || !email.includes('@')) {
-			return fail(400, { message: 'Valid email is required' });
+		if (email.length > 254 || !/^[^@\s]+@[^@\s]+$/.test(email)) {
+			return fail(400, { message: m['members.bad_email']() });
 		}
 
 		const { error } = await supabase.rpc('invite_family_member', {
 			p_family_id: familyId,
-			p_email: email.trim()
+			p_email: email
 		});
 
 		if (error) {
-			console.error('Invitation error:', error);
-			const status = error.code === 'P0002' ? 404 : error.code === '23505' ? 409 : 500;
-			return fail(status, { message: error.message });
+			if (error.code === 'P0002') return fail(404, { message: m['members.invite_missing']() });
+			if (error.code === '23505') return fail(409, { message: m['members.invite_duplicate']() });
+			return fail(error.code === '42501' ? 403 : 400, { message: m['members.invite_error']() });
 		}
 
-		return { success: true, message: 'Invitation sent successfully' };
+		return { success: true, message: m['members.sent']() };
 	},
 
 	updateRole: async ({ request, params, locals: { supabase, safeGetSession } }) => {

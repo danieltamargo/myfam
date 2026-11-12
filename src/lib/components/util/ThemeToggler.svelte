@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { browser } from '$app/environment';
+	import { getLocale } from '$paraglide/runtime';
 
 	let theme = $state<'myfam-light' | 'myfam-dark'>(
 		browser
@@ -19,7 +20,7 @@
 <button
 	onclick={toggleTheme}
 	class="btn fixed right-4 bottom-4 z-50 btn-circle shadow-lg btn-ghost"
-	aria-label="Toggle theme"
+	aria-label={getLocale() === 'es' ? 'Cambiar tema' : 'Toggle theme'}
 >
 	{#if theme === 'myfam-light'}
 		<svg

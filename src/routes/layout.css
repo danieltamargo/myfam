@@ -80,3 +80,18 @@
 @utility badge {
 	@apply h-fit whitespace-nowrap;
 }
+
+.modal-box {
+	max-height: calc(100dvh - 2rem);
+	overscroll-behavior: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.modal,
+	.modal-box,
+	.btn,
+	.tab {
+		animation-duration: 0s;
+		transition-duration: 0s;
+	}
+}

@@ -36,13 +36,13 @@ test('mantiene el registro cerrado y valida el acceso de una cuenta creada por e
 		await context.clearCookies();
 		await page.evaluate(() => localStorage.clear());
 		await page.goto('/login');
-		await page.getByLabel('Email', { exact: true }).fill(email);
-		await page.getByLabel('Password', { exact: true }).fill('Contraseña incorrecta');
-		await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+		await page.getByLabel('Correo electrónico', { exact: true }).fill(email);
+		await page.getByLabel('Contraseña', { exact: true }).fill('Contraseña incorrecta');
+		await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
 		await expect(page.locator('.alert-error')).toBeVisible();
 		await expect(page).toHaveURL(/\/login$/);
-		await page.getByLabel('Password', { exact: true }).fill(password);
-		await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+		await page.getByLabel('Contraseña', { exact: true }).fill(password);
+		await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
 		await expect(page).toHaveURL(/\/dashboard$/);
 		const recovery = await publicAuth.auth.resetPasswordForEmail(email);
 		expect(recovery.error).toBeNull();
@@ -102,17 +102,17 @@ test('establece la contraseña de una invitación y rechaza enlaces incompletos'
 			refresh_token: session.refresh_token
 		});
 		await page.goto(`/reset-password#${fragment}`);
-		await expect(page.getByLabel('New Password', { exact: true })).toBeVisible();
+		await expect(page.getByLabel('Nueva contraseña', { exact: true })).toBeVisible();
 		await expect(page).toHaveURL(/\/reset-password$/);
 		const password = `Invitation-${randomUUID()}aA1!`;
-		await page.getByLabel('New Password', { exact: true }).fill(password);
-		await page.getByLabel('Confirm New Password', { exact: true }).fill(password);
-		await page.getByRole('button', { name: 'Update Password', exact: true }).click();
-		await expect(page.getByText('Password Updated!', { exact: true })).toBeVisible();
+		await page.getByLabel('Nueva contraseña', { exact: true }).fill(password);
+		await page.getByLabel('Repite la nueva contraseña', { exact: true }).fill(password);
+		await page.getByRole('button', { name: 'Guardar contraseña', exact: true }).click();
+		await expect(page.getByText('Contraseña actualizada', { exact: true })).toBeVisible();
 		await page.waitForURL('**/login');
-		await page.getByLabel('Email', { exact: true }).fill(email);
-		await page.getByLabel('Password', { exact: true }).fill(password);
-		await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+		await page.getByLabel('Correo electrónico', { exact: true }).fill(email);
+		await page.getByLabel('Contraseña', { exact: true }).fill(password);
+		await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto('/reset-password#type=invite&access_token=incomplete');
 		await expect(
@@ -120,7 +120,7 @@ test('establece la contraseña de una invitación y rechaza enlaces incompletos'
 				'El enlace de bienvenida ha caducado o no es válido. Solicita uno nuevo al administrador.'
 			)
 		).toBeVisible();
-		await expect(page.getByLabel('New Password', { exact: true })).toHaveCount(0);
+		await expect(page.getByLabel('Nueva contraseña', { exact: true })).toHaveCount(0);
 		await expect(page).toHaveURL(/\/reset-password$/);
 	} finally {
 		if (userId) {

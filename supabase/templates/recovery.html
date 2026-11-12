@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="{{ if eq .Data.locale "en" }}en{{ else }}es{{ end }}">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;background:#f5f3ef;color:#272423;font-family:system-ui,sans-serif">
+  <main style="max-width:520px;margin:24px auto;padding:28px;background:#fff;border-radius:16px">
+    <p style="margin:0;color:#615093;font-weight:700">MyFamily</p>
+    {{ if eq .Data.locale "en" }}
+    <h1 style="font-size:26px">Reset your password</h1>
+    <p>Use this link to choose a new password. If you did not request it, you can ignore this email.</p>
+    <p><a style="display:inline-block;background:#574489;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none" href="{{ .ConfirmationURL }}">Choose a password</a></p>
+    {{ else }}
+    <h1 style="font-size:26px">Restablece tu contraseña</h1>
+    <p>Usa este enlace para elegir una nueva contraseña. Si no lo pediste, puedes ignorar este mensaje.</p>
+    <p><a style="display:inline-block;background:#574489;color:#fff;padding:12px 18px;border-radius:8px;text-decoration:none" href="{{ .ConfirmationURL }}">Elegir una contraseña</a></p>
+    {{ end }}
+  </main>
+</body>
+</html>

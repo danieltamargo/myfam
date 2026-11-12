@@ -55,9 +55,9 @@ function createUserClient(
 async function signIn(page: Page, email: string, password: string): Promise<void> {
 	await page.goto('/login');
 	await page.waitForTimeout(750);
-	await page.getByLabel('Email').fill(email);
-	await page.getByLabel('Password').fill(password);
-	await page.getByRole('button', { name: 'Sign In' }).click();
+	await page.getByLabel('Correo electrónico').fill(email);
+	await page.getByLabel('Contraseña').fill(password);
+	await page.getByRole('button', { name: 'Iniciar sesión' }).click();
 	await page.waitForURL('**/dashboard', { timeout: 15_000 });
 }
 

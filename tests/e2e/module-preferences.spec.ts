@@ -55,9 +55,9 @@ function createUserClient(
 async function signIn(page: Page, email: string, password: string): Promise<void> {
 	await page.goto('/login');
 	await page.waitForTimeout(750);
-	await page.getByLabel('Email').fill(email);
-	await page.getByLabel('Password').fill(password);
-	await page.getByRole('button', { name: 'Sign In' }).click();
+	await page.getByLabel('Correo electrónico').fill(email);
+	await page.getByLabel('Contraseña').fill(password);
+	await page.getByRole('button', { name: 'Iniciar sesión' }).click();
 	await page.waitForURL('**/dashboard', { timeout: 15_000 });
 }
 
@@ -170,7 +170,7 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 
 		const theme = await page.locator('html').getAttribute('data-theme');
 		expect(theme).not.toBeNull();
-		await page.getByRole('button', { name: 'Toggle theme', exact: true }).click();
+		await page.getByRole('button', { name: 'Cambiar tema', exact: true }).click();
 		await expect(page.locator('html')).toHaveAttribute(
 			'data-theme',
 			theme === 'myfam-dark' ? 'myfam-light' : 'myfam-dark'
@@ -232,9 +232,9 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 		await page.context().clearCookies();
 		await signIn(page, ownerEmail, password);
 		await page.goto(`/family/${familyId}/members`);
-		await page.getByRole('button', { name: 'Invite Member', exact: true }).click();
-		await expect(page.getByRole('heading', { name: 'Invite Family Member' })).toBeVisible();
-		await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+		await page.getByRole('button', { name: 'Invitar a un miembro', exact: true }).click();
+		await expect(page.getByRole('dialog', { name: 'Invitar a un miembro' })).toBeVisible();
+		await page.getByRole('button', { name: 'Cancelar', exact: true }).click();
 		const capabilityForm = page.locator('form[action="?/setCapabilities"]').filter({
 			has: page.locator(`input[name="userId"][value="${createdUserIds[1]}"]`)
 		});
@@ -259,7 +259,7 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 		await page.getByRole('button', { name: 'Activar Calendario' }).click();
 		await expect(page.getByRole('status')).toContainText('Calendario está activo.');
 		await page.goto(`/family/${familyId}/members`);
-		await expect(page.getByRole('button', { name: 'Invite Member' })).toHaveCount(0);
+		await expect(page.getByRole('button', { name: 'Invitar a un miembro' })).toHaveCount(0);
 		await expect(page.getByRole('button', { name: 'Guardar permisos' })).toHaveCount(0);
 		expect(
 			(

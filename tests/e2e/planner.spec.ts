@@ -56,9 +56,9 @@ async function signIn(page: Page, email: string, password: string): Promise<void
 	for (let attempt = 0; attempt < 2; attempt += 1) {
 		await page.goto('/login');
 		await page.waitForLoadState('networkidle');
-		await page.getByLabel('Email').fill(email);
-		await page.getByLabel('Password').fill(password);
-		await page.getByRole('button', { name: 'Sign In' }).click();
+		await page.getByLabel('Correo electrónico').fill(email);
+		await page.getByLabel('Contraseña').fill(password);
+		await page.getByRole('button', { name: 'Iniciar sesión' }).click();
 
 		try {
 			await page.waitForURL('**/dashboard', { timeout: 15_000 });

@@ -135,9 +135,9 @@ test('administra cuentas con AAL2 y deniega el acceso normal sin exponer datos p
 			)
 			.toBe(200);
 		await page.goto(`${origin}/login`);
-		await page.getByLabel('Email', { exact: true }).fill(adminEmail);
-		await page.getByLabel('Password', { exact: true }).fill(password);
-		await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+		await page.getByLabel('Correo electrónico', { exact: true }).fill(adminEmail);
+		await page.getByLabel('Contraseña', { exact: true }).fill(password);
+		await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
 		await expect(page).toHaveURL(/\/verify-2fa/);
 		await expect
 			.poll(() => totp(factor.data!.totp.secret) !== enrollmentCode, {

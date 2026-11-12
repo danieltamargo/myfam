@@ -1,3 +1,5 @@
+import * as m from '$paraglide/messages';
+
 export const registrationMessage =
 	'If your account can be created, check your email for a confirmation link. You can also try signing in.';
 export const passwordRecoveryMessage =
@@ -5,7 +7,12 @@ export const passwordRecoveryMessage =
 
 type AuthAction = 'login' | 'register' | 'recovery' | 'reset' | 'mfa';
 
-export function safeAuthError(error: unknown, action: AuthAction): string {
+export function safeAuthError(
+	error: unknown,
+	action: AuthAction,
+	locale: 'es' | 'en' = 'en'
+): string {
+	const options = { locale };
 	const details = typeof error === 'object' && error !== null ? error : {};
 	const code = 'code' in details ? details.code : undefined;
 	const status = 'status' in details ? details.status : undefined;
@@ -16,10 +23,10 @@ export function safeAuthError(error: unknown, action: AuthAction): string {
 		code === 'over_request_rate_limit' ||
 		code === 'over_email_send_rate_limit'
 	) {
-		return 'Too many attempts. Please wait a few minutes and try again.';
+		return m['auth.rate_error']({}, options);
 	}
 	if (name === 'AuthRetryableFetchError') {
-		return 'Unable to connect. Check your connection and try again.';
+		return m['auth.network_error']({}, options);
 	}
 	if (action === 'register' && (code === 'user_already_exists' || code === 'email_exists')) {
 		return registrationMessage;
@@ -28,16 +35,16 @@ export function safeAuthError(error: unknown, action: AuthAction): string {
 		return '';
 	}
 	if (action === 'login') {
-		return 'Unable to sign in. Check your email and password and try again.';
+		return m['auth.login_error']({}, options);
 	}
 	if (
 		action === 'reset' &&
 		(code === 'otp_expired' || code === 'session_not_found' || code === 'refresh_token_not_found')
 	) {
-		return 'Invalid or expired reset link. Please request a new one.';
+		return m['auth.reset_link_error']({}, options);
 	}
 	if (action === 'mfa') {
 		return 'Unable to complete two-factor authentication. Check your current code and try again.';
 	}
-	return 'Unable to complete this request. Please try again.';
+	return m['auth.generic_error']({}, options);
 }

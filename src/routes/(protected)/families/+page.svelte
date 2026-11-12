@@ -1,9 +1,10 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
 	import { activeFamily } from '$lib/stores/familyStore';
 	import { onMount } from 'svelte';
+	import * as m from '$paraglide/messages';
+	import { getLocale } from '$paraglide/runtime';
 
 	interface Props {
 		data: {
@@ -21,9 +22,11 @@
 
 	let { data, form }: Props = $props();
 
-	let showCreateModal = $state(false);
+	let dialog: HTMLDialogElement;
 	let familyName = $state('');
 	let showInvitationSuccess = $state(false);
+	let submitting = $state(false);
+	let createError = $state('');
 
 	onMount(() => {
 		// Check if redirected from accepting an invitation
@@ -48,17 +51,17 @@
 
 	function resetForm() {
 		familyName = '';
-		showCreateModal = false;
+		createError = '';
 	}
 </script>
 
-<div class="container mx-auto max-w-6xl p-8">
-	<div class="mb-8 flex items-center justify-between">
+<div class="container mx-auto max-w-6xl px-4 py-6 sm:p-8">
+	<div class="mb-8 flex flex-wrap items-center justify-between gap-4">
 		<div>
-			<h1 class="text-4xl font-bold">My Families</h1>
-			<p class="mt-2 text-base-content/70">Manage your family groups</p>
+			<h1 class="text-3xl font-bold sm:text-4xl">{m['app_nav.families']()}</h1>
+			<p class="mt-2 text-base-content/70">{m['families.description']()}</p>
 		</div>
-		<button onclick={() => (showCreateModal = true)} class="btn gap-2 btn-primary">
+		<button onclick={() => dialog.showModal()} class="btn gap-2 btn-primary">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-5 w-5"
@@ -72,12 +75,12 @@
 				<line x1="12" y1="5" x2="12" y2="19"></line>
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
-			Create Family
+			{m['families.create']()}
 		</button>
 	</div>
 
 	{#if showInvitationSuccess}
-		<div class="mb-6 alert alert-success">
+		<div class="mb-6 alert alert-success" role="status">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-6 w-6 shrink-0 stroke-current"
@@ -91,12 +94,12 @@
 					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 				/>
 			</svg>
-			<span>Invitation accepted successfully! Welcome to the family.</span>
+			<span>{m['families.invitation_accepted']()}</span>
 		</div>
 	{/if}
 
 	{#if form?.success}
-		<div class="mb-6 alert alert-success">
+		<div class="mb-6 alert alert-success" role="status">
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
 				class="h-6 w-6 shrink-0 stroke-current"
@@ -110,26 +113,7 @@
 					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 				/>
 			</svg>
-			<span>Family created successfully!</span>
-		</div>
-	{/if}
-
-	{#if form?.message}
-		<div class="mb-6 alert alert-error">
-			<svg
-				xmlns="http://www.w3.org/2000/svg"
-				class="h-6 w-6 shrink-0 stroke-current"
-				fill="none"
-				viewBox="0 0 24 24"
-			>
-				<path
-					stroke-linecap="round"
-					stroke-linejoin="round"
-					stroke-width="2"
-					d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-				/>
-			</svg>
-			<span>{form.message}</span>
+			<span>{m['families.created']()}</span>
 		</div>
 	{/if}
 
@@ -160,11 +144,11 @@
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body items-center py-16 text-center">
 				<div class="mb-4 text-6xl">👨‍👩‍👧‍👦</div>
-				<h2 class="mb-2 card-title text-2xl">No families yet</h2>
+				<h2 class="mb-2 card-title text-2xl">{m['families.empty']()}</h2>
 				<p class="mb-6 text-base-content/70">
-					Create your first family to start organizing events, expenses, and more!
+					{m['families.empty_description']()}
 				</p>
-				<button onclick={() => (showCreateModal = true)} class="btn gap-2 btn-primary">
+				<button onclick={() => dialog.showModal()} class="btn gap-2 btn-primary">
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						class="h-5 w-5"
@@ -178,41 +162,52 @@
 						<line x1="12" y1="5" x2="12" y2="19"></line>
 						<line x1="5" y1="12" x2="19" y2="12"></line>
 					</svg>
-					Create Your First Family
+					{m['families.create']()}
 				</button>
 			</div>
 		</div>
 	{:else}
 		<div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-			{#each data.families as family}
-				<div
-					class="card cursor-pointer bg-base-100 shadow-xl transition-all hover:shadow-2xl"
-					onclick={() => openFamily(family)}
-				>
+			{#each data.families as family (family.id)}
+				<div class="card min-w-0 bg-base-100 shadow-sm">
 					<div class="card-body">
-						<div class="mb-2 flex items-start justify-between">
-							<h2 class="card-title text-2xl">{family.name}</h2>
+						<div class="mb-2 flex flex-wrap items-start justify-between gap-2">
+							<h2 class="card-title text-2xl break-words">{family.name}</h2>
 							{#if family.isOwner}
-								<div class="badge badge-primary">Owner</div>
+								<div class="badge badge-primary">{m['app_nav.owner']()}</div>
 							{:else}
-								<div class="badge badge-secondary">{family.role}</div>
+								<div class="badge badge-secondary">
+									{family.role === 'admin' ? m['app_nav.admin_role']() : m['app_nav.member']()}
+								</div>
 							{/if}
 						</div>
 
 						<div class="mt-4 flex flex-col gap-2">
 							<div class="flex items-center gap-2 text-sm">
 								<span class="text-lg">👥</span>
-								<span>{family.memberCount} {family.memberCount === 1 ? 'member' : 'members'}</span>
+								<span
+									>{family.memberCount === 1
+										? m['families.member_one']({ count: family.memberCount })
+										: m['families.member_many']({ count: family.memberCount })}</span
+								>
 							</div>
 							<div class="flex items-center gap-2 text-sm text-base-content/70">
 								<span class="text-lg">📅</span>
-								<span>Joined {new Date(family.joinedAt).toLocaleDateString()}</span>
+								<span
+									>{m['families.joined']({
+										date: new Date(family.joinedAt).toLocaleDateString(getLocale())
+									})}</span
+								>
 							</div>
 						</div>
 
 						<div class="mt-4 card-actions justify-end">
-							<button class="btn gap-2 btn-sm btn-primary">
-								Open Family
+							<button
+								type="button"
+								class="btn gap-2 btn-sm btn-primary"
+								onclick={() => openFamily(family)}
+							>
+								{m['families.open']()}
 								<svg
 									xmlns="http://www.w3.org/2000/svg"
 									class="h-4 w-4"
@@ -237,44 +232,64 @@
 </div>
 
 <!-- Create Family Modal -->
-{#if showCreateModal}
-	<div class="modal-open modal">
-		<div class="modal-box">
-			<h3 class="mb-4 text-lg font-bold">Create New Family</h3>
+<dialog class="modal" bind:this={dialog} aria-labelledby="create-family-title" onclose={resetForm}>
+	<div class="modal-box">
+		<h2 id="create-family-title" class="mb-4 text-lg font-bold">{m['families.create']()}</h2>
 
-			<form
-				method="POST"
-				action="?/createFamily"
-				use:enhance={() => {
-					return async ({ result, update }) => {
+		<form
+			method="POST"
+			action="?/createFamily"
+			use:enhance={({ cancel }) => {
+				if (submitting) {
+					cancel();
+					return;
+				}
+				submitting = true;
+				createError = '';
+				return async ({ result, update }) => {
+					try {
 						await update();
-						if (result.type === 'success') {
-							resetForm();
-						}
-					};
-				}}
-			>
-				<div class="form-control">
-					<label class="label" for="name">
-						<span class="label-text">Family Name</span>
-					</label>
-					<input
-						id="name"
-						name="name"
-						type="text"
-						placeholder="e.g., Smith Family"
-						class="input-bordered input"
-						bind:value={familyName}
-						required
-					/>
-				</div>
+						if (result.type === 'success') dialog.close();
+						else
+							createError =
+								result.type === 'failure' && typeof result.data?.message === 'string'
+									? result.data.message
+									: m['families.error']();
+					} catch {
+						createError = m['families.error']();
+					} finally {
+						submitting = false;
+					}
+				};
+			}}
+		>
+			<div class="form-control">
+				<label class="label" for="name">
+					<span class="label-text">{m['families.name']()}</span>
+				</label>
+				<input
+					id="name"
+					name="name"
+					type="text"
+					class="input w-full"
+					bind:value={familyName}
+					required
+					maxlength={80}
+				/>
+			</div>
 
-				<div class="modal-action">
-					<button type="button" class="btn btn-ghost" onclick={resetForm}> Cancel </button>
-					<button type="submit" class="btn btn-primary"> Create </button>
-				</div>
-			</form>
-		</div>
-		<div class="modal-backdrop" onclick={resetForm}></div>
+			{#if createError}<p class="mt-3 text-sm text-error" role="alert">{createError}</p>{/if}
+			<div class="modal-action">
+				<button type="button" class="btn btn-ghost" onclick={() => dialog.close()}
+					>{m['families.cancel']()}</button
+				>
+				<button type="submit" class="btn btn-primary" disabled={submitting}>
+					{submitting ? m['families.creating']() : m['families.create']()}
+				</button>
+			</div>
+		</form>
 	</div>
-{/if}
+	<form method="dialog" class="modal-backdrop">
+		<button aria-label={m['families.cancel']()}>{m['families.cancel']()}</button>
+	</form>
+</dialog>

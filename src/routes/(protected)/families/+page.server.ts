@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { fail } from '@sveltejs/kit';
+import * as m from '$paraglide/messages';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
 	const { user } = await safeGetSession();
@@ -68,13 +69,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 export const actions: Actions = {
 	createFamily: async ({ request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
-		if (!user) return fail(401, { message: 'Unauthorized' });
+		if (!user) return fail(401, { message: m['families.unauthorized']() });
 
 		const formData = await request.formData();
-		const name = formData.get('name') as string;
+		const name = formData.get('name');
 
-		if (!name || name.trim().length === 0) {
-			return fail(400, { message: 'Family name is required' });
+		if (typeof name !== 'string' || !name.trim() || name.trim().length > 80) {
+			return fail(400, { message: m['families.invalid']() });
 		}
 
 		const { data: familyId, error: familyError } = await supabase.rpc('create_family', {
@@ -83,7 +84,7 @@ export const actions: Actions = {
 
 		if (familyError || !familyId) {
 			return fail(familyError?.code === '22023' ? 400 : 500, {
-				message: familyError?.message || 'Failed to create family'
+				message: familyError?.code === '22023' ? m['families.invalid']() : m['families.error']()
 			});
 		}
 

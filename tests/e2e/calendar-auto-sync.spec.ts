@@ -99,9 +99,9 @@ test('actualiza el calendario en segundo plano y conserva un borrador al recibir
 		});
 		await page.goto('/login');
 		await page.waitForTimeout(750);
-		await page.getByLabel('Email').fill(email);
-		await page.getByLabel('Password').fill(password);
-		await page.getByRole('button', { name: 'Sign In' }).click();
+		await page.getByLabel('Correo electrónico').fill(email);
+		await page.getByLabel('Contraseña').fill(password);
+		await page.getByRole('button', { name: 'Iniciar sesión' }).click();
 		await page.waitForURL('**/dashboard');
 		await page.clock.install();
 		await page.goto(`/family/${familyId}/calendar?view=agenda&date=2026-11-09&event=${eventId}`);

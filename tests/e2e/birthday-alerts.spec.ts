@@ -109,9 +109,9 @@ test('guarda y elimina cumpleaños, abre la wishlist filtrada y aísla familias'
 			).toBeNull();
 
 		await page.goto('/login');
-		await page.getByLabel('Email', { exact: true }).fill(emails[1]);
-		await page.getByLabel('Password', { exact: true }).fill(password);
-		await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+		await page.getByLabel('Correo electrónico', { exact: true }).fill(emails[1]);
+		await page.getByLabel('Contraseña', { exact: true }).fill(password);
+		await page.getByRole('button', { name: 'Iniciar sesión', exact: true }).click();
 		await page.waitForURL('**/dashboard');
 		await page.goto(`/family/${familyId}/settings/birthdays`);
 		await expect(page.getByRole('heading', { name: 'Cumpleaños familiares' })).toBeVisible();

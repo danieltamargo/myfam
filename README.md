@@ -1,5 +1,7 @@
 # MyFamily
 
+Para arrancar el entorno local, cargar las familias de prueba y revisar el correo en Mailpit, consulta la [guía de prueba manual](docs/MVP_LOCAL.md).
+
 MyFamily es una aplicación web para coordinar la vida familiar con espacios compartidos y privados. Está construida con SvelteKit y Supabase y aplica autorización tanto en el servidor como en PostgreSQL mediante Row Level Security (RLS).
 
 ## Estado
