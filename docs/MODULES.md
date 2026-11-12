@@ -12,9 +12,9 @@
 | Módulo | Estado global | Preferencia familiar | Comportamiento |
 | --- | --- | --- | --- |
 | Miembros | `core` | No | Personas, invitaciones y roles |
-| Wishlist | `core` | No | Deseos, recibido, histórico privado y revelado explícito |
-| Gastos | `available` | Sí | Colecciones privadas, análisis, repartos y recurrencias |
-| Calendario | `available` | Sí | Eventos, recurrencias y conexión opcional con Google de sincronización manual |
+| Wishlist | `available` | Sí | Deseos, recibido, histórico privado y revelado explícito |
+| Gastos | `available` | Sí | Colecciones privadas, análisis, repartos, recurrencias y evento opcional por gasto |
+| Calendario | `available` | Sí | Eventos, recurrencias y sincronización automática con Google y Microsoft mientras la vista está abierta |
 | Tareas | `available` | Sí | Responsables, vencimientos y estados |
 | Listas | `available` | Sí | Listas compartidas o privadas |
 | Notas | `available` | Sí | Visibilidad familiar, privada o seleccionada |
@@ -39,7 +39,9 @@ La navegación usa el mismo resultado, pero cada loader, action y endpoint vuelv
 
 ## Administración
 
-Owner, admin y miembros con `can_configure_modules` pueden cambiar módulos opcionales desde `Configuración → Módulos`. Solo owner delega esa capacidad. El resto de miembros ve el estado en modo lectura. Miembros/Wishlist no muestran interruptor; Juegos es opcional y solo utiliza su protocolo nuevo.
+Owner, admin y miembros con `can_configure_modules` pueden cambiar módulos opcionales desde `Configuración → Módulos`. Solo owner delega esa capacidad. El resto de miembros ve el estado en modo lectura. Solo Miembros permanece siempre activo; Wishlist y Juegos son opcionales.
+
+La migración de Wishlist añade una preferencia habilitada a las familias existentes que no la tengan y conserva cualquier preferencia explícita, incluida `false`. Las familias nuevas comienzan con Wishlist habilitada. Desactivarla oculta su navegación y bloquea sus rutas y acciones sin borrar sus datos.
 
 ## Añadir un módulo
 

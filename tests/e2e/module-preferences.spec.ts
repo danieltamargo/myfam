@@ -148,7 +148,17 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 		await expect(
 			page.getByRole('heading', { name: 'Elige qué necesita tu familia' })
 		).toBeVisible();
-		await expect(page.getByText('Siempre activo')).toHaveCount(2);
+		await expect(page.getByText('Siempre activo')).toHaveCount(1);
+		await expect(page.getByRole('tab', { name: 'Wishlist', exact: true })).toBeVisible();
+		await page.getByRole('button', { name: 'Desactivar Wishlist' }).click();
+		await expect(page.getByRole('status')).toContainText('Wishlist está desactivado.');
+		await expect(page.getByRole('tab', { name: 'Wishlist', exact: true })).toHaveCount(0);
+		expect((await page.goto(`/family/${familyId}/wishlist`))?.status()).toBe(404);
+		await page.goto(`/family/${familyId}/settings/modules`);
+		await page.getByRole('button', { name: 'Activar Wishlist' }).click();
+		await expect(page.getByRole('status')).toContainText('Wishlist está activo.');
+		expect((await page.goto(`/family/${familyId}/wishlist`))?.status()).toBe(200);
+		await page.goto(`/family/${familyId}/settings/modules`);
 		await expect(page.getByRole('heading', { name: 'Juegos', exact: true })).toBeVisible();
 		await expect(page.getByRole('tab', { name: 'Calendario' })).toBeVisible();
 

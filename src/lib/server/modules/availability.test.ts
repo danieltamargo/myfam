@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { load as loadCalendar } from '../../../routes/(protected)/family/[familyId]/calendar/+page.server';
 import {
+	load as loadWishlist,
+	actions as wishlistActions
+} from '../../../routes/(protected)/family/[familyId]/wishlist/+page.server';
+import {
 	requireModuleAvailable,
 	resolveModuleAccess,
 	type ModuleEntitlementProvider
@@ -23,25 +27,28 @@ function supabaseWithPreference(enabled: boolean | null) {
 describe('module availability matrix', () => {
 	it('keeps core modules enabled regardless of a stored false preference', () => {
 		expect(
-			resolveModuleAccess('wishlist', [{ module_name: 'wishlist', enabled: false }])
-		).toMatchObject({ enabled: true, reason: 'core' });
-		expect(
 			resolveModuleAccess('members', [{ module_name: 'members', enabled: false }])
 		).toMatchObject({ enabled: true, reason: 'core' });
 	});
 
-	it('requires both family preference and entitlement for available modules', () => {
-		expect(resolveModuleAccess('calendar', [], true)).toMatchObject({
-			enabled: false,
-			reason: 'family-disabled'
-		});
-		expect(
-			resolveModuleAccess('calendar', [{ module_name: 'calendar', enabled: true }], false)
-		).toMatchObject({ enabled: false, reason: 'not-entitled' });
-		expect(
-			resolveModuleAccess('calendar', [{ module_name: 'calendar', enabled: true }], true)
-		).toMatchObject({ enabled: true, reason: 'enabled' });
-	});
+	it.each(['wishlist', 'calendar'] as const)(
+		'requires both family preference and entitlement for %s',
+		(moduleId) => {
+			expect(resolveModuleAccess(moduleId, [], true)).toMatchObject({
+				enabled: false,
+				reason: 'family-disabled'
+			});
+			expect(
+				resolveModuleAccess(moduleId, [{ module_name: moduleId, enabled: true }], false)
+			).toMatchObject({ enabled: false, reason: 'not-entitled' });
+			expect(
+				resolveModuleAccess(moduleId, [{ module_name: moduleId, enabled: true }], true)
+			).toMatchObject({ enabled: true, reason: 'enabled' });
+			expect(
+				resolveModuleAccess(moduleId, [{ module_name: moduleId, enabled: false }], true)
+			).toMatchObject({ enabled: false, reason: 'family-disabled' });
+		}
+	);
 
 	it('requires family opt-in for the secure games module', () => {
 		expect(resolveModuleAccess('games', [{ module_name: 'games', enabled: true }])).toMatchObject({
@@ -78,10 +85,27 @@ describe('module availability matrix', () => {
 			loadCalendar({
 				params: { familyId: 'family-a' },
 				url: new URL('http://localhost/family/family-a/calendar'),
+				depends: vi.fn(),
 				parent: vi.fn(),
 				locals: { supabase, safeGetSession: vi.fn() }
 			} as never)
 		).rejects.toMatchObject({ status: 404 });
 		expect(supabase.from).toHaveBeenCalledTimes(1);
+	});
+
+	it('blocks the direct Wishlist route and every action before loading disabled data', async () => {
+		const supabase = supabaseWithPreference(false);
+		const safeGetSession = vi.fn();
+		const event = {
+			params: { familyId: 'family-a' },
+			url: new URL('http://localhost/family/family-a/wishlist'),
+			locals: { supabase, safeGetSession }
+		};
+		await expect(loadWishlist(event as never)).rejects.toMatchObject({ status: 404 });
+		for (const action of Object.values(wishlistActions)) {
+			await expect(action(event as never)).rejects.toMatchObject({ status: 404 });
+		}
+		expect(safeGetSession).not.toHaveBeenCalled();
+		expect(supabase.from.mock.calls.every(([table]) => table === 'family_modules')).toBe(true);
 	});
 });

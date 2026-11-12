@@ -12,6 +12,7 @@ const service = createCalendarService({
 	eventBody: provider.microsoftEventBody,
 	eventUrl: provider.microsoftEventUrl,
 	listEvents: provider.listMicrosoftEvents,
+	listChanges: provider.listMicrosoftEventChanges,
 	normalizeEvent: provider.normalizeMicrosoftEvent,
 	refreshTokens: provider.refreshMicrosoftTokens,
 	exportEvent: provider.exportMicrosoftEvent
@@ -21,6 +22,7 @@ export const loadMicrosoftCalendarPanel = service.loadPanel;
 export const calendarTokenContext = service.tokenContext;
 export const selectMicrosoftCalendar = service.selectCalendar;
 export const syncMicrosoftCalendar = service.syncCalendar;
+export const autoSyncMicrosoftCalendar = service.autoSyncCalendar;
 export const exportMicrosoftCalendarEvent = service.exportEvent;
 export const resolveMicrosoftCalendarConflict = service.resolveConflict;
 export const disconnectMicrosoftCalendar = service.disconnect;

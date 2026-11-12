@@ -3,7 +3,7 @@ import { resolveModuleAccess } from '$lib/server/modules/availability';
 import type { Database } from '$lib/types/database';
 
 const PLANNER_MODULE_IDS = ['wishlist', 'expenses', 'calendar', 'tasks', 'lists'] as const;
-const PLANNER_PREFERENCE_NAMES = ['expenses', 'calendar', 'tasks', 'lists'] as const;
+const PLANNER_PREFERENCE_NAMES = PLANNER_MODULE_IDS;
 
 type PlannerModuleId = (typeof PLANNER_MODULE_IDS)[number];
 

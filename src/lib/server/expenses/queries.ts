@@ -5,6 +5,10 @@ import type { ExpenseFilterState } from './filters';
 import type { ExpenseCollectionRole } from './schemas';
 import { signExpenseReceiptUrls } from './receipts';
 import { suggestSettlements } from '$lib/expenses/settlements';
+import {
+	loadVisibleCalendarEventOptions,
+	type CalendarEventOption
+} from '$lib/server/calendar/resource-links';
 
 export class ExpenseQueryError extends Error {
 	constructor(message: string) {
@@ -48,6 +52,7 @@ export interface ExpenseMember {
 }
 
 export interface ExpenseRecord extends Tables<'expenses'> {
+	calendarEvent: CalendarEventOption | null;
 	category: Tables<'expense_categories'> | null;
 	creator: ExpenseProfile;
 	payer: ExpenseProfile;
@@ -76,6 +81,7 @@ export interface ExpenseBalance {
 }
 
 export interface ExpensePageData {
+	calendarEvents: CalendarEventOption[];
 	collection: ExpenseCollectionSummary;
 	members: ExpenseMember[];
 	categories: Tables<'expense_categories'>[];
@@ -217,7 +223,8 @@ export function decodeExpenseCursor(cursor: string | null | undefined): {
 
 export async function loadExpenseCollections(
 	supabase: SupabaseClient<Database>,
-	familyId: string
+	familyId: string,
+	userId: string
 ): Promise<{ collections: ExpenseCollectionSummary[]; invitations: ExpenseInvitation[] }> {
 	const [membershipsResult, invitationsResult] = await Promise.all([
 		supabase
@@ -225,7 +232,8 @@ export async function loadExpenseCollections(
 			.select(
 				'role, status, collection:expense_collections(id, family_id, name, description, currency, archived_at)'
 			)
-			.eq('status', 'active'),
+			.eq('status', 'active')
+			.eq('user_id', userId),
 		supabase.rpc('get_expense_collection_invitations')
 	]);
 	assertQuery(membershipsResult.error, 'No se pudieron cargar las colecciones');
@@ -318,7 +326,8 @@ export async function loadExpenseCollectionPage(
 	userId: string,
 	filters: ExpenseFilterState,
 	cursorValue?: string | null,
-	pageSize = 25
+	pageSize = 25,
+	calendarEnabled = false
 ): Promise<ExpensePageData> {
 	const cursor = decodeExpenseCursor(cursorValue);
 	let expenseQuery = supabase
@@ -400,6 +409,28 @@ export async function loadExpenseCollectionPage(
 	const rows = expensesResult.data ?? [];
 	const hasMore = rows.length > pageSize;
 	const pageRows = rows.slice(0, pageSize);
+	const [calendarEvents, calendarLinks] = calendarEnabled
+		? await Promise.all([
+				loadVisibleCalendarEventOptions(supabase, collection.familyId),
+				pageRows.length
+					? supabase
+							.from('expense_event_links')
+							.select('expense_id, event_id')
+							.in(
+								'expense_id',
+								pageRows.map((expense) => expense.id)
+							)
+					: Promise.resolve({ data: [], error: null })
+			])
+		: [[], { data: [], error: null }];
+	assertQuery(calendarLinks.error, 'No se pudieron cargar los eventos de los gastos');
+	const eventsById = new Map(calendarEvents.map((event) => [event.id, event]));
+	const eventsByExpense = new Map(
+		(calendarLinks.data ?? []).map((link) => [
+			link.expense_id,
+			eventsById.get(link.event_id) ?? null
+		])
+	);
 	const profiles = await loadProfiles(
 		supabase,
 		pageRows.flatMap((expense) => [expense.created_by, expense.paid_by])
@@ -428,6 +459,7 @@ export async function loadExpenseCollectionPage(
 	);
 	const expenses: ExpenseRecord[] = pageRows.map((expense) => ({
 		...expense,
+		calendarEvent: eventsByExpense.get(expense.id) ?? null,
 		category: expense.category_id ? (categoriesById.get(expense.category_id) ?? null) : null,
 		creator: profiles.get(expense.created_by) ?? profileFallback(expense.created_by),
 		payer: profiles.get(expense.paid_by) ?? profileFallback(expense.paid_by),
@@ -490,6 +522,7 @@ export async function loadExpenseCollectionPage(
 		members,
 		categories,
 		expenses,
+		calendarEvents,
 		nextCursor: last ? encodeExpenseCursor(last.occurred_on, last.id) : null,
 		canCreate: collection.role !== 'viewer' && !collection.archivedAt,
 		canManage: collection.role === 'owner' || collection.role === 'manager',

@@ -6,6 +6,7 @@ import {
 	googleRequest,
 	GoogleCalendarError,
 	listGoogleEvents,
+	listGoogleEventChanges,
 	listOwnedGoogleCalendars,
 	normalizeGoogleEvent,
 	remoteGoogleEventId,
@@ -120,5 +121,98 @@ describe('Google Calendar provider', () => {
 		expect(remoteGoogleEventId('connection-2', 'event')).not.toBe(
 			remoteGoogleEventId('connection', 'event')
 		);
+	});
+});
+
+describe('Google incremental synchronization', () => {
+	const from = '2026-11-01T00:00:00Z';
+	const to = '2027-11-01T00:00:00Z';
+	const cursor = { kind: 'google' as const, token: 'old', from, to };
+	it('records the token only after every bounded initial page', async () => {
+		const fetcher = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(
+				Response.json({ items: [{ id: 'one', etag: '1' }], nextPageToken: 'page-2' })
+			)
+			.mockResolvedValueOnce(
+				Response.json({ items: [{ id: 'two', etag: '2' }], nextSyncToken: 'next' })
+			);
+		const result = await listGoogleEventChanges('access', 'own', from, to, null, [], fetcher);
+		expect(result).toMatchObject({
+			full: true,
+			cursor: { kind: 'google', token: 'next', from, to }
+		});
+		expect(result.events.map((event) => event.id)).toEqual(['one', 'two']);
+		for (const [url] of fetcher.mock.calls) {
+			const params = new URL(String(url)).searchParams;
+			expect(params.get('timeMin')).toBe(from);
+			expect(params.get('timeMax')).toBe(to);
+		}
+	});
+	it('uses the same token on every delta page without incompatible time filters', async () => {
+		const fetcher = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(Response.json({ items: [], nextPageToken: 'page-2' }))
+			.mockResolvedValueOnce(
+				Response.json({ items: [{ id: 'gone', status: 'cancelled' }], nextSyncToken: 'next' })
+			);
+		const result = await listGoogleEventChanges('access', 'own', from, to, cursor, [], fetcher);
+		expect(result.full).toBe(false);
+		expect(result.events[0].status).toBe('cancelled');
+		for (const [url] of fetcher.mock.calls) {
+			const params = new URL(String(url)).searchParams;
+			expect(params.get('syncToken')).toBe('old');
+			expect(params.has('timeMin')).toBe(false);
+			expect(params.has('timeMax')).toBe(false);
+		}
+	});
+	it('fetches only the newly entered horizon and deduplicates changed events', async () => {
+		const nextTo = '2027-11-02T00:00:00Z';
+		const fetcher = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(
+				Response.json({ items: [{ id: 'one', etag: '1' }], nextSyncToken: 'next' })
+			)
+			.mockResolvedValueOnce(
+				Response.json({ items: [{ id: 'one', etag: '2' }], nextSyncToken: 'boundary' })
+			);
+		const result = await listGoogleEventChanges('access', 'own', from, nextTo, cursor, [], fetcher);
+		expect(result.events).toEqual([{ id: 'one', etag: '2' }]);
+		expect(result.cursor).toMatchObject({ token: 'next', from, to: nextTo });
+		const boundary = new URL(String(fetcher.mock.calls[1][0]));
+		expect(boundary.searchParams.get('timeMin')).toBe(to);
+		expect(boundary.searchParams.get('timeMax')).toBe(nextTo);
+	});
+	it('recovers expired tokens with a bounded full refresh', async () => {
+		const fetcher = vi
+			.fn<typeof fetch>()
+			.mockResolvedValueOnce(new Response(null, { status: 410 }))
+			.mockResolvedValueOnce(Response.json({ items: [], nextSyncToken: 'replacement' }));
+		const result = await listGoogleEventChanges('access', 'own', from, to, cursor, [], fetcher);
+		expect(result).toMatchObject({ full: true, cursor: { token: 'replacement' } });
+		expect(new URL(String(fetcher.mock.calls[1][0])).searchParams.get('timeMin')).toBe(from);
+	});
+	it.each([
+		{ items: [] },
+		{ items: 'invalid', nextSyncToken: 'next' },
+		{ items: [{ id: 'one' }], nextSyncToken: 'next' }
+	])('rejects incomplete or malformed successful responses', async (body) => {
+		await expect(
+			listGoogleEventChanges('access', 'own', from, to, cursor, [], async () => Response.json(body))
+		).rejects.toMatchObject({ status: 502 });
+	});
+	it('does not recover unrelated errors or silently return partial pagination', async () => {
+		const failure = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 503 }));
+		await expect(
+			listGoogleEventChanges('access', 'own', from, to, cursor, [], failure)
+		).rejects.toMatchObject({ status: 503 });
+		expect(failure).toHaveBeenCalledTimes(1);
+		const pages = vi
+			.fn<typeof fetch>()
+			.mockImplementation(async () => Response.json({ items: [], nextPageToken: 'more' }));
+		await expect(
+			listGoogleEventChanges('access', 'own', from, to, cursor, [], pages)
+		).rejects.toMatchObject({ reason: 'limit' });
+		expect(pages).toHaveBeenCalledTimes(20);
 	});
 });

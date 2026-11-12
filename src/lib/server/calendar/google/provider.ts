@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { isValidIanaTimezone, localDateTimeToIso } from '../schemas';
+import type { CalendarSyncBatch, CalendarSyncCursor, CalendarSyncLink } from '../sync-types';
 
 export const GOOGLE_CALENDAR_SCOPES = [
 	'https://www.googleapis.com/auth/calendar.events.owned',
@@ -207,6 +208,89 @@ export async function listGoogleEvents(
 		if (!pageToken) return events;
 	}
 	throw new GoogleCalendarError(413, 'limit');
+}
+
+async function googleChanges(
+	token: string,
+	calendarId: string,
+	from: string,
+	to: string,
+	syncToken: string | null,
+	fetcher: typeof fetch
+) {
+	const events: GoogleEvent[] = [];
+	let pageToken = '';
+	for (let page = 0; page < 20; page++) {
+		const params = new URLSearchParams({
+			maxResults: '250',
+			singleEvents: 'true',
+			showDeleted: 'true',
+			...(syncToken ? { syncToken } : { timeMin: from, timeMax: to }),
+			...(pageToken ? { pageToken } : {})
+		});
+		const result = await googleRequest<{
+			items?: GoogleEvent[];
+			nextPageToken?: string;
+			nextSyncToken?: string;
+		}>(
+			`${googleEventUrl(calendarId)}?${params}`,
+			{ headers: { Authorization: `Bearer ${token}` } },
+			fetcher
+		);
+		if (
+			!result ||
+			(result.items !== undefined && !Array.isArray(result.items)) ||
+			(result.items?.length ?? 0) > 250 ||
+			result.items?.some(
+				(event) =>
+					!event ||
+					typeof event.id !== 'string' ||
+					!event.id ||
+					(event.status !== 'cancelled' && (typeof event.etag !== 'string' || !event.etag))
+			) ||
+			(result.nextPageToken !== undefined &&
+				(typeof result.nextPageToken !== 'string' || !result.nextPageToken))
+		)
+			throw new GoogleCalendarError(502);
+		events.push(...(result.items ?? []));
+		pageToken = result.nextPageToken ?? '';
+		if (!pageToken) {
+			if (typeof result.nextSyncToken !== 'string' || !result.nextSyncToken)
+				throw new GoogleCalendarError(502);
+			return { events, token: result.nextSyncToken };
+		}
+	}
+	throw new GoogleCalendarError(413, 'limit');
+}
+
+export async function listGoogleEventChanges(
+	token: string,
+	calendarId: string,
+	from: string,
+	to: string,
+	cursor: CalendarSyncCursor | null,
+	_links: CalendarSyncLink[],
+	fetcher: typeof fetch = fetch
+): Promise<CalendarSyncBatch> {
+	const previous = cursor?.kind === 'google' ? cursor : null;
+	let result;
+	let full = !previous;
+	try {
+		result = await googleChanges(token, calendarId, from, to, previous?.token ?? null, fetcher);
+	} catch (error) {
+		if (!previous || !(error instanceof GoogleCalendarError) || error.status !== 410) throw error;
+		result = await googleChanges(token, calendarId, from, to, null, fetcher);
+		full = true;
+	}
+	if (!full && previous && Date.parse(to) > Date.parse(previous.to)) {
+		const boundary = await googleChanges(token, calendarId, previous.to, to, null, fetcher);
+		result.events.push(...boundary.events);
+	}
+	return {
+		events: [...new Map(result.events.map((event) => [event.id, event])).values()],
+		cursor: { kind: 'google', token: result.token, from: full ? from : previous!.from, to },
+		full
+	};
 }
 
 export function normalizeGoogleEvent(

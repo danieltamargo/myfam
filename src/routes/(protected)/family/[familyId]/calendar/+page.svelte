@@ -6,17 +6,33 @@
 	import type { CalendarEventRecord, CalendarOccurrence } from '$lib/server/calendar/queries';
 	import GoogleCalendarConnections from '$lib/components/calendar/GoogleCalendarConnections.svelte';
 	import MicrosoftCalendarConnections from '$lib/components/calendar/MicrosoftCalendarConnections.svelte';
+	import CalendarAutoSync from '$lib/components/calendar/CalendarAutoSync.svelte';
 	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 	let allDay = $state(false);
 	let recurrence = $state('none');
 	let visibility = $state('family');
+	let editSnapshot = $state.raw<CalendarEventRecord | null>(null);
+	let editOccurrenceSnapshot = $state.raw<CalendarOccurrence | null>(null);
 
 	const selectedEventId = $derived(page.url.searchParams.get('event'));
-	const selectedEvent = $derived(data.events.find((event) => event.id === selectedEventId) ?? null);
+	const liveSelectedEvent = $derived(
+		data.events.find((event) => event.id === selectedEventId) ?? null
+	);
+	const selectedEvent = $derived(
+		liveSelectedEvent ?? (editSnapshot?.id === selectedEventId ? editSnapshot : null)
+	);
+	const editEvent = $derived(editSnapshot?.id === selectedEventId ? editSnapshot : selectedEvent);
+	$effect(() => {
+		if (editSnapshot && editSnapshot.id !== selectedEventId) {
+			editSnapshot = null;
+			editOccurrenceSnapshot = null;
+		}
+	});
 	const selectedOccurrence = $derived(
-		data.occurrences.find((occurrence) => occurrence.eventId === selectedEventId) ?? null
+		data.occurrences.find((occurrence) => occurrence.eventId === selectedEventId) ??
+			(editSnapshot?.id === selectedEventId ? editOccurrenceSnapshot : null)
 	);
 	function originLabel(eventId: string): string {
 		const origin = data.events.find((event) => event.id === eventId)?.origin;
@@ -171,6 +187,19 @@
 		panel={data.microsoftCalendar}
 		events={data.events}
 		currentUserId={data.currentUserId}
+	/>
+	<CalendarAutoSync
+		familyId={data.family.id}
+		enabled={Boolean(
+			(data.googleCalendar.configured && data.googleCalendar.connection?.calendarId) ||
+			(data.microsoftCalendar.configured && data.microsoftCalendar.connection?.calendarId)
+		)}
+		connectionKey={JSON.stringify([
+			data.googleCalendar.connection?.id,
+			data.googleCalendar.connection?.calendarId,
+			data.microsoftCalendar.connection?.id,
+			data.microsoftCalendar.connection?.calendarId
+		])}
 	/>
 
 	<section
@@ -386,20 +415,41 @@
 					</div>
 				</div>
 
-				{#if selectedEvent.canManage}
+				{#if data.moduleAccess.some((access) => access.moduleId === 'expenses' && access.enabled)}
+					<a
+						class="btn btn-outline btn-sm"
+						href={resolve(`/family/${data.family.id}/expenses?event=${selectedEvent.id}` as '/')}
+						>Añadir gasto de este evento</a
+					>
+				{/if}
+				{#if editSnapshot && !liveSelectedEvent}
+					<p class="alert alert-warning" role="status">
+						El evento ya no aparece en esta vista. Tu borrador se conserva; al guardar se comprobará
+						si el evento sigue disponible y su versión.
+					</p>
+				{/if}
+				{#if selectedEvent.canManage && editEvent}
 					<details class="collapse-arrow collapse border border-base-300">
 						<summary class="collapse-title font-semibold">Editar evento</summary>
 						<div class="collapse-content">
-							<form method="POST" action="?/updateEvent" class="grid gap-4 pt-2 md:grid-cols-6">
-								<input type="hidden" name="event_id" value={selectedEvent.id} />
-								<input type="hidden" name="version" value={selectedEvent.version} />
+							<form
+								method="POST"
+								action="?/updateEvent"
+								class="grid gap-4 pt-2 md:grid-cols-6"
+								oninput={() => {
+									editSnapshot ??= selectedEvent;
+									editOccurrenceSnapshot ??= selectedOccurrence;
+								}}
+							>
+								<input type="hidden" name="event_id" value={editEvent.id} />
+								<input type="hidden" name="version" value={editEvent.version} />
 								<label class="form-control md:col-span-4"
 									><span class="label-text mb-2 font-medium">Título</span><input
 										class="input-bordered input"
 										name="title"
 										maxlength="160"
 										required
-										value={selectedEvent.title}
+										value={editEvent.title}
 									/></label
 								>
 								<label class="form-control md:col-span-2"
@@ -407,29 +457,29 @@
 										class="input-bordered input"
 										name="timezone"
 										required
-										value={selectedEvent.timezone}
+										value={editEvent.timezone}
 									/></label
 								>
 								<label class="form-control md:col-span-3"
 									><span class="label-text mb-2 font-medium">Inicio</span><input
 										class="input-bordered input"
 										name="start_local"
-										type={selectedEvent.all_day ? 'date' : 'datetime-local'}
+										type={editEvent.all_day ? 'date' : 'datetime-local'}
 										required
-										value={selectedEvent.all_day
-											? localDateValue(selectedEvent.starts_at, selectedEvent.timezone)
-											: localInputValue(selectedEvent.starts_at, selectedEvent.timezone)}
+										value={editEvent.all_day
+											? localDateValue(editEvent.starts_at, editEvent.timezone)
+											: localInputValue(editEvent.starts_at, editEvent.timezone)}
 									/></label
 								>
 								<label class="form-control md:col-span-3"
 									><span class="label-text mb-2 font-medium">Final</span><input
 										class="input-bordered input"
 										name="end_local"
-										type={selectedEvent.all_day ? 'date' : 'datetime-local'}
+										type={editEvent.all_day ? 'date' : 'datetime-local'}
 										required
-										value={selectedEvent.all_day
-											? localDateValue(selectedEvent.ends_at, selectedEvent.timezone)
-											: localInputValue(selectedEvent.ends_at, selectedEvent.timezone)}
+										value={editEvent.all_day
+											? localDateValue(editEvent.ends_at, editEvent.timezone)
+											: localInputValue(editEvent.ends_at, editEvent.timezone)}
 									/></label
 								>
 								<label class="label cursor-pointer justify-start gap-3 md:col-span-2"
@@ -438,18 +488,18 @@
 										type="checkbox"
 										name="all_day"
 										value="true"
-										checked={selectedEvent.all_day}
+										checked={editEvent.all_day}
 									/><span class="label-text">Día completo</span></label
 								>
 								<label class="form-control md:col-span-2"
 									><span class="label-text mb-2 font-medium">Visibilidad</span><select
 										class="select-bordered select"
 										name="visibility"
-										><option value="family" selected={selectedEvent.visibility === 'family'}
+										><option value="family" selected={editEvent.visibility === 'family'}
 											>Toda la familia</option
 										><option
 											value="selected_members"
-											selected={selectedEvent.visibility === 'selected_members'}
+											selected={editEvent.visibility === 'selected_members'}
 											>Solo participantes</option
 										></select
 									></label
@@ -461,7 +511,7 @@
 										><option value="">Sin recordatorio</option
 										>{#each [0, 15, 30, 60, 1440, 10080] as minutes (minutes)}<option
 												value={minutes}
-												selected={selectedEvent.reminderMinutes === minutes}
+												selected={editEvent.reminderMinutes === minutes}
 												>{minutes === 0
 													? 'Al empezar'
 													: minutes < 60
@@ -477,22 +527,22 @@
 								<input
 									type="hidden"
 									name="recurrence_frequency"
-									value={selectedEvent.recurrence_frequency}
+									value={editEvent.recurrence_frequency}
 								/>
 								<input
 									type="hidden"
 									name="recurrence_interval"
-									value={selectedEvent.recurrence_interval}
+									value={editEvent.recurrence_interval}
 								/>
-								{#if selectedEvent.recurrence_until}<input
+								{#if editEvent.recurrence_until}<input
 										type="hidden"
 										name="recurrence_until_local"
-										value={localInputValue(selectedEvent.recurrence_until, selectedEvent.timezone)}
+										value={localInputValue(editEvent.recurrence_until, editEvent.timezone)}
 									/>{/if}
-								{#if selectedEvent.recurrence_count}<input
+								{#if editEvent.recurrence_count}<input
 										type="hidden"
 										name="recurrence_count"
-										value={selectedEvent.recurrence_count}
+										value={editEvent.recurrence_count}
 									/>{/if}
 								<label class="form-control md:col-span-3"
 									><span class="label-text mb-2 font-medium">Categoría Wishlist</span><select
@@ -501,7 +551,7 @@
 										><option value="">Sin vínculo</option
 										>{#each data.categories as category (category.id)}<option
 												value={category.id}
-												selected={selectedEvent.wishlist_category_id === category.id}
+												selected={editEvent.wishlist_category_id === category.id}
 												>{category.icon ?? '🎁'} {category.name}</option
 											>{/each}</select
 									></label
@@ -516,7 +566,7 @@
 													type="checkbox"
 													name="participant_ids"
 													value={member.id}
-													checked={selectedEvent.participantIds.includes(member.id)}
+													checked={editEvent.participantIds.includes(member.id)}
 												/><span class="label-text">{member.displayName}</span></label
 											>{/each}
 									</div>
@@ -525,7 +575,7 @@
 									><span class="label-text mb-2 font-medium">Descripción</span><textarea
 										class="textarea-bordered textarea min-h-24"
 										name="description"
-										maxlength="4000">{selectedEvent.description ?? ''}</textarea
+										maxlength="4000">{editEvent.description ?? ''}</textarea
 									></label
 								>
 								<div class="flex flex-wrap justify-between gap-3 md:col-span-6">

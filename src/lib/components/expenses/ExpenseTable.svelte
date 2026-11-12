@@ -1,5 +1,7 @@
 <script lang="ts">
 	import type { Tables } from '$lib/types/database';
+	import { resolve } from '$app/paths';
+	import type { CalendarEventOption } from '$lib/server/calendar/resource-links';
 	import type {
 		ExpenseCollectionSummary,
 		ExpenseMember,
@@ -15,10 +17,21 @@
 		currentUserId: string;
 		canManage: boolean;
 		actionQuery: string;
+		calendarEvents: CalendarEventOption[];
+		calendarEnabled: boolean;
 	}
 
-	let { expenses, categories, members, collection, currentUserId, canManage, actionQuery }: Props =
-		$props();
+	let {
+		expenses,
+		categories,
+		members,
+		collection,
+		currentUserId,
+		canManage,
+		actionQuery,
+		calendarEvents,
+		calendarEnabled
+	}: Props = $props();
 	let editAmounts = $state<Record<string, string>>({});
 	const activeMembers = $derived(members.filter((member) => member.status === 'active'));
 
@@ -34,6 +47,16 @@
 		return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(
 			new Date(year, month - 1, day)
 		);
+	}
+	function calendarHref(event: CalendarEventOption): string {
+		const parts = new Intl.DateTimeFormat('en-CA', {
+			timeZone: event.timezone,
+			year: 'numeric',
+			month: '2-digit',
+			day: '2-digit'
+		}).formatToParts(new Date(event.starts_at));
+		const part = (type: string) => parts.find((value) => value.type === type)?.value ?? '';
+		return `/family/${collection.familyId}/calendar?event=${event.id}&date=${part('year')}-${part('month')}-${part('day')}`;
 	}
 
 	function canEdit(createdBy: string): boolean {
@@ -73,6 +96,11 @@
 						>
 						<td class="min-w-52"
 							><p class="font-medium">{expense.description}</p>
+							{#if expense.calendarEvent}
+								<a class="link text-xs" href={resolve(calendarHref(expense.calendarEvent) as '/')}
+									>{expense.calendarEvent.title}</a
+								>
+							{/if}
 							{#if expense.notes}<p class="max-w-sm truncate text-xs text-base-content/50">
 									{expense.notes}
 								</p>{/if}</td
@@ -219,6 +247,22 @@
 													value="true"
 												/><span class="label-text">Quitar recibo</span></label
 											>
+											{#if calendarEnabled}
+												<label class="form-control md:col-span-3" for={`event-${expense.id}`}>
+													<span class="label-text mb-1">Evento</span>
+													<select
+														id={`event-${expense.id}`}
+														class="select select-sm"
+														name="calendar_event_id"
+													>
+														<option value="keep">Conservar asociación actual</option>
+														<option value="">Sin evento (gasto genérico)</option>
+														{#each calendarEvents as event (event.id)}<option value={event.id}
+																>{event.title}</option
+															>{/each}
+													</select>
+												</label>
+											{/if}
 											<div class="md:col-span-6">
 												<ExpenseSplitEditor
 													{members}

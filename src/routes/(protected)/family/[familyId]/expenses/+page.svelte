@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
+	import { resolve } from '$app/paths';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -47,6 +48,12 @@
 	{#if form?.error}
 		<div class="alert alert-error" role="alert"><span>{form.error}</span></div>
 	{/if}
+	{#if data.selectedCalendarEvent}
+		<p class="alert" role="status">
+			Elige una colección para añadir un gasto de «{data.selectedCalendarEvent.title}». Podrás
+			cambiar el evento o dejar el gasto como genérico.
+		</p>
+	{/if}
 
 	{#if data.invitations.length > 0}
 		<section aria-labelledby="invitaciones-gastos" class="space-y-3">
@@ -64,7 +71,15 @@
 								· {invitation.description}{/if}
 						</p>
 					</div>
-					<form method="POST" action="?/acceptInvitation">
+					<form
+						method="POST"
+						action={`?${data.selectedCalendarEvent ? `event=${data.selectedCalendarEvent.id}&` : ''}/acceptInvitation`}
+					>
+						{#if data.selectedCalendarEvent}<input
+								type="hidden"
+								name="calendar_event_id"
+								value={data.selectedCalendarEvent.id}
+							/>{/if}
 						<input type="hidden" name="collection_id" value={invitation.collectionId} />
 						<button class="btn btn-sm btn-primary" type="submit">Aceptar</button>
 					</form>
@@ -96,7 +111,9 @@
 			<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 				{#each activeCollections as collection (collection.id)}
 					<a
-						href={`/family/${data.family.id}/expenses/${collection.id}`}
+						href={resolve(
+							`/family/${data.family.id}/expenses/${collection.id}${data.selectedCalendarEvent ? `?event=${data.selectedCalendarEvent.id}#nuevo-gasto` : ''}` as '/'
+						)}
 						class="card bg-base-100 transition card-border hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
 					>
 						<div class="card-body gap-4">
@@ -139,7 +156,16 @@
 					Serás su propietario. Después podrás invitar participantes con permisos independientes.
 				</p>
 			</div>
-			<form method="POST" action="?/createCollection" class="grid gap-4 md:grid-cols-6">
+			<form
+				method="POST"
+				action={`?${data.selectedCalendarEvent ? `event=${data.selectedCalendarEvent.id}&` : ''}/createCollection`}
+				class="grid gap-4 md:grid-cols-6"
+			>
+				{#if data.selectedCalendarEvent}<input
+						type="hidden"
+						name="calendar_event_id"
+						value={data.selectedCalendarEvent.id}
+					/>{/if}
 				<label class="form-control md:col-span-3" for="expense-collection-name">
 					<span class="label-text mb-2 font-medium">Nombre</span>
 					<input

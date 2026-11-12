@@ -89,7 +89,8 @@
 		{:else}
 			<p class="mt-3 font-medium">{connection.calendarLabel}</p>
 			<p class="mt-1 text-sm text-base-content/65">
-				Sincronización manual: desde hace 30 días hasta los próximos 365 días. Las series de Google
+				Se sincroniza al abrir el calendario y cada dos minutos mientras esté visible. La primera
+				sincronización abarca desde hace 30 días hasta los próximos 365 días. Las series de Google
 				se muestran como citas individuales, incluidas sus excepciones.
 			</p>
 			{#if connection.lastSyncedAt}<p class="mt-1 text-xs text-base-content/55">

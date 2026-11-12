@@ -19,6 +19,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 			family:families(
 				id,
 				name,
+				alias,
 				created_at,
 				created_by
 			)
@@ -52,7 +53,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 			const family = fm.family as any;
 			return {
 				id: family.id,
-				name: family.name,
+				name: family.alias ?? family.name,
 				role: fm.role,
 				memberCount: countMap[fm.family_id!] || 0,
 				joinedAt: fm.joined_at,

@@ -75,7 +75,7 @@ export const load: PageServerLoad = async ({
 	url,
 	locals: { supabase, safeGetSession }
 }) => {
-	requireModuleAvailable('wishlist');
+	await requireModuleAvailable(supabase, params.familyId, 'wishlist');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
 
@@ -99,7 +99,16 @@ export const load: PageServerLoad = async ({
 };
 
 const moduleActions: Actions = {
-	receiveItem: async ({ request, locals: { supabase, safeGetSession } }) => {
+	revealPurchased: async ({ params, locals: { supabase, safeGetSession } }) => {
+		const { user } = await safeGetSession();
+		if (!user) return fail(401, { error: 'Unauthorized' });
+		const { data, error: revealError } = await supabase.rpc('reveal_purchased_gift_items', {
+			p_family_id: params.familyId
+		});
+		if (revealError) return fail(500, { error: 'No se pudieron mostrar los regalos comprados.' });
+		return { purchasedItemIds: data };
+	},
+	receiveItem: async ({ params, request, locals: { supabase, safeGetSession } }) => {
 		const { user } = await safeGetSession();
 		if (!user) return fail(401, { error: 'Unauthorized' });
 		const formData = await request.formData();
@@ -108,6 +117,14 @@ const moduleActions: Actions = {
 		if (!item.success) return invalidForm(item.errors);
 		if (!version.success) return invalidForm(version.errors);
 		try {
+			const { data: purchasedItemIds, error: revealError } = await supabase.rpc(
+				'reveal_purchased_gift_items',
+				{ p_family_id: params.familyId }
+			);
+			if (revealError) return fail(500, { error: 'No se pudo comprobar la compra.' });
+			if (!purchasedItemIds?.includes(item.data)) {
+				return fail(409, { error: 'El regalo debe tener una compra registrada.' });
+			}
 			await receiveWishlistItem(supabase, item.data, version.data);
 			return { success: true, message: 'Regalo recibido. Puedes verlo en tu histórico.' };
 		} catch (caught) {

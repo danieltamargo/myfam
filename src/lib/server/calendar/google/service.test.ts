@@ -7,6 +7,7 @@ import { encryptCalendarSecret } from './crypto';
 import { GoogleCalendarError, remoteGoogleEventId } from './provider';
 import {
 	calendarTokenContext,
+	autoSyncGoogleCalendar,
 	exportGoogleCalendarEvent,
 	googleSyncDecision,
 	resolveGoogleCalendarConflict,
@@ -17,7 +18,8 @@ const mocked = vi.hoisted(() => ({
 	client: null as unknown as SupabaseClient<Database>,
 	config: {} as GoogleCalendarConfig,
 	events: [] as GoogleEvent[],
-	request: vi.fn()
+	request: vi.fn(),
+	changes: vi.fn()
 }));
 vi.mock('./config', () => ({
 	googleCalendarConfig: () => mocked.config,
@@ -27,6 +29,7 @@ vi.mock('./config', () => ({
 vi.mock('./provider', async (original) => ({
 	...(await original<typeof import('./provider')>()),
 	listGoogleEvents: () => Promise.resolve(mocked.events),
+	listGoogleEventChanges: mocked.changes,
 	googleRequest: mocked.request
 }));
 
@@ -48,7 +51,7 @@ const local = {
 	version: 1
 };
 
-function fakeDatabase(links: object[] = []) {
+function fakeDatabase(links: object[] = [], overrides: Record<string, unknown> = {}) {
 	const writes: unknown[] = [];
 	const context = calendarTokenContext({ id: connectionId, user_id: userId, family_id: familyId });
 	const connection = {
@@ -68,7 +71,8 @@ function fakeDatabase(links: object[] = []) {
 			mocked.config.keys
 		),
 		expires_at: new Date(Date.now() + 3600_000).toISOString(),
-		metadata: { calendars: [], calendarId: 'owned', calendarLabel: 'Personal', timezone: 'UTC' }
+		metadata: { calendars: [], calendarId: 'owned', calendarLabel: 'Personal', timezone: 'UTC' },
+		...overrides
 	};
 	function query(data: unknown) {
 		const result = { data, error: null };
@@ -114,7 +118,7 @@ function fakeDatabase(links: object[] = []) {
 		rpc
 	} as unknown as SupabaseClient<Database>;
 	mocked.client = client;
-	return { client, rpc, writes };
+	return { client, rpc, writes, connection };
 }
 
 beforeEach(() => {
@@ -128,9 +132,107 @@ beforeEach(() => {
 	};
 	mocked.events = [];
 	mocked.request.mockReset();
+	mocked.changes.mockReset().mockImplementation(async () => ({
+		events: mocked.events,
+		cursor: {
+			kind: 'google',
+			token: 'next-cursor',
+			from: '2026-10-01T00:00:00Z',
+			to: '2027-11-01T00:00:00Z'
+		},
+		full: true
+	}));
 });
 
 describe('Google Calendar synchronization orchestration', () => {
+	it('skips recent automatic syncs before acquiring a lease or calling Google', async () => {
+		const { client, rpc } = fakeDatabase([], { sync_attempted_at: new Date().toISOString() });
+		expect(await autoSyncGoogleCalendar(client, familyId, userId, connectionId)).toMatchObject({
+			status: 'recent'
+		});
+		expect(rpc).not.toHaveBeenCalled();
+		expect(mocked.changes).not.toHaveBeenCalled();
+	});
+	it('treats the project lease conflict as busy instead of a provider failure', async () => {
+		const { client, rpc } = fakeDatabase();
+		rpc.mockResolvedValueOnce({ data: null, error: { code: 'PT409' } } as never);
+		expect(await autoSyncGoogleCalendar(client, familyId, userId, connectionId)).toMatchObject({
+			status: 'busy',
+			changed: false
+		});
+		expect(mocked.changes).not.toHaveBeenCalled();
+	});
+	it('applies a remote tombstone even if the provider repeats the previous etag', async () => {
+		const { client, rpc } = fakeDatabase([
+			{
+				remote_event_id: 'deleted',
+				local_event_id: eventId,
+				local_version: 1,
+				remote_etag: 'same',
+				remote_deleted: false,
+				conflict: null
+			}
+		]);
+		mocked.changes.mockResolvedValueOnce({
+			events: [{ id: 'deleted', etag: 'same', status: 'cancelled' }],
+			cursor: { kind: 'google', token: 'next', from: '', to: '' },
+			full: false
+		});
+		expect(await autoSyncGoogleCalendar(client, familyId, userId, connectionId)).toMatchObject({
+			status: 'synced',
+			changed: true
+		});
+		expect(rpc).toHaveBeenCalledWith(
+			'apply_google_calendar_event',
+			expect.objectContaining({ p_event: null, p_etag: 'deleted' })
+		);
+	});
+	it('rechecks the cooldown under the lease to prevent races between tabs', async () => {
+		const { client, rpc, connection } = fakeDatabase([], { sync_attempted_at: null });
+		rpc.mockImplementationOnce(async () => {
+			Object.assign(connection, { sync_attempted_at: new Date().toISOString() });
+			return { data: 'lease', error: null };
+		});
+		expect(await autoSyncGoogleCalendar(client, familyId, userId, connectionId)).toMatchObject({
+			status: 'recent'
+		});
+		expect(mocked.changes).not.toHaveBeenCalled();
+	});
+	it('does not fetch or rewrite unchanged linked events for an empty incremental batch', async () => {
+		const { client, rpc } = fakeDatabase([
+			{
+				remote_event_id: 'unchanged',
+				local_event_id: eventId,
+				local_version: 1,
+				remote_etag: 'same',
+				remote_deleted: false,
+				conflict: null
+			}
+		]);
+		mocked.changes.mockResolvedValueOnce({
+			events: [],
+			cursor: { kind: 'google', token: 'next', from: '', to: '' },
+			full: false
+		});
+		expect(await autoSyncGoogleCalendar(client, familyId, userId, connectionId)).toMatchObject({
+			changed: false
+		});
+		expect(mocked.request).not.toHaveBeenCalled();
+		expect(rpc).not.toHaveBeenCalledWith('apply_google_calendar_event', expect.anything());
+	});
+	it('saves the cursor only after the complete sync and never after a provider failure', async () => {
+		const { client, writes } = fakeDatabase();
+		mocked.changes.mockRejectedValueOnce(new GoogleCalendarError(503));
+		await expect(
+			autoSyncGoogleCalendar(client, familyId, userId, connectionId)
+		).rejects.toMatchObject({ status: 502 });
+		expect(
+			writes.some((write) => write && typeof write === 'object' && 'sync_attempted_at' in write)
+		).toBe(true);
+		expect(
+			writes.some((write) => write && typeof write === 'object' && 'sync_cursor' in write)
+		).toBe(false);
+	});
 	it('imports through the service RPC and never returns tokens or provider attendee data', async () => {
 		const { client, rpc, writes } = fakeDatabase();
 		mocked.events = [

@@ -1,8 +1,8 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, isHttpError } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Actions, PageServerLoad } from './$types';
 import type { Database } from '$lib/types/database';
-import { guardModuleActions } from '$lib/server/modules/availability';
+import { guardModuleActions, requireModuleAvailable } from '$lib/server/modules/availability';
 import { parseExpenseFilters } from '$lib/server/expenses/filters';
 import {
 	createExpense,
@@ -48,6 +48,7 @@ function invalidForm(errors: ExpenseValidationErrors) {
 }
 
 function commandFailure(caught: unknown, fallback: string) {
+	if (isHttpError(caught)) return fail(caught.status, { error: caught.body.message });
 	if (caught instanceof ExpenseCommandError || caught instanceof ExpenseReceiptError)
 		return fail(caught.status, { error: caught.message });
 	console.error(fallback, caught);
@@ -91,7 +92,10 @@ export const load: PageServerLoad = async ({
 }) => {
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');
-	const { expenseCollection } = await parent();
+	const { expenseCollection, moduleAccess } = await parent();
+	const calendarEnabled = moduleAccess.some(
+		(access) => access.moduleId === 'calendar' && access.enabled
+	);
 	let filters;
 	try {
 		filters = parseExpenseFilters(url.searchParams);
@@ -99,14 +103,22 @@ export const load: PageServerLoad = async ({
 		throw error(400, 'El intervalo de gastos no es válido.');
 	}
 	try {
-		return await loadExpenseCollectionPage(
+		const result = await loadExpenseCollectionPage(
 			supabase,
 			expenseCollection,
 			user.id,
 			filters,
-			url.searchParams.get('cursor')
+			url.searchParams.get('cursor'),
+			25,
+			calendarEnabled
 		);
+		const selectedId = url.searchParams.get('event');
+		const selectedCalendarEvent =
+			result.calendarEvents.find((event) => event.id === selectedId) ?? null;
+		if (selectedId && !selectedCalendarEvent) throw error(404, 'Evento no disponible.');
+		return { ...result, selectedCalendarEvent, calendarEnabled };
 	} catch (caught) {
+		if (isHttpError(caught)) throw caught;
 		if (caught instanceof ExpenseQueryError || caught instanceof ExpenseReceiptError)
 			console.error(caught.message);
 		else console.error('Unexpected expense query failure', caught);
@@ -164,6 +176,8 @@ const moduleActions: Actions = {
 		if (!splits.success) return invalidForm(splits.errors);
 		try {
 			await uploadExpenseReceipt(supabase, prepared);
+			if (parsed.data.calendarChange === 'replace')
+				await requireModuleAvailable(supabase, params.familyId, 'calendar');
 			await createExpense(supabase, params.collectionId, parsed.data, splits.data);
 			await finalizeExpenseReceipt(supabase, prepared);
 			return { success: true, message: 'Gasto añadido.' };
@@ -221,6 +235,8 @@ const moduleActions: Actions = {
 		if (!splits.success) return invalidForm(splits.errors);
 		try {
 			await uploadExpenseReceipt(supabase, prepared);
+			if (parsed.data.calendarChange === 'replace')
+				await requireModuleAvailable(supabase, params.familyId, 'calendar');
 			await updateExpense(
 				supabase,
 				params.collectionId,

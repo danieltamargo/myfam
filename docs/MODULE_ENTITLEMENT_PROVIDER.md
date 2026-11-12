@@ -12,7 +12,7 @@ La regla prevista para un módulo opcional es:
 disponible globalmente AND activado por la familia AND permitido por el entitlement
 ```
 
-Los módulos `core` (`members` y `wishlist`) no dependen de una preferencia ni deben convertirse en productos comercializables. Un módulo `disabled`, como `games`, permanece bloqueado aunque exista una fila familiar habilitada o un proveedor futuro lo permita.
+El módulo `core` (`members`) no depende de una preferencia ni debe convertirse en un producto comercializable. Wishlist es opcional y usa la preferencia familiar igual que los demás módulos `available`. Cualquier módulo `disabled` permanece bloqueado aunque exista una fila familiar habilitada o un proveedor futuro lo permita.
 
 ## Contrato actual
 

@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { CalendarSyncBatch, CalendarSyncCursor, CalendarSyncLink } from '../sync-types';
 import {
 	GoogleCalendarError,
 	normalizeGoogleEvent,
@@ -230,6 +231,202 @@ export async function listMicrosoftEvents(
 		)
 	).map(adapted);
 }
+function scopedGraphUrl(value: string, path: string) {
+	const url = new URL(graphUrl(value));
+	if (url.pathname !== path) throw new GoogleCalendarError(502);
+	return value;
+}
+
+interface GraphChange extends GraphEvent {
+	'@removed'?: { reason?: string };
+	changeKey?: string;
+}
+
+async function microsoftChanges(
+	initial: string,
+	path: string,
+	token: string,
+	delta: boolean,
+	fetcher: typeof fetch
+) {
+	const events: GraphChange[] = [];
+	let url = initial;
+	for (let page = 0; page < 20; page++) {
+		const result = await request<{
+			value?: GraphChange[];
+			'@odata.nextLink'?: string;
+			'@odata.deltaLink'?: string;
+		}>(
+			scopedGraphUrl(url, path),
+			{
+				headers: { ...headers(token), Prefer: `${headers(token).Prefer}, odata.maxpagesize=250` }
+			},
+			fetcher
+		);
+		if (
+			!result ||
+			!Array.isArray(result.value) ||
+			result.value.length > 250 ||
+			result.value.some(
+				(event) =>
+					!event ||
+					typeof event.id !== 'string' ||
+					!event.id ||
+					(event.isCancelled !== undefined && typeof event.isCancelled !== 'boolean') ||
+					(event['@removed'] !== undefined &&
+						(!event['@removed'] ||
+							typeof event['@removed'] !== 'object' ||
+							Array.isArray(event['@removed']) ||
+							event['@removed'].reason !== 'deleted')) ||
+					(!event['@removed'] &&
+						!event.isCancelled &&
+						(typeof event['@odata.etag'] !== 'string' || !event['@odata.etag']))
+			)
+		)
+			throw new GoogleCalendarError(502);
+		events.push(...result.value);
+		const next = result['@odata.nextLink'];
+		if (next !== undefined) {
+			if (typeof next !== 'string' || !next || result['@odata.deltaLink'] !== undefined)
+				throw new GoogleCalendarError(502);
+			url = scopedGraphUrl(next, path);
+			continue;
+		}
+		const cursor = result['@odata.deltaLink'];
+		if (delta && (typeof cursor !== 'string' || !cursor)) throw new GoogleCalendarError(502);
+		return { events, url: delta ? scopedGraphUrl(cursor!, path) : null };
+	}
+	throw new GoogleCalendarError(413, 'limit');
+}
+
+export async function listMicrosoftEventChanges(
+	token: string,
+	calendarId: string,
+	from: string,
+	to: string,
+	cursor: CalendarSyncCursor | null,
+	links: CalendarSyncLink[],
+	fetcher: typeof fetch = fetch
+): Promise<CalendarSyncBatch> {
+	const primary = await request<{ id?: string }>(
+		`${GRAPH}/me/calendar?$select=id`,
+		{
+			headers: headers(token)
+		},
+		fetcher
+	);
+	if (!primary || typeof primary.id !== 'string' || !primary.id) throw new GoogleCalendarError(502);
+	const delta = primary.id === calendarId;
+	const path = delta
+		? '/v1.0/me/calendarView/delta'
+		: `/v1.0/me/calendars/${encodeURIComponent(calendarId)}/calendarView`;
+	const previous = delta && cursor?.kind === 'microsoft-delta' ? cursor : null;
+	const reuse =
+		previous && previous.ids !== undefined && previous.from === from && previous.to === to;
+	const params = new URLSearchParams({ startDateTime: from, endDateTime: to });
+	if (!delta) {
+		params.set('$top', '250');
+		params.set('$select', 'id,changeKey,isCancelled');
+	}
+	const initial = `https://graph.microsoft.com${path}?${params}`;
+	let full = delta ? !reuse : cursor?.kind !== 'microsoft-index';
+	let result;
+	try {
+		result = await microsoftChanges(reuse ? previous.url : initial, path, token, delta, fetcher);
+	} catch (error) {
+		if (!reuse || !(error instanceof GoogleCalendarError) || error.status !== 410) throw error;
+		result = await microsoftChanges(initial, path, token, delta, fetcher);
+		full = true;
+	}
+	const known = new Map(links.map((link) => [link.remote_event_id, link]));
+	const changes = new Map(result.events.map((event) => [event.id, event]));
+	const events: GoogleEvent[] = [];
+	const windowIds = new Set(!full && previous ? previous.ids : []);
+	const checked = new Set<string>();
+	const inWindow = (event: GoogleEvent) => {
+		const start =
+			event.start?.dateTime || (event.start?.date ? `${event.start.date}T00:00:00Z` : '');
+		const end = event.end?.dateTime || (event.end?.date ? `${event.end.date}T00:00:00Z` : '');
+		return Date.parse(start) < Date.parse(to) && Date.parse(end) > Date.parse(from);
+	};
+	const detail = async (id: string, compact = false) => {
+		checked.add(id);
+		const link = known.get(id);
+		const etag = link && !link.remote_deleted ? link.remote_etag : null;
+		try {
+			const requestHeaders = { ...headers(token), ...(etag ? { 'If-None-Match': etag } : {}) };
+			if (compact) {
+				const summary = await request<GraphChange>(
+					`${microsoftEventUrl(calendarId, id)}?${new URLSearchParams({ $select: 'id,changeKey,isCancelled' })}`,
+					{ headers: requestHeaders },
+					fetcher
+				);
+				if (
+					!summary ||
+					summary.id !== id ||
+					(summary.isCancelled !== undefined && typeof summary.isCancelled !== 'boolean') ||
+					(!summary.isCancelled &&
+						(typeof summary['@odata.etag'] !== 'string' || !summary['@odata.etag']))
+				)
+					throw new GoogleCalendarError(502);
+				if (summary.isCancelled) {
+					windowIds.delete(id);
+					events.push({ id, etag: summary['@odata.etag'] || etag || '', status: 'cancelled' });
+					return;
+				}
+				if (summary['@odata.etag'] === etag) return;
+			}
+			const event = await microsoftRequest<GoogleEvent>(
+				microsoftEventUrl(calendarId, id),
+				{
+					headers: requestHeaders
+				},
+				fetcher
+			);
+			if (!event || event.id !== id || (event.status !== 'cancelled' && !event.etag))
+				throw new GoogleCalendarError(502);
+			if (delta && event.status !== 'cancelled' && inWindow(event)) windowIds.add(id);
+			else windowIds.delete(id);
+			events.push(event);
+		} catch (error) {
+			if (etag && error instanceof GoogleCalendarError && error.status === 304) return;
+			if (!(error instanceof GoogleCalendarError) || (error.status !== 404 && error.status !== 410))
+				throw error;
+			windowIds.delete(id);
+			events.push({ id, etag: known.get(id)?.remote_etag ?? '', status: 'cancelled' });
+		}
+	};
+	for (const change of changes.values()) {
+		const link = known.get(change.id);
+		if (delta && !change['@removed'] && !change.isCancelled && inWindow(adapted(change)))
+			windowIds.add(change.id);
+		else windowIds.delete(change.id);
+		if (change['@removed']) {
+			if (link && !link.remote_deleted) await detail(change.id);
+		} else if (change.isCancelled) {
+			events.push({
+				id: change.id,
+				etag: change['@odata.etag'] || link?.remote_etag || '',
+				status: 'cancelled'
+			});
+		} else if (!link || link.remote_deleted || link.remote_etag !== change['@odata.etag']) {
+			await detail(change.id);
+		}
+	}
+	for (const link of links) {
+		const id = link.remote_event_id;
+		if (!link.remote_deleted && !checked.has(id) && (delta ? !windowIds.has(id) : !changes.has(id)))
+			await detail(id, true);
+	}
+	return {
+		events,
+		cursor: delta
+			? { kind: 'microsoft-delta', url: result.url!, ids: [...windowIds], from, to }
+			: { kind: 'microsoft-index', ids: [...changes.keys()], from, to },
+		full
+	};
+}
+
 export function normalizeMicrosoftEvent(event: GoogleEvent, timezone: string) {
 	return normalizeGoogleEvent(event, timezone);
 }

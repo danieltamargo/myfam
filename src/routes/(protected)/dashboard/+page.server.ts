@@ -10,7 +10,7 @@ export const load: PageServerLoad = async ({ parent, locals: { supabase, safeGet
 	const { data: invitations, error: invitationError } = await supabase
 		.from('family_invitations')
 		.select(
-			'id, family_id, invited_by, created_at, family:families(id, name), invitedBy:public_profiles!family_invitations_invited_by_fkey(display_name)'
+			'id, family_id, invited_by, created_at, family:families(id, name, alias), invitedBy:public_profiles!family_invitations_invited_by_fkey(display_name)'
 		)
 		.eq('invited_user_id', user.id)
 		.eq('status', 'pending')

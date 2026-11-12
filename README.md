@@ -15,9 +15,9 @@ El [ensayo operativo del 1 de noviembre](docs/LOCAL_OPERATIONS_2026-11-01.md) ce
 | Área | Estado |
 | --- | --- |
 | Miembros, roles e invitaciones | Núcleo, siempre activo |
-| Wishlist, recibido, histórico y coordinación sin spoilers | Núcleo, siempre activo |
+| Wishlist, recibido, histórico y coordinación sin spoilers | Disponible y configurable; habilitado inicialmente |
 | Gastos, repartos, recurrencias y reembolsos registrados | Disponible y configurable |
-| Calendario interno y Google/Outlook | Disponible; conexiones configurables y sincronización manual |
+| Calendario interno y Google/Outlook | Disponible; sincronización en segundo plano al abrir y cada dos minutos, con comprobaciones incrementales |
 | Tareas y listas | Disponible y configurable |
 | Notas, planner, comidas y hábitos | Disponible y configurable |
 | Documentos privados | Disponible y configurable |

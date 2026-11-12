@@ -7,6 +7,7 @@ import { MicrosoftCalendarError } from './provider';
 import { encryptCalendarSecret } from '../google/crypto';
 import {
 	calendarTokenContext,
+	autoSyncMicrosoftCalendar,
 	resolveMicrosoftCalendarConflict,
 	syncMicrosoftCalendar
 } from './service';
@@ -15,7 +16,8 @@ const mocked = vi.hoisted(() => ({
 	client: null as unknown as SupabaseClient<Database>,
 	config: {} as MicrosoftCalendarConfig,
 	events: [] as MicrosoftEvent[],
-	request: vi.fn()
+	request: vi.fn(),
+	changes: vi.fn()
 }));
 vi.mock('./config', () => ({
 	microsoftCalendarConfig: () => mocked.config,
@@ -25,6 +27,7 @@ vi.mock('./config', () => ({
 vi.mock('./provider', async (original) => ({
 	...(await original<typeof import('./provider')>()),
 	listMicrosoftEvents: () => Promise.resolve(mocked.events),
+	listMicrosoftEventChanges: mocked.changes,
 	microsoftRequest: mocked.request
 }));
 
@@ -46,7 +49,7 @@ const local = {
 	version: 1
 };
 
-function fakeDatabase(links: object[] = []) {
+function fakeDatabase(links: object[] = [], overrides: Record<string, unknown> = {}) {
 	const writes: unknown[] = [];
 	const context = calendarTokenContext({ id: connectionId, user_id: userId, family_id: familyId });
 	const connection = {
@@ -66,7 +69,8 @@ function fakeDatabase(links: object[] = []) {
 			mocked.config.keys
 		),
 		expires_at: new Date(Date.now() + 3600_000).toISOString(),
-		metadata: { calendars: [], calendarId: 'owned', calendarLabel: 'Personal', timezone: 'UTC' }
+		metadata: { calendars: [], calendarId: 'owned', calendarLabel: 'Personal', timezone: 'UTC' },
+		...overrides
 	};
 	function query(data: unknown) {
 		const result = { data, error: null };
@@ -126,9 +130,30 @@ beforeEach(() => {
 	};
 	mocked.events = [];
 	mocked.request.mockReset();
+	mocked.changes.mockReset().mockImplementation(async () => ({
+		events: mocked.events,
+		cursor: {
+			kind: 'microsoft-index',
+			ids: mocked.events.map((event) => event.id),
+			from: '2026-10-01T00:00:00Z',
+			to: '2027-11-01T00:00:00Z'
+		},
+		full: true
+	}));
 });
 
 describe('Microsoft Calendar synchronization orchestration', () => {
+	it('skips recent automatic Outlook syncs before calling the provider', async () => {
+		const { client, rpc } = fakeDatabase([], {
+			metadata: { calendars: [], calendarId: 'owned', lastSyncedAt: new Date().toISOString() }
+		});
+		expect(await autoSyncMicrosoftCalendar(client, familyId, userId, connectionId)).toMatchObject({
+			status: 'recent',
+			changed: false
+		});
+		expect(rpc).not.toHaveBeenCalled();
+		expect(mocked.changes).not.toHaveBeenCalled();
+	});
 	it('imports through the service RPC and never returns tokens or provider attendee data', async () => {
 		const { client, rpc, writes } = fakeDatabase();
 		mocked.events = [

@@ -44,7 +44,9 @@
 					<article class="card border border-primary/30 bg-primary/5">
 						<div class="card-body gap-3 p-4">
 							<div>
-								<h3 class="font-semibold">{invitation.family?.name ?? 'Familia'}</h3>
+								<h3 class="font-semibold">
+									{invitation.family?.alias ?? invitation.family?.name ?? 'Familia'}
+								</h3>
 								<p class="text-sm text-base-content/65">
 									Invitación de {invitation.invitedBy?.display_name?.trim() || 'un familiar'}
 								</p>

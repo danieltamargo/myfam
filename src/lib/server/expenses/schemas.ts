@@ -34,6 +34,8 @@ export interface ExpenseInput {
 	occurredOn: string;
 	notes: string | null;
 	receiptPath: string | null;
+	calendarChange: 'keep' | 'replace' | 'clear';
+	calendarEventId: string | null;
 }
 
 export interface ExpenseFormContext {
@@ -229,6 +231,15 @@ export function parseExpenseForm(
 	const categoryId = textValue(formData, 'category_id');
 	const notes = textValue(formData, 'notes');
 	const receiptPath = textValue(formData, 'receipt_path');
+	const calendarSelection = textValue(formData, 'calendar_event_id');
+	const calendarChange =
+		!formData.has('calendar_event_id') || calendarSelection === 'keep'
+			? 'keep'
+			: calendarSelection
+				? 'replace'
+				: 'clear';
+	if (calendarChange === 'replace' && !isUuid(calendarSelection))
+		errors.calendar_event_id = 'El evento seleccionado no es válido.';
 
 	if (!description) errors.description = 'La descripción es obligatoria.';
 	else if (description.length > EXPENSE_LIMITS.description)
@@ -258,7 +269,9 @@ export function parseExpenseForm(
 			amount,
 			occurredOn,
 			notes: notes || null,
-			receiptPath: receiptPath || null
+			receiptPath: receiptPath || null,
+			calendarChange,
+			calendarEventId: calendarChange === 'replace' ? calendarSelection : null
 		}
 	};
 }

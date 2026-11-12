@@ -454,6 +454,16 @@ export type Database = {
           },
         ]
       }
+      expense_event_links: {
+        Row: { expense_id: string; collection_id: string; family_id: string; event_id: string }
+        Insert: { expense_id: string; collection_id: string; family_id: string; event_id: string }
+        Update: { expense_id?: string; collection_id?: string; family_id?: string; event_id?: string }
+        Relationships: [
+          { foreignKeyName: "expense_event_links_collection_id_expense_id_fkey"; columns: ["collection_id", "expense_id"]; isOneToOne: false; referencedRelation: "expenses"; referencedColumns: ["collection_id", "id"] },
+          { foreignKeyName: "expense_event_links_family_id_collection_id_fkey"; columns: ["family_id", "collection_id"]; isOneToOne: false; referencedRelation: "expense_collections"; referencedColumns: ["family_id", "id"] },
+          { foreignKeyName: "expense_event_links_family_id_event_id_fkey"; columns: ["family_id", "event_id"]; isOneToOne: false; referencedRelation: "calendar_events"; referencedColumns: ["family_id", "id"] }
+        ]
+      }
       expense_collection_members: {
         Row: {
           collection_id: string
@@ -811,6 +821,8 @@ export type Database = {
           metadata: Json | null
           provider: string
           refresh_token: string | null
+          sync_cursor: Json | null
+          sync_attempted_at: string | null
           sync_lease_id: string | null
           sync_lease_until: string | null
           updated_at: string | null
@@ -825,6 +837,8 @@ export type Database = {
           metadata?: Json | null
           provider: string
           refresh_token?: string | null
+          sync_cursor?: Json | null
+          sync_attempted_at?: string | null
           sync_lease_id?: string | null
           sync_lease_until?: string | null
           updated_at?: string | null
@@ -839,6 +853,8 @@ export type Database = {
           metadata?: Json | null
           provider?: string
           refresh_token?: string | null
+          sync_cursor?: Json | null
+          sync_attempted_at?: string | null
           sync_lease_id?: string | null
           sync_lease_until?: string | null
           updated_at?: string | null
@@ -870,6 +886,7 @@ export type Database = {
       }
       families: {
         Row: {
+          alias: string | null
           created_at: string | null
           created_by: string | null
           id: string
@@ -877,6 +894,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          alias?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -884,6 +902,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          alias?: string | null
           created_at?: string | null
           created_by?: string | null
           id?: string
@@ -2516,7 +2535,7 @@ export type Database = {
           item_id: string
           notes: string | null
           purchased_at: string | null
-          purchased_by: string
+          purchased_by: string | null
           quantity_purchased: number
         }
         Insert: {
@@ -2524,7 +2543,7 @@ export type Database = {
           item_id: string
           notes?: string | null
           purchased_at?: string | null
-          purchased_by: string
+          purchased_by?: string | null
           quantity_purchased?: number
         }
         Update: {
@@ -2532,7 +2551,7 @@ export type Database = {
           item_id?: string
           notes?: string | null
           purchased_at?: string | null
-          purchased_by?: string
+          purchased_by?: string | null
           quantity_purchased?: number
         }
         Relationships: [
@@ -3566,6 +3585,24 @@ export type Database = {
         }
         Returns: string
       }
+      save_expense_with_event: {
+        Args: {
+          p_collection_id: string
+          p_expense_id: string
+          p_version: number
+          p_category_id: string
+          p_paid_by: string
+          p_description: string
+          p_amount: number
+          p_occurred_on: string
+          p_notes: string
+          p_receipt_path: string
+          p_splits: Json
+          p_calendar_change: string
+          p_calendar_event_id: string
+        }
+        Returns: string
+      }
       create_expense_with_splits: {
         Args: {
           p_amount: number
@@ -3954,12 +3991,16 @@ export type Database = {
         Args: { p_document_id: string }
         Returns: number
       }
+      reveal_purchased_gift_items: {
+        Args: { p_family_id: string }
+        Returns: string[]
+      }
       reveal_received_gift_buyers: {
         Args: { p_item_id: string }
         Returns: {
-          buyer_id: string
+          buyer_id: string | null
           display_name: string
-          purchased_at: string
+          purchased_at: string | null
           quantity: number
         }[]
       }

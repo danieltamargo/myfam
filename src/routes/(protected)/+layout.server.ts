@@ -15,14 +15,14 @@ export const load: LayoutServerLoad = async ({ url, locals: { safeGetSession, su
 	// Get user's families
 	const { data: familyMembers } = await supabase
 		.from('family_members')
-		.select('family_id, role, family:families(id, name)')
+		.select('family_id, role, family:families(id, name, alias)')
 		.eq('user_id', user.id);
 
 	const families = (familyMembers || [])
 		.filter((fm) => fm.family)
 		.map((fm) => ({
 			id: (fm.family as any).id,
-			name: (fm.family as any).name,
+			name: (fm.family as any).alias ?? (fm.family as any).name,
 			role: fm.role
 		}));
 

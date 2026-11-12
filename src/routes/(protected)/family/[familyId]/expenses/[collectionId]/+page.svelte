@@ -26,6 +26,7 @@
 		} else params.set('anchor', data.filters.period.anchor);
 		if (data.filters.paidBy) params.set('paid_by', data.filters.paidBy);
 		if (data.filters.categoryId) params.set('category', data.filters.categoryId);
+		if (data.selectedCalendarEvent) params.set('event', data.selectedCalendarEvent.id);
 		if (cursor) params.set('cursor', cursor);
 		return params.toString();
 	}
@@ -182,6 +183,8 @@
 			collection={data.collection}
 			currentUserId={data.currentUserId}
 			canManage={data.canManage}
+			calendarEvents={data.calendarEvents}
+			calendarEnabled={data.calendarEnabled}
 			actionQuery={filterParams()}
 		/>
 		{#if data.nextCursor}
@@ -271,6 +274,22 @@
 								>{/each}</select
 						></label
 					>
+					{#if data.calendarEnabled}
+						<label class="form-control md:col-span-3" for="expense-event">
+							<span class="label-text mb-2 font-medium">Evento</span>
+							<select
+								id="expense-event"
+								class="select w-full"
+								name="calendar_event_id"
+								value={data.selectedCalendarEvent?.id ?? ''}
+							>
+								<option value="">Sin evento (gasto genérico)</option>
+								{#each data.calendarEvents as event (event.id)}<option value={event.id}
+										>{event.title}</option
+									>{/each}
+							</select>
+						</label>
+					{/if}
 					<label class="form-control md:col-span-2" for="expense-receipt"
 						><span class="label-text mb-2 font-medium"
 							>Recibo <span class="font-normal opacity-50">(opcional)</span></span

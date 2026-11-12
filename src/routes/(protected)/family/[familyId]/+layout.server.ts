@@ -16,7 +16,7 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 	// Verify user is a member of this family
 	const { data: membership } = await supabase
 		.from('family_members')
-		.select('role, family:families(id, name, created_at, created_by)')
+		.select('role, family:families(id, name, alias, created_at, created_by)')
 		.eq('family_id', familyId)
 		.eq('user_id', user.id)
 		.single();
@@ -42,7 +42,8 @@ export const load: LayoutServerLoad = async ({ params, locals: { supabase, safeG
 	return {
 		family: {
 			id: family.id,
-			name: family.name,
+			name: family.alias ?? family.name,
+			officialName: family.name,
 			createdAt: family.created_at,
 			createdBy: family.created_by
 		},

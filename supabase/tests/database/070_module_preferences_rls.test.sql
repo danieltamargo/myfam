@@ -62,11 +62,33 @@ select is(
 	true,
 	'owner preference is persisted'
 );
-select throws_ok(
+select lives_ok(
 	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'wishlist', false)$$,
+	'owner can disable optional Wishlist through the preference API'
+);
+select is(
+	(select enabled from public.family_modules where family_id = '70000000-1000-4000-8000-000000000001' and module_name = 'wishlist'),
+	false,
+	'Wishlist opt-out is persisted'
+);
+select lives_ok(
+	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'wishlist', true)$$,
+	'owner can enable Wishlist again'
+);
+select lives_ok(
+	$$update public.family_modules set enabled = false where family_id = '70000000-1000-4000-8000-000000000001' and module_name = 'wishlist'$$,
+	'RLS permits direct Wishlist preference updates by an owner'
+);
+select is(
+	(select enabled from public.family_modules where family_id = '70000000-1000-4000-8000-000000000001' and module_name = 'wishlist'),
+	false,
+	'direct Wishlist update changed its preference'
+);
+select throws_ok(
+	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'members', false)$$,
 	'22023',
 	'Only available modules have a family preference',
-	'core Wishlist cannot be disabled through the preference API'
+	'core Members cannot be disabled through the preference API'
 );
 select lives_ok(
 	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'games', true)$$,
@@ -79,7 +101,7 @@ select throws_ok(
 	'owner cannot mutate another family preference'
 );
 select throws_ok(
-	$$insert into public.family_modules (family_id, module_name, enabled) values ('70000000-1000-4000-8000-000000000001', 'wishlist', false)$$,
+	$$insert into public.family_modules (family_id, module_name, enabled) values ('70000000-1000-4000-8000-000000000001', 'members', false)$$,
 	'42501',
 	'new row violates row-level security policy for table "family_modules"',
 	'RLS also blocks direct writes for core modules'
@@ -102,6 +124,23 @@ select is(
 	false,
 	'admin preference is persisted'
 );
+select lives_ok(
+	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'wishlist', true)$$,
+	'admin can enable optional Wishlist'
+);
+select lives_ok(
+	$$delete from public.family_modules where family_id = '70000000-1000-4000-8000-000000000001' and module_name = 'wishlist'$$,
+	'admin can delete the optional Wishlist preference directly'
+);
+select is(
+	(select count(*)::integer from public.family_modules where family_id = '70000000-1000-4000-8000-000000000001' and module_name = 'wishlist'),
+	0,
+	'RLS allowed deletion of the Wishlist preference'
+);
+select lives_ok(
+	$$insert into public.family_modules (family_id, module_name, enabled) values ('70000000-1000-4000-8000-000000000001', 'wishlist', true)$$,
+	'admin can insert a Wishlist preference directly'
+);
 
 reset role;
 select set_config(
@@ -111,12 +150,18 @@ select set_config(
 );
 set local role authenticated;
 
-select is((select count(*)::integer from public.family_modules), 3, 'member can read family preferences');
+select is((select count(*)::integer from public.family_modules), 4, 'member can read family preferences');
 select throws_ok(
 	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'notes', false)$$,
 	'42501',
 	'Owner or admin role required',
 	'member cannot change a family preference'
+);
+select throws_ok(
+	$$select public.set_family_module_preference('70000000-1000-4000-8000-000000000001', 'wishlist', false)$$,
+	'42501',
+	'Owner or admin role required',
+	'member without the configuration capability cannot disable Wishlist'
 );
 
 reset role;
@@ -132,6 +177,20 @@ select is(
 	(select count(*)::integer from public.family_modules where family_id = '70000000-1000-4000-8000-000000000001'),
 	0,
 	'preferences never leak across families'
+);
+
+reset role;
+select set_config(
+	'request.jwt.claims',
+	'{"sub":"70000000-0000-4000-8000-000000000001","role":"authenticated","aal":"aal1"}',
+	true
+);
+set local role authenticated;
+select set_config('tests.modules_new_family', public.create_family('Optional Wishlist defaults')::text, true);
+select is(
+	(select enabled from public.family_modules where family_id = current_setting('tests.modules_new_family')::uuid and module_name = 'wishlist'),
+	true,
+	'new families start with Wishlist enabled'
 );
 
 reset role;

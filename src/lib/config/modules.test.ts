@@ -11,14 +11,18 @@ describe('project test baseline', () => {
 		expect(cn('px-2', optionalClass ? 'hidden' : undefined, 'px-4')).toBe('px-4');
 	});
 
-	it('keeps Wishlist core and exposes optional Expenses and secure Games', () => {
-		expect(MODULE_CATALOG.wishlist.availability).toBe('core');
+	it('keeps Members core and exposes optional Wishlist, Expenses and secure Games', () => {
+		expect(MODULE_CATALOG.wishlist.availability).toBe('available');
+		expect(getNavigationModules([]).some((module) => module.id === 'wishlist')).toBe(false);
+		expect(getNavigationModules(['wishlist']).some((module) => module.id === 'wishlist')).toBe(
+			true
+		);
 		expect(MODULE_CATALOG.expenses.availability).toBe('available');
 		expect(getNavigationModules([]).some((module) => module.id === 'expenses')).toBe(false);
 		expect(getNavigationModules(['expenses']).some((module) => module.id === 'expenses')).toBe(
 			true
 		);
-		expect(getNavigationModules([]).map((module) => module.id)).toEqual(['members', 'wishlist']);
+		expect(getNavigationModules([]).map((module) => module.id)).toEqual(['members']);
 		expect(MODULE_CATALOG.games.availability).toBe('available');
 		expect(getNavigationModules(['games']).some((module) => module.id === 'games')).toBe(true);
 		expect(requireModuleAvailable('games')).toMatchObject({ id: 'games' });
@@ -26,6 +30,7 @@ describe('project test baseline', () => {
 
 	it('publishes every completed organizational module as available', () => {
 		for (const moduleId of [
+			'wishlist',
 			'expenses',
 			'calendar',
 			'tasks',

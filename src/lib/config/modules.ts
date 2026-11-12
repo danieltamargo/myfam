@@ -42,8 +42,8 @@ export const MODULE_CATALOG: Record<ModuleId, ModuleDefinition> = {
 		label: 'Wishlist',
 		description: 'Regalos, reservas y coordinación sin spoilers.',
 		icon: '🎁',
-		availability: 'core',
-		familyCanDisable: false,
+		availability: 'available',
+		familyCanDisable: true,
 		href: (familyId) => familyHref(familyId, 'wishlist')
 	},
 	expenses: {

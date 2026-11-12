@@ -19,6 +19,7 @@
 		getCoordination,
 		getReservationNames,
 		getComments,
+		canReceive,
 		onClose
 	}: {
 		item: WishlistItemDto | null;
@@ -28,6 +29,7 @@
 		getCoordination: (item: WishlistItemDto) => WishlistCoordinationSummary;
 		getReservationNames: (itemId: string) => string[];
 		getComments: (itemId: string) => WishlistCommentDto[];
+		canReceive: boolean;
 		onClose: () => void;
 	} = $props();
 	let receiving = $state(false);
@@ -115,7 +117,8 @@
 						<div class="mt-4 alert alert-info" role="status">
 							<span>La coordinación está oculta para proteger la sorpresa.</span>
 						</div>
-						{#if item.status === 'active'}
+						{#if canReceive && item.status === 'active'}
+							<span class="mt-4 badge badge-success">Comprado</span>
 							<form
 								method="POST"
 								action="?/receiveItem"

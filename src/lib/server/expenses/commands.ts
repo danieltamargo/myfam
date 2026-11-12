@@ -219,7 +219,11 @@ export async function createExpense(
 	input: ExpenseInput,
 	splits: ExpenseSplitValue[]
 ): Promise<string> {
-	const { data, error } = await supabase.rpc('create_expense_with_splits', {
+	const { data, error } = await supabase.rpc('save_expense_with_event', {
+		p_expense_id: nullableRpcText(null),
+		p_version: null as unknown as number,
+		p_calendar_change: input.calendarChange,
+		p_calendar_event_id: nullableRpcText(input.calendarEventId),
 		p_collection_id: collectionId,
 		p_category_id: nullableRpcText(input.categoryId),
 		p_paid_by: input.paidBy,
@@ -242,7 +246,9 @@ export async function updateExpense(
 	input: ExpenseInput,
 	splits: ExpenseSplitValue[]
 ): Promise<void> {
-	const { error } = await supabase.rpc('update_expense_with_splits', {
+	const { error } = await supabase.rpc('save_expense_with_event', {
+		p_calendar_change: input.calendarChange,
+		p_calendar_event_id: nullableRpcText(input.calendarEventId),
 		p_collection_id: collectionId,
 		p_expense_id: expenseId,
 		p_version: version,

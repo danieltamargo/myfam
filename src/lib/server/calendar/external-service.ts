@@ -6,6 +6,13 @@ import { GoogleCalendarError, remoteGoogleEventId } from './google/provider';
 import type { GoogleCalendarOption, GoogleEvent, GoogleEventInput } from './google/provider';
 import type * as GoogleProvider from './google/provider';
 import type * as GoogleConfig from './google/config';
+import type { CalendarSyncBatch, CalendarSyncCursor, CalendarSyncLink } from './sync-types';
+
+export interface CalendarSyncOutcome {
+	status: 'synced' | 'recent' | 'busy';
+	conflicts: number;
+	changed: boolean;
+}
 
 interface CalendarAdapter {
 	provider: 'google_calendar' | 'microsoft_calendar';
@@ -18,6 +25,14 @@ interface CalendarAdapter {
 	eventBody: typeof GoogleProvider.googleEventBody;
 	eventUrl: typeof GoogleProvider.googleEventUrl;
 	listEvents: typeof GoogleProvider.listGoogleEvents;
+	listChanges: (
+		token: string,
+		calendarId: string,
+		from: string,
+		to: string,
+		cursor: CalendarSyncCursor | null,
+		links: CalendarSyncLink[]
+	) => Promise<CalendarSyncBatch>;
 	normalizeEvent: typeof GoogleProvider.normalizeGoogleEvent;
 	refreshTokens: typeof GoogleProvider.refreshGoogleTokens;
 	revokeToken?: typeof GoogleProvider.revokeGoogleToken;
@@ -38,7 +53,6 @@ export function createCalendarService(adapter: CalendarAdapter) {
 		request: googleRequest,
 		eventBody: googleEventBody,
 		eventUrl: googleEventUrl,
-		listEvents: listGoogleEvents,
 		normalizeEvent: normalizeGoogleEvent,
 		refreshTokens: refreshGoogleTokens,
 		revokeToken: revokeGoogleToken
@@ -76,6 +90,31 @@ export function createCalendarService(adapter: CalendarAdapter) {
 			timezone: typeof raw.timezone === 'string' ? raw.timezone : undefined,
 			lastSyncedAt: typeof raw.lastSyncedAt === 'string' ? raw.lastSyncedAt : undefined
 		};
+	}
+
+	function recentlySynced(connection: Connection): boolean {
+		const latest = Math.max(
+			Date.parse(connection.sync_attempted_at ?? '') || 0,
+			Date.parse(metadata(connection).lastSyncedAt ?? '') || 0
+		);
+		return latest > Date.now() - 60_000;
+	}
+
+	function syncCursor(connection: Connection): CalendarSyncCursor | null {
+		const cursor = connection.sync_cursor;
+		if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor)) return null;
+		if (typeof cursor.from !== 'string' || typeof cursor.to !== 'string') return null;
+		if (cursor.kind === 'google' && typeof cursor.token === 'string')
+			return cursor as unknown as CalendarSyncCursor;
+		if (cursor.kind === 'microsoft-delta' && typeof cursor.url === 'string')
+			return cursor as unknown as CalendarSyncCursor;
+		if (
+			cursor.kind === 'microsoft-index' &&
+			Array.isArray(cursor.ids) &&
+			cursor.ids.every((id) => typeof id === 'string')
+		)
+			return cursor as unknown as CalendarSyncCursor;
+		return null;
 	}
 
 	async function requireCalendarMembership(supabase: Client, familyId: string, userId: string) {
@@ -182,16 +221,19 @@ export function createCalendarService(adapter: CalendarAdapter) {
 			lease: string,
 			accessToken: string
 		) => Promise<T>,
-		refreshAccess = true
+		refreshAccess = true,
+		cooldown?: { recent: T; busy: T }
 	): Promise<T> {
 		await requireCalendarMembership(supabase, familyId, userId);
 		const config = googleCalendarConfig();
 		const service = calendarServiceClient(config);
 		let connection = await ownedConnection(service, familyId, userId, connectionId);
+		if (cooldown && recentlySynced(connection)) return cooldown.recent;
 		const { data: lease, error } = await service.rpc('acquire_google_calendar_sync', {
 			p_connection_id: connectionId,
 			p_user_id: userId
 		});
+		if (cooldown && error && ['40001', 'PT409'].includes(error.code)) return cooldown.busy;
 		if (error || !lease)
 			throw new CalendarCommandError(
 				409,
@@ -201,6 +243,19 @@ export function createCalendarService(adapter: CalendarAdapter) {
 			connection = await ownedConnection(service, familyId, userId, connectionId);
 			if (connection.sync_lease_id !== lease)
 				throw new CalendarCommandError(409, 'La conexión cambió mientras se sincronizaba.');
+			if (cooldown && recentlySynced(connection)) return cooldown.recent;
+			if (cooldown) {
+				const attempted = await service
+					.from('external_connections')
+					.update({ sync_attempted_at: new Date().toISOString() })
+					.eq('id', connectionId)
+					.eq('sync_lease_id', lease)
+					.select('id')
+					.maybeSingle();
+				assertDatabase(attempted.error);
+				if (!attempted.data)
+					throw new CalendarCommandError(409, 'La conexión cambió mientras se sincronizaba.');
+			}
 			const context = calendarTokenContext(connection);
 			if (!connection.access_token || !connection.refresh_token)
 				throw new CalendarCommandError(401, `Vuelve a conectar ${adapter.label}.`);
@@ -406,13 +461,14 @@ export function createCalendarService(adapter: CalendarAdapter) {
 		return 'unchanged';
 	}
 
-	async function syncGoogleCalendar(
+	async function runCalendarSync(
 		supabase: Client,
 		familyId: string,
 		userId: string,
-		connectionId: string
-	) {
-		return withConnection(
+		connectionId: string,
+		automatic = false
+	): Promise<CalendarSyncOutcome> {
+		return withConnection<CalendarSyncOutcome>(
 			supabase,
 			familyId,
 			userId,
@@ -421,23 +477,37 @@ export function createCalendarService(adapter: CalendarAdapter) {
 				const selected = metadata(connection);
 				if (!selected.calendarId)
 					throw new CalendarCommandError(400, 'Selecciona primero un calendario propio.');
-				const now = Date.now();
-				const remotes = await listGoogleEvents(
+				const links = await loadLinks(service, connectionId);
+				const today = new Date();
+				today.setUTCHours(0, 0, 0, 0);
+				const from = new Date(today.getTime() - 30 * 86400_000).toISOString();
+				const to = new Date(today.getTime() + 366 * 86400_000).toISOString();
+				const batch = await adapter.listChanges(
 					token,
 					selected.calendarId,
-					new Date(now - 30 * 86400_000).toISOString(),
-					new Date(now + 365 * 86400_000).toISOString()
+					from,
+					to,
+					syncCursor(connection),
+					links
 				);
+				const remotes = batch.events;
 				const byRemoteId = new Map(remotes.map((event) => [event.id, event]));
-				const links = await loadLinks(service, connectionId);
 				const linkedIds = new Set(links.map((link) => link.remote_event_id));
 				let conflicts = 0;
+				let changed = false;
 				for (const link of links) {
-					await renewSyncLease(service, connectionId, lease);
 					try {
 						if (link.remote_deleted) continue;
 						const local = await localEvent(service, connection, link.local_event_id);
 						let remote = byRemoteId.get(link.remote_event_id);
+						if ((!batch.full || adapter.provider === 'microsoft_calendar') && !remote) {
+							if (link.conflict) {
+								conflicts++;
+								continue;
+							}
+							if (local && local.version === link.local_version) continue;
+						}
+						await renewSyncLease(service, connectionId, lease);
 						if (!remote) {
 							try {
 								remote = await googleRequest<GoogleEvent>(
@@ -450,6 +520,7 @@ export function createCalendarService(adapter: CalendarAdapter) {
 								else throw caught;
 							}
 						}
+						if (remote.status === 'cancelled') remote = { ...remote, etag: 'deleted' };
 						if (!local) {
 							if (
 								remote.status !== 'cancelled' &&
@@ -461,6 +532,7 @@ export function createCalendarService(adapter: CalendarAdapter) {
 									.eq('connection_id', connectionId)
 									.eq('remote_event_id', link.remote_event_id);
 								assertDatabase(result.error);
+								changed = true;
 								conflicts++;
 								continue;
 							}
@@ -478,6 +550,7 @@ export function createCalendarService(adapter: CalendarAdapter) {
 								.eq('connection_id', connectionId)
 								.eq('remote_event_id', link.remote_event_id);
 							assertDatabase(result.error);
+							changed = true;
 							continue;
 						}
 						const decision = googleSyncDecision(
@@ -493,6 +566,7 @@ export function createCalendarService(adapter: CalendarAdapter) {
 								.eq('connection_id', connectionId)
 								.eq('remote_event_id', remote.id);
 							assertDatabase(result.error);
+							changed = true;
 							conflicts++;
 							continue;
 						}
@@ -510,7 +584,9 @@ export function createCalendarService(adapter: CalendarAdapter) {
 								}
 							);
 							await recordExport(service, connection, lease, local, updated);
+							changed = true;
 						} else if (decision === 'pull') {
+							changed = true;
 							if (
 								(await pullEvent(
 									service,
@@ -531,11 +607,14 @@ export function createCalendarService(adapter: CalendarAdapter) {
 							.eq('connection_id', connectionId)
 							.eq('remote_event_id', link.remote_event_id);
 						assertDatabase(saved.error);
+						changed = true;
 						conflicts++;
 					}
 				}
 				for (const remote of remotes)
 					if (!linkedIds.has(remote.id) && remote.status !== 'cancelled') {
+						const eventWindow = normalizeGoogleEvent(remote, selected.timezone || 'UTC');
+						if (!eventWindow || eventWindow.endsAt <= from || eventWindow.startsAt >= to) continue;
 						await renewSyncLease(service, connectionId, lease);
 						const originalId = remote.extendedProperties?.private?.myfamilyEventId;
 						const original =
@@ -556,18 +635,41 @@ export function createCalendarService(adapter: CalendarAdapter) {
 								);
 							await recordExport(service, connection, lease, original, remote, exportedVersion);
 						} else await pullEvent(service, connection, lease, remote, selected.timezone || 'UTC');
+						changed = true;
 					}
 				const result = await service
 					.from('external_connections')
 					.update({
-						metadata: { ...selected, lastSyncedAt: new Date().toISOString() } as unknown as Json
+						metadata: { ...selected, lastSyncedAt: new Date().toISOString() } as unknown as Json,
+						sync_cursor: batch.cursor as unknown as Json
 					})
 					.eq('id', connectionId)
-					.eq('sync_lease_id', lease);
+					.eq('sync_lease_id', lease)
+					.gt('sync_lease_until', new Date().toISOString())
+					.select('id')
+					.maybeSingle();
 				assertDatabase(result.error);
-				return conflicts;
-			}
+				if (!result.data)
+					throw new CalendarCommandError(409, 'La sincronización caducó. Vuelve a intentarlo.');
+				return { status: 'synced', conflicts, changed };
+			},
+			true,
+			automatic
+				? {
+						recent: { status: 'recent', conflicts: 0, changed: false },
+						busy: { status: 'busy', conflicts: 0, changed: false }
+					}
+				: undefined
 		);
+	}
+
+	async function syncGoogleCalendar(
+		supabase: Client,
+		familyId: string,
+		userId: string,
+		connectionId: string
+	) {
+		return (await runCalendarSync(supabase, familyId, userId, connectionId)).conflicts;
 	}
 
 	async function exportGoogleCalendarEvent(
@@ -818,6 +920,8 @@ export function createCalendarService(adapter: CalendarAdapter) {
 		tokenContext: calendarTokenContext,
 		selectCalendar: selectGoogleCalendar,
 		syncCalendar: syncGoogleCalendar,
+		autoSyncCalendar: (supabase: Client, familyId: string, userId: string, connectionId: string) =>
+			runCalendarSync(supabase, familyId, userId, connectionId, true),
 		exportEvent: exportGoogleCalendarEvent,
 		resolveConflict: resolveGoogleCalendarConflict,
 		disconnect: disconnectGoogleCalendar,

@@ -31,6 +31,36 @@
 	let historyBusy = $state(false);
 	let historyError = $state('');
 	let refreshError = $state('');
+	let spoilersDialog: HTMLDialogElement;
+	let spoilersFamilyId = $state<string | null>(null);
+	let purchasedItemIds = $state<string[]>([]);
+	let spoilersBusy = $state(false);
+	let spoilersError = $state('');
+	const spoilersVisible = $derived(spoilersFamilyId === page.params.familyId);
+	const purchasedGifts = $derived(
+		data.items.filter((item) => item.status === 'active' && purchasedItemIds.includes(item.id))
+	);
+
+	const enhancePurchased: SubmitFunction = ({ cancel }) => {
+		if (spoilersBusy) {
+			cancel();
+			return;
+		}
+		const familyId = page.params.familyId;
+		spoilersBusy = true;
+		spoilersError = '';
+		return async ({ result }) => {
+			spoilersBusy = false;
+			if (familyId !== page.params.familyId || !spoilersDialog?.open) return;
+			if (result.type === 'success' && Array.isArray(result.data?.purchasedItemIds)) {
+				purchasedItemIds = result.data.purchasedItemIds;
+				spoilersFamilyId = familyId ?? null;
+				spoilersDialog.close();
+			} else {
+				spoilersError = 'No se pudieron mostrar los regalos comprados. Inténtalo de nuevo.';
+			}
+		};
+	};
 	const enhanceReveal: SubmitFunction = ({ cancel }) => {
 		if (historyBusy) {
 			cancel();
@@ -407,7 +437,7 @@
 						<div class="mt-3" role="status">
 							{#each form.revealedBuyers as buyer (buyer.buyer_id)}
 								<p>
-									Comprado por {buyer.display_name} · {buyer.quantity}
+									{buyer.buyer_id ? `Comprado por ${buyer.display_name}` : buyer.display_name} · {buyer.quantity}
 									{buyer.quantity === 1 ? 'unidad' : 'unidades'}
 								</p>
 							{:else}<p>No consta quién compró este regalo.</p>{/each}
@@ -459,6 +489,50 @@
 			/>
 
 			<main class="min-w-0 flex-1" aria-label="Regalos de la wishlist">
+				{#if spoilersVisible}
+					<section
+						class="mb-4 rounded-box border border-success/40 p-4"
+						aria-label="Mis regalos comprados"
+					>
+						<div class="flex flex-wrap items-center justify-between gap-2">
+							<h2 class="font-semibold">Mis regalos comprados</h2>
+							<button
+								type="button"
+								class="btn btn-ghost btn-sm"
+								onclick={() => {
+									spoilersFamilyId = null;
+									purchasedItemIds = [];
+								}}>Ocultar spoilers</button
+							>
+						</div>
+						{#if purchasedGifts.length}
+							<ul class="mt-2 space-y-2">
+								{#each purchasedGifts as gift (gift.id)}
+									<li>
+										<button
+											type="button"
+											class="btn h-auto min-h-8 whitespace-normal btn-outline btn-sm btn-success"
+											onclick={() => openDetailModal(gift)}
+										>
+											{gift.name}
+										</button>
+									</li>
+								{/each}
+							</ul>
+						{:else}
+							<p class="text-sm">Todavía no hay compras registradas en tus regalos activos.</p>
+						{/if}
+					</section>
+				{:else}
+					<button
+						type="button"
+						class="btn mb-4 btn-outline btn-sm"
+						onclick={() => {
+							spoilersError = '';
+							spoilersDialog.showModal();
+						}}>Mostrar mis regalos comprados</button
+					>
+				{/if}
 				<p class="mb-3 text-sm text-base-content/60" aria-live="polite">
 					{filteredItems.length}
 					{filteredItems.length === 1 ? 'regalo' : 'regalos'}
@@ -493,6 +567,25 @@
 	{/if}
 </div>
 
+<dialog class="modal" bind:this={spoilersDialog} aria-labelledby="wishlist-spoilers-title">
+	<div class="modal-box">
+		<h2 id="wishlist-spoilers-title" class="text-lg font-bold">¿Mostrar regalos comprados?</h2>
+		<p class="mt-2">
+			Verás cuáles de tus regalos se han comprado. Así podrás marcarlos como recibidos cuando te
+			lleguen. La identidad de quien los compró seguirá oculta.
+		</p>
+		{#if spoilersError}<p class="mt-2 text-error" role="alert">{spoilersError}</p>{/if}
+		<div class="modal-action">
+			<button type="button" class="btn" onclick={() => spoilersDialog.close()}>Cancelar</button>
+			<form method="POST" action="?/revealPurchased" use:enhance={enhancePurchased}>
+				<button type="submit" class="btn btn-primary" disabled={spoilersBusy}
+					>Mostrar regalos comprados</button
+				>
+			</form>
+		</div>
+	</div>
+</dialog>
+
 {#if detailItem}
 	<WishlistItemModal
 		item={detailItem}
@@ -502,6 +595,7 @@
 		{getCoordination}
 		{getReservationNames}
 		{getComments}
+		canReceive={spoilersVisible && purchasedItemIds.includes(detailItem.id)}
 		onClose={closeDetailModal}
 	/>
 {/if}

@@ -1,6 +1,6 @@
 # Conexión con Google Calendar
 
-La aplicación permite conectar un calendario propio de Google sin cambiar la identidad ni la sesión de Supabase. La sincronización se solicita con «Sincronizar ahora»; no hay sincronización automática, cron ni webhooks en este hito.
+La aplicación permite conectar un calendario propio de Google sin cambiar la identidad ni la sesión de Supabase. Al abrir Calendario comprueba cambios en segundo plano y repite cada dos minutos mientras la pestaña esté visible. Al volver a ella comprueba de nuevo; el servidor impide repetir la sincronización automática de una conexión antes de un minuto desde el último intento o sincronización correcta. «Sincronizar ahora» sigue disponible. No hay cron ni webhooks: al abandonar la vista se detiene el sondeo.
 
 ## Configuración del servidor
 
@@ -32,7 +32,7 @@ Para rotar, añadir una nueva clave al objeto `CALENDAR_TOKEN_KEYS`, cambiar `CA
 
 - OAuth usa nonce de un solo uso en base de datos y cookie HttpOnly cifrada, PKCE y comprobación de la misma identidad de MyFamily al volver del proveedor.
 - El usuario elige un calendario que Google identifica como propio. Para cambiar de cuenta o calendario, desconecta y vuelve a conectar.
-- La importación manual consulta desde 30 días antes hasta 365 días después del momento actual, con paginación y series expandidas en instancias. Se conservan fechas de todo el día, zonas horarias y excepciones/cancelaciones del proveedor. Los vínculos ya existentes se comprueban aunque su fecha salga de esa ventana.
+- La primera carga consulta desde 30 días antes hasta el final de los próximos 365 días, con paginación y series expandidas en instancias. Las siguientes usan `syncToken` y descargan altas, cambios y cancelaciones. Al avanzar el día se consulta además el tramo que entra en la ventana. Un `410` del proveedor reinicia la carga sin borrar previamente los datos locales ni los conflictos. Se conservan fechas de todo el día y zonas horarias.
 - Los eventos nuevos importados son privados, visibles únicamente para quien conectó la cuenta. No se copian invitados ni respuestas de asistentes. No se publica libre/ocupado a la familia. El usuario puede compartir una copia mediante la audiencia del evento de MyFamily.
 - La exportación requiere elegir un evento interno propio, sin recurrencia. Crea una copia privada en Google y usa una identidad remota determinista para que un reintento no duplique el evento.
 - Se comparan la versión local y el ETag remoto. Si ambas partes cambian, se conserva el conflicto sin sobrescribirlas. El usuario puede elegir Google o MyFamily. Las escrituras remotas usan `If-Match`; un cambio adicional del proveedor produce conflicto. [Versiones y modificaciones condicionales](https://developers.google.com/workspace/calendar/api/guides/version-resources).
@@ -47,7 +47,7 @@ No se ha conectado ninguna cuenta real ni se ha probado un consentimiento real p
 
 La sincronización manual tiene un máximo de 20 páginas de 250 eventos por consulta del proveedor; si lo supera, falla explícitamente. No se exportan reglas de recurrencia ni se gestionan invitados, conferencias, adjuntos o calendarios compartidos ajenos. Las descripciones se conservan como texto y se presentan escapadas por Svelte.
 
-Una siguiente fase puede añadir sincronización periódica con una cola de trabajo, cursores incrementales `syncToken` con recuperación de `410`, y webhooks renovables. Esa fase debe conservar la misma protección de audiencia y las decisiones de conflicto. [Sincronización incremental de Google](https://developers.google.com/workspace/calendar/api/guides/sync).
+Los cursores se guardan en columnas accesibles solo por el servicio y únicamente después de completar la sincronización. Las conexiones se bloquean con una concesión temporal para evitar solapamientos entre pestañas. La vista se actualiza solo cuando hay cambios o conflictos y conserva los borradores de edición con su versión original. Una siguiente fase puede añadir webhooks renovables para actualizar sin tener la vista abierta. [Sincronización incremental de Google](https://developers.google.com/workspace/calendar/api/guides/sync).
 
 ## Verificación local
 

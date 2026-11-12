@@ -54,10 +54,12 @@ function commandFailure(caught: unknown, fallback: string) {
 
 export const load: PageServerLoad = async ({
 	parent,
+	depends,
 	url,
 	params,
 	locals: { supabase, safeGetSession }
 }) => {
+	depends('app:calendar');
 	await requireModuleAvailable(supabase, params.familyId, 'calendar');
 	const { user } = await safeGetSession();
 	if (!user) throw error(401, 'Unauthorized');

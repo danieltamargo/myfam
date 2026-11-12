@@ -22,6 +22,35 @@ function validExpenseForm(): FormData {
 }
 
 describe('expense validation', () => {
+	it.each([
+		[undefined, 'keep', null],
+		['keep', 'keep', null],
+		['', 'clear', null],
+		[collectionId, 'replace', collectionId]
+	] as const)(
+		'parses event selection %s without clearing hidden associations',
+		(selection, change, eventId) => {
+			const form = validExpenseForm();
+			if (selection !== undefined) form.set('calendar_event_id', selection);
+			expect(
+				parseExpenseForm(form, { collectionId, activeUserIds: new Set([payerId]) })
+			).toMatchObject({
+				success: true,
+				data: { calendarChange: change, calendarEventId: eventId }
+			});
+		}
+	);
+
+	it('rejects a malformed event identifier', () => {
+		const form = validExpenseForm();
+		form.set('calendar_event_id', 'not-an-event');
+		expect(
+			parseExpenseForm(form, { collectionId, activeUserIds: new Set([payerId]) })
+		).toMatchObject({
+			success: false,
+			errors: { calendar_event_id: expect.any(String) }
+		});
+	});
 	it('normalizes a lowercase ISO currency code', () => {
 		const form = new FormData();
 		form.set('name', 'Casa');

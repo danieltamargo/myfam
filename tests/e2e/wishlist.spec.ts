@@ -321,6 +321,17 @@ test('coordina cantidades sin spoilers entre owner, comprador y usuario externo'
 		expect(serializedExport).not.toContain('image_url');
 
 		await ownerPage.goto(`/family/${familyId}/wishlist?item=${item!.id}`);
+		await expect(ownerDialog.getByRole('button', { name: 'Marcar como recibido' })).toHaveCount(0);
+		await ownerPage.keyboard.press('Escape');
+		const showPurchased = ownerPage.getByRole('button', { name: 'Mostrar mis regalos comprados' });
+		await showPurchased.click();
+		const spoilersDialog = ownerPage.getByRole('dialog', { name: '¿Mostrar regalos comprados?' });
+		await spoilersDialog.getByRole('button', { name: 'Cancelar' }).click();
+		const purchased = ownerPage.getByRole('region', { name: 'Mis regalos comprados' });
+		await expect(purchased).toHaveCount(0);
+		await showPurchased.click();
+		await spoilersDialog.getByRole('button', { name: 'Mostrar regalos comprados' }).click();
+		await purchased.getByRole('button', { name: itemName, exact: true }).click();
 		await ownerDialog.getByRole('button', { name: 'Marcar como recibido' }).click();
 		await expect(ownerDialog).not.toBeVisible();
 		await expect(ownerPage.getByTestId(`wishlist-item-${item!.id}`)).toHaveCount(0);

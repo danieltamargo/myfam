@@ -179,6 +179,34 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 			}
 		]);
 		expect(seedError).toBeNull();
+		const eventId = randomUUID();
+		const otherEventId = randomUUID();
+		expect(
+			(
+				await admin.from('calendar_events').insert([
+					{
+						id: eventId,
+						family_id: familyId!,
+						created_by: ownerId,
+						title: `Viaje ${suffix}`,
+						starts_at: '2026-08-20T10:00:00Z',
+						ends_at: '2026-08-20T11:00:00Z',
+						timezone: 'UTC',
+						visibility: 'family'
+					},
+					{
+						id: otherEventId,
+						family_id: familyId!,
+						created_by: ownerId,
+						title: `Celebración ${suffix}`,
+						starts_at: '2026-08-21T10:00:00Z',
+						ends_at: '2026-08-21T11:00:00Z',
+						timezone: 'UTC',
+						visibility: 'family'
+					}
+				])
+			).error
+		).toBeNull();
 
 		expect(
 			(
@@ -234,7 +262,14 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 		expect(viewerReadError).toBeNull();
 		expect(viewerExpenses).toHaveLength(3);
 
-		await page.goto(`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15`);
+		await page.goto(`/family/${familyId}/calendar?event=${eventId}&view=agenda&date=2026-08-15`);
+		await page.getByRole('link', { name: 'Añadir gasto de este evento' }).click();
+		await expect(page.getByText('Elige una colección', { exact: false })).toBeVisible();
+		await page.locator(`a[href*="/expenses/${collectionId}"]`).click();
+		await expect(page.getByRole('combobox', { name: 'Evento', exact: true })).toHaveValue(eventId);
+		await page.goto(
+			`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15&event=${eventId}`
+		);
 		const createForm = page.locator('#nuevo-gasto');
 		await createForm.getByLabel('Concepto').fill(`Farmacia ${suffix}`);
 		await createForm.getByLabel('Importe', { exact: true }).fill('18.25');
@@ -258,6 +293,42 @@ test('filtra, exporta y gestiona repartos respetando el acceso de solo lectura',
 		expect(createdSplitsError).toBeNull();
 		expect(createdSplits).toHaveLength(2);
 		expect(createdSplits!.reduce((sum, split) => sum + Number(split.amount), 0)).toBe(18.25);
+		await expect(page.getByRole('link', { name: `Viaje ${suffix}`, exact: true })).toBeVisible();
+		await page.getByRole('link', { name: `Viaje ${suffix}`, exact: true }).click();
+		await expect(page).toHaveURL(/date=2026-08-20/);
+		await expect(page.getByRole('link', { name: 'Añadir gasto de este evento' })).toBeVisible();
+		await page.goto(`/family/${familyId}/expenses/${collectionId}?period=month&anchor=2026-08-15`);
+		expect(
+			(
+				await owner
+					.from('expense_event_links')
+					.select('event_id')
+					.eq('expense_id', createdExpense!.id)
+					.single()
+			).data?.event_id
+		).toBe(eventId);
+		const editForm = page
+			.locator(`form[action*="/updateExpense"]`)
+			.filter({ has: page.locator(`input[name="expense_id"][value="${createdExpense!.id}"]`) });
+		await page.locator(`#editar-${createdExpense!.id} summary`).click();
+		await editForm
+			.getByRole('combobox', { name: 'Evento', exact: true })
+			.selectOption(otherEventId);
+		await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+		await expect(
+			page.getByRole('link', { name: `Celebración ${suffix}`, exact: true })
+		).toBeVisible();
+		await page.locator(`#editar-${createdExpense!.id} summary`).click();
+		await editForm.getByRole('combobox', { name: 'Evento', exact: true }).selectOption('');
+		await editForm.getByRole('button', { name: 'Guardar cambios' }).click();
+		expect(
+			(
+				await owner
+					.from('expense_event_links')
+					.select('event_id')
+					.eq('expense_id', createdExpense!.id)
+			).data
+		).toEqual([]);
 
 		await page.getByText('Programar un gasto recurrente', { exact: true }).press('Enter');
 		const recurringForm = page.locator('form[action*="/createRecurring"]');
