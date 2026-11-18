@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -251,13 +253,15 @@
 	}
 
 	function quantityLabel(quantity: number, unit: string | null): string {
-		const formatted = Number(quantity).toLocaleString('es-ES', { maximumFractionDigits: 3 });
+		const formatted = Number(quantity).toLocaleString(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+			maximumFractionDigits: 3
+		});
 		return `${formatted}${unit ? ` ${unit}` : ''}`;
 	}
 </script>
 
 <svelte:head>
-	<title>Listas compartidas · MyFamily</title>
+	<title>{messages['ui.shared_lists_myfamily']()}</title>
 	<meta
 		name="description"
 		content="Listas de compra familiares privadas o compartidas en tiempo real."
@@ -267,10 +271,12 @@
 <div class="mx-auto w-full max-w-6xl space-y-5 px-3 py-4 sm:px-5 sm:py-7">
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
-			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">En tiempo real</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Listas compartidas</h1>
+			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">
+				{messages['screen.shared_updates']()}
+			</p>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{messages['ui.shared_lists']()}</h1>
 			<p class="mt-2 text-sm text-base-content/65 sm:text-base">
-				Marca mientras compras; la familia ve el cambio al momento.
+				{messages['screen.tick_off_items_as_you_shop_and_your_family_will_see_the_updates_righ']()}
 			</p>
 		</div>
 		<button
@@ -291,7 +297,7 @@
 
 	{#if showCreate}
 		<section class="rounded-box border border-base-300 bg-base-100 p-4 sm:p-6">
-			<h2 class="text-xl font-bold">Crear lista</h2>
+			<h2 class="text-xl font-bold">{messages['ui.create_list']()}</h2>
 			<form
 				method="POST"
 				action="?/createList"
@@ -299,7 +305,7 @@
 				class="mt-4 grid gap-4 md:grid-cols-2"
 			>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Tipo de lista</span>
+					<span class="label-text mb-1 font-medium">{messages['ui.list_type']()}</span>
 					<select
 						class="select w-full"
 						name="list_type"
@@ -311,14 +317,16 @@
 					</select>
 				</label>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Empezar desde tu histórico</span>
+					<span class="label-text mb-1 font-medium"
+						>{messages['screen.start_from_a_previous_list']()}</span
+					>
 					<select
 						class="select w-full"
 						name="source_list_id"
 						bind:value={sourceListId}
 						onchange={selectTemplate}
 					>
-						<option value="">Lista vacía</option>
+						<option value="">{messages['ui.empty_list']()}</option>
 						{#each templates as template (template.id)}
 							<option value={template.id}
 								>{template.title} · {template.items.length} elementos · {visibilityLabel(
@@ -335,7 +343,7 @@
 					</p>
 				{/if}
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Nombre</span>
+					<span class="label-text mb-1 font-medium">{messages['ui.name']()}</span>
 					<input
 						class="input w-full"
 						name="title"
@@ -345,28 +353,28 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Visibilidad</span>
+					<span class="label-text mb-1 font-medium">{messages['ui.visibility']()}</span>
 					<select class="select w-full" name="visibility" bind:value={visibility}>
 						<option
 							value="family"
 							disabled={selectedTemplate && selectedTemplate.visibility !== 'family'}
-							>Toda la familia</option
+							>{messages['ui.whole_family']()}</option
 						>
 						<option
 							value="selected_members"
 							disabled={selectedTemplate && selectedTemplate.visibility !== 'family'}
-							>Personas seleccionadas</option
+							>{messages['ui.selected_people']()}</option
 						>
-						<option value="private">Solo yo</option>
+						<option value="private">{messages['ui.only_me']()}</option>
 					</select>
 				</label>
 				<label class="form-control md:col-span-2">
-					<span class="label-text mb-1 font-medium">Descripción</span>
+					<span class="label-text mb-1 font-medium">{messages['ui.description']()}</span>
 					<textarea class="textarea min-h-20 w-full" name="description" maxlength="2000"></textarea>
 				</label>
 				{#if visibility === 'selected_members'}
 					<fieldset class="md:col-span-2">
-						<legend class="mb-2 font-medium">Quién puede colaborar</legend>
+						<legend class="mb-2 font-medium">{messages['screen.who_can_contribute']()}</legend>
 						<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 							{#each data.members as member (member.id)}
 								<label
@@ -386,7 +394,7 @@
 				{/if}
 				<div class="md:col-span-2 md:flex md:justify-end">
 					<button class="btn w-full btn-primary md:w-auto" type="submit" disabled={busy}
-						>Crear lista</button
+						>{messages['ui.create_list']()}</button
 					>
 				</div>
 			</form>
@@ -396,7 +404,7 @@
 	<div class="grid gap-5 lg:grid-cols-[18rem_minmax(0,1fr)]">
 		<aside class="min-w-0">
 			<div class="mb-2 flex items-center justify-between">
-				<h2 class="font-bold">Tus listas</h2>
+				<h2 class="font-bold">{messages['ui.your_lists']()}</h2>
 				<span class="text-xs text-base-content/45">{data.lists.length}</span>
 			</div>
 			<div class="flex snap-x gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
@@ -431,7 +439,7 @@
 					<div
 						class="rounded-box border border-dashed border-base-300 p-5 text-sm text-base-content/55"
 					>
-						Crea tu primera lista para empezar.
+						{messages['screen.create_your_first_list_to_get_started']()}
 					</div>
 				{/if}
 			</div>
@@ -470,7 +478,9 @@
 							>
 								<input type="hidden" name="item_id" value={data.selectedList.id} />
 								<input type="hidden" name="version" value={data.selectedList.version} />
-								<label for="existing-list-type" class="text-sm font-medium">Tipo de lista</label>
+								<label for="existing-list-type" class="text-sm font-medium"
+									>{messages['ui.list_type']()}</label
+								>
 								<select
 									id="existing-list-type"
 									name="list_type"
@@ -481,7 +491,9 @@
 											>{LIST_TYPE_LABELS[type]}</option
 										>{/each}
 								</select>
-								<button type="submit" class="btn btn-sm" disabled={busy}>Guardar tipo</button>
+								<button type="submit" class="btn btn-sm" disabled={busy}
+									>{messages['ui.save_type']()}</button
+								>
 							</form>
 						{/if}
 						<progress class="progress mt-4 h-2 w-full progress-primary" value={completion} max="100"
@@ -495,7 +507,7 @@
 								onselect={(value) => (completedBy = value)}
 							/>
 							{#if completedBy}<p class="mt-1 text-xs text-base-content/65">
-									Los artículos pendientes siguen visibles para todas las personas.
+									{messages['screen.everyone_with_access_can_still_see_items_that_need_buying']()}
 								</p>{/if}
 						</div>
 						<div class="mt-3 flex flex-wrap items-center justify-between gap-2">
@@ -503,12 +515,13 @@
 								<button
 									class={['btn join-item btn-sm', { 'btn-active': viewMode === 'list' }]}
 									aria-pressed={viewMode === 'list'}
-									onclick={() => (viewMode = 'list')}>Lista</button
+									onclick={() => (viewMode = 'list')}>{messages['details.list']()}</button
 								>
 								<button
 									class={['btn join-item btn-sm', { 'btn-active': viewMode === 'recent' }]}
 									aria-pressed={viewMode === 'recent'}
-									onclick={() => (viewMode = 'recent')}>Últimos marcados</button
+									onclick={() => (viewMode = 'recent')}
+									>{messages['screen.recently_checked_off']()}</button
 								>
 							</div>
 							{#if undoAction && data.selectedList.canEdit}
@@ -516,7 +529,8 @@
 									class="btn btn-ghost btn-sm"
 									disabled={busy}
 									onclick={undoLastAction}
-									aria-label={`Deshacer último marcado de ${undoAction.title}`}>Deshacer</button
+									aria-label={`Deshacer último marcado de ${undoAction.title}`}
+									>{messages['details.undo']()}</button
 								>
 							{/if}
 						</div>
@@ -530,7 +544,7 @@
 							class="grid gap-2 border-b border-base-300 bg-base-200/45 p-3 sm:grid-cols-[minmax(0,1fr)_6rem_7rem_auto] sm:p-4"
 						>
 							<input type="hidden" name="list_id" value={data.selectedList.id} />
-							<label class="sr-only" for="item-title">Artículo</label>
+							<label class="sr-only" for="item-title">{messages['ui.item']()}</label>
 							<input
 								id="item-title"
 								class="input w-full"
@@ -540,7 +554,7 @@
 								maxlength="200"
 								required
 							/>
-							<label class="sr-only" for="item-quantity">Cantidad</label>
+							<label class="sr-only" for="item-quantity">{messages['ui.quantity']()}</label>
 							<input
 								id="item-quantity"
 								class="input w-full"
@@ -552,7 +566,7 @@
 								step="0.001"
 								required
 							/>
-							<label class="sr-only" for="item-unit">Unidad</label>
+							<label class="sr-only" for="item-unit">{messages['ui.unit']()}</label>
 							<input
 								id="item-unit"
 								class="input w-full"
@@ -561,14 +575,15 @@
 								placeholder="unidad"
 								maxlength="40"
 							/>
-							<button class="btn btn-primary" type="submit" disabled={busy}>Añadir</button>
+							<button class="btn btn-primary" type="submit" disabled={busy}
+								>{messages['ui.add']()}</button
+							>
 						</form>
 						{#if suggestions.length > 0}
 							<div class="border-b border-base-300 px-4 py-3">
 								<p class="mb-2 text-sm text-base-content/70">
-									De tu histórico de {LIST_TYPE_LABELS[
-										data.selectedList.list_type
-									].toLocaleLowerCase('es')}
+									{messages['details.from_your_list_on']()}
+									{LIST_TYPE_LABELS[data.selectedList.list_type].toLocaleLowerCase('es')}
 								</p>
 								<div class="flex flex-wrap gap-2">
 									{#each suggestions as suggestion (suggestion.title)}
@@ -636,7 +651,9 @@
 								<summary
 									class="cursor-pointer list-none px-4 py-3 text-sm font-medium text-base-content/55 hover:bg-base-200/50"
 								>
-									{viewMode === 'recent' ? 'Últimos marcados' : 'Completados'} · {completedItems.length}
+									{viewMode === 'recent'
+										? messages['screen.recently_checked_off']()
+										: 'Completados'} · {completedItems.length}
 								</summary>
 								<div class="divide-y divide-base-300 border-t border-base-300 bg-base-200/30">
 									{#each completedItems as item (item.id)}
@@ -669,14 +686,14 @@
 
 						{#if viewMode === 'recent' && completedItems.length === 0}
 							<p class="px-5 py-8 text-center text-sm text-base-content/55" role="status">
-								Aún no hay artículos marcados.
+								{messages['details.no_items_checked_off_yet']()}
 							</p>
 						{:else if localItems.length === 0}
 							<div class="px-5 py-12 text-center">
 								<p class="text-3xl" aria-hidden="true">🧺</p>
-								<h3 class="mt-2 font-semibold">La lista está vacía</h3>
+								<h3 class="mt-2 font-semibold">{messages['ui.this_list_is_empty']()}</h3>
 								<p class="mt-1 text-sm text-base-content/55">
-									Añade el primer artículo cuando quieras.
+									{messages['details.add_your_first_item_when_you_re_ready']()}
 								</p>
 							</div>
 						{/if}
@@ -685,9 +702,11 @@
 			{:else}
 				<section class="rounded-box border border-dashed border-base-300 px-5 py-16 text-center">
 					<p class="text-3xl" aria-hidden="true">📝</p>
-					<h2 class="mt-2 text-xl font-bold">Aún no hay listas</h2>
+					<h2 class="mt-2 text-xl font-bold">{messages['ui.no_lists_yet']()}</h2>
 					<p class="mt-1 text-sm text-base-content/55">
-						Crea una lista familiar, privada o para personas concretas.
+						{messages[
+							'details.create_a_list_for_the_whole_family_just_for_you_or_for_selected_peop'
+						]()}
 					</p>
 				</section>
 			{/if}

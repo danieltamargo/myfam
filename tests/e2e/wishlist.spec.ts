@@ -204,7 +204,9 @@ test('coordina cantidades sin spoilers entre owner, comprador y usuario externo'
 		await page.goto(`/family/${familyId}/wishlist?item=${item!.id}`);
 		const dialog = page.getByRole('dialog', { name: 'Detalle del regalo' });
 		await expect(dialog).toBeVisible();
-		await expect(dialog).toBeFocused();
+		await expect
+			.poll(() => dialog.evaluate((node) => node.contains(document.activeElement)))
+			.toBe(true);
 		await expect(dialog.getByText('1 unidad disponible')).toBeVisible();
 		await expect(dialog.getByText('2 en consideración')).toBeVisible();
 

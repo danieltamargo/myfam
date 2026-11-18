@@ -1,24 +1,24 @@
 <script lang="ts">
-	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
 	import { getLocale } from '$paraglide/runtime';
 
-	let theme = $state<'myfam-light' | 'myfam-dark'>(
-		browser
-			? (localStorage.getItem('theme') as 'myfam-light' | 'myfam-dark') || 'myfam-light'
-			: 'myfam-light'
-	);
+	let theme = $state<'myfam-light' | 'myfam-dark'>('myfam-light');
+	let ready = $state(false);
+	onMount(() => {
+		theme = localStorage.getItem('theme') === 'myfam-dark' ? 'myfam-dark' : 'myfam-light';
+		ready = true;
+	});
 
 	function toggleTheme() {
 		theme = theme === 'myfam-light' ? 'myfam-dark' : 'myfam-light';
-		if (browser) {
-			localStorage.setItem('theme', theme);
-			document.documentElement.setAttribute('data-theme', theme);
-		}
+		localStorage.setItem('theme', theme);
+		document.documentElement.setAttribute('data-theme', theme);
 	}
 </script>
 
 <button
 	onclick={toggleTheme}
+	disabled={!ready}
 	class="btn fixed right-4 bottom-4 z-50 btn-circle shadow-lg btn-ghost"
 	aria-label={getLocale() === 'es' ? 'Cambiar tema' : 'Toggle theme'}
 >

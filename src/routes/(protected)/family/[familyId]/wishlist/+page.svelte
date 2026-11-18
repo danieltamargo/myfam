@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { afterNavigate, goto, invalidateAll, pushState, replaceState } from '$app/navigation';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
@@ -282,7 +284,10 @@
 
 	function formatPrice(price: number | null, currency: string): string {
 		if (price === null) return 'Sin precio';
-		return new Intl.NumberFormat('es-ES', { style: 'currency', currency }).format(price);
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+			style: 'currency',
+			currency
+		}).format(price);
 	}
 
 	function getPriorityLabel(priority: number): string {
@@ -408,12 +413,12 @@
 		<button
 			class={['btn join-item btn-sm', { 'btn-active': !showHistory }]}
 			aria-pressed={!showHistory}
-			onclick={() => changeHistoryView(false)}>Listas de deseos</button
+			onclick={() => changeHistoryView(false)}>{messages['screen.wishlists']()}</button
 		>
 		<button
 			class={['btn join-item btn-sm', { 'btn-active': showHistory }]}
 			aria-pressed={showHistory}
-			onclick={() => changeHistoryView(true)}>Mi histórico</button
+			onclick={() => changeHistoryView(true)}>{messages['ui.my_history']()}</button
 		>
 	</div>
 	{#if form?.error || historyError || refreshError}
@@ -424,10 +429,9 @@
 
 	{#if showHistory}
 		<section aria-label="Regalos recibidos" class="space-y-4">
-			<h2 class="text-xl font-bold">Mis regalos recibidos</h2>
+			<h2 class="text-xl font-bold">{messages['ui.my_received_gifts']()}</h2>
 			<p class="text-sm text-base-content/65">
-				Solo tú puedes ver este histórico. El comprador permanece oculto hasta que decidas
-				revelarlo.
+				{messages['screen.only_you_can_see_this_history_you_choose_whether_to_reveal_who_bough']()}
 			</p>
 			{#each data.receivedItems as item (item.id)}
 				<article class="rounded-box border border-base-300 p-4">
@@ -440,7 +444,7 @@
 									{buyer.buyer_id ? `Comprado por ${buyer.display_name}` : buyer.display_name} · {buyer.quantity}
 									{buyer.quantity === 1 ? 'unidad' : 'unidades'}
 								</p>
-							{:else}<p>No consta quién compró este regalo.</p>{/each}
+							{:else}<p>{messages['screen.there_s_no_record_of_who_bought_this_gift']()}</p>{/each}
 						</div>
 					{:else}
 						<form
@@ -451,26 +455,26 @@
 						>
 							<input type="hidden" name="item_id" value={item.id} />
 							<button type="submit" class="btn btn-outline btn-sm" disabled={historyBusy}
-								>Revelar comprador (spoiler)</button
+								>{messages['ui.reveal_buyer_spoiler']()}</button
 							>
 						</form>
 					{/if}
 				</article>
 			{:else}
 				<p class="rounded-box border border-dashed border-base-300 p-6" role="status">
-					Aún no has marcado regalos como recibidos.
+					{messages['screen.you_haven_t_marked_any_gifts_as_received_yet']()}
 				</p>
 			{/each}
 			<nav class="flex items-center gap-3" aria-label="Páginas del histórico">
 				{#if data.historyPage > 1}
 					<a class="btn btn-outline btn-sm" href={resolve(historyHref(data.historyPage - 1))}
-						>Anterior</a
+						>{messages['ui.previous']()}</a
 					>
 				{/if}
-				<span class="text-sm">Página {data.historyPage}</span>
+				<span class="text-sm">{messages['details.page']()} {data.historyPage}</span>
 				{#if data.historyHasNext}
 					<a class="btn btn-outline btn-sm" href={resolve(historyHref(data.historyPage + 1))}
-						>Siguiente</a
+						>{messages['ui.next']()}</a
 					>
 				{/if}
 			</nav>
@@ -492,17 +496,17 @@
 				{#if spoilersVisible}
 					<section
 						class="mb-4 rounded-box border border-success/40 p-4"
-						aria-label="Mis regalos comprados"
+						aria-label={messages['ui.my_purchased_gifts']()}
 					>
 						<div class="flex flex-wrap items-center justify-between gap-2">
-							<h2 class="font-semibold">Mis regalos comprados</h2>
+							<h2 class="font-semibold">{messages['ui.my_purchased_gifts']()}</h2>
 							<button
 								type="button"
 								class="btn btn-ghost btn-sm"
 								onclick={() => {
 									spoilersFamilyId = null;
 									purchasedItemIds = [];
-								}}>Ocultar spoilers</button
+								}}>{messages['ui.hide_spoilers']()}</button
 							>
 						</div>
 						{#if purchasedGifts.length}
@@ -520,7 +524,9 @@
 								{/each}
 							</ul>
 						{:else}
-							<p class="text-sm">Todavía no hay compras registradas en tus regalos activos.</p>
+							<p class="text-sm">
+								{messages['screen.no_purchases_have_been_recorded_for_your_active_gifts_yet']()}
+							</p>
 						{/if}
 					</section>
 				{:else}
@@ -530,7 +536,7 @@
 						onclick={() => {
 							spoilersError = '';
 							spoilersDialog.showModal();
-						}}>Mostrar mis regalos comprados</button
+						}}>{messages['ui.show_my_purchased_gifts']()}</button
 					>
 				{/if}
 				<p class="mb-3 text-sm text-base-content/60" aria-live="polite">
@@ -571,15 +577,16 @@
 	<div class="modal-box">
 		<h2 id="wishlist-spoilers-title" class="text-lg font-bold">¿Mostrar regalos comprados?</h2>
 		<p class="mt-2">
-			Verás cuáles de tus regalos se han comprado. Así podrás marcarlos como recibidos cuando te
-			lleguen. La identidad de quien los compró seguirá oculta.
+			{messages['screen.you_ll_see_which_gifts_have_been_purchased_so_you_can_mark_them_as_r']()}
 		</p>
 		{#if spoilersError}<p class="mt-2 text-error" role="alert">{spoilersError}</p>{/if}
 		<div class="modal-action">
-			<button type="button" class="btn" onclick={() => spoilersDialog.close()}>Cancelar</button>
+			<button type="button" class="btn" onclick={() => spoilersDialog.close()}
+				>{messages['ui.cancel']()}</button
+			>
 			<form method="POST" action="?/revealPurchased" use:enhance={enhancePurchased}>
 				<button type="submit" class="btn btn-primary" disabled={spoilersBusy}
-					>Mostrar regalos comprados</button
+					>{messages['ui.show_purchased_gifts']()}</button
 				>
 			</form>
 		</div>

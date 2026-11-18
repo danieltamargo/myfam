@@ -68,14 +68,17 @@
 {@render children()}
 
 <ThemeToggle />
-<div class="fixed right-18 bottom-4 z-50 flex flex-col items-end gap-1">
+<div class="absolute top-0 right-3 z-40 flex h-16 flex-col items-end justify-center sm:right-5">
 	{#if languageError}
-		<p class="max-w-56 rounded-box bg-base-100 p-2 text-sm text-error shadow" role="alert">
+		<p
+			class="absolute top-full w-52 rounded-box bg-base-100 p-2 text-sm text-error shadow"
+			role="alert"
+		>
 			{getLocale() === 'es' ? 'No se pudo guardar el idioma.' : 'Could not save your language.'}
 		</p>
 	{/if}
 	<select
-		class="select w-auto bg-base-100 select-sm shadow"
+		class="select w-auto border-0 select-ghost bg-transparent select-sm font-medium shadow-none focus-visible:outline"
 		aria-label={getLocale() === 'es' ? 'Idioma' : 'Language'}
 		value={getLocale()}
 		onchange={changeLanguage}

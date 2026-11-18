@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { resolve } from '$app/paths';
 	import type { PlannerSnapshot } from '$lib/server/planner/queries';
 
@@ -11,7 +13,7 @@
 
 	let { familyId, familyName, planner, showFamilyName = false }: Props = $props();
 
-	const eventDate = new Intl.DateTimeFormat('es-ES', {
+	const eventDate = new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 		timeZone: 'Europe/Madrid',
 		weekday: 'short',
 		day: 'numeric',
@@ -19,13 +21,13 @@
 		hour: '2-digit',
 		minute: '2-digit'
 	});
-	const allDayDate = new Intl.DateTimeFormat('es-ES', {
+	const allDayDate = new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 		timeZone: 'Europe/Madrid',
 		weekday: 'short',
 		day: 'numeric',
 		month: 'short'
 	});
-	const taskDate = new Intl.DateTimeFormat('es-ES', {
+	const taskDate = new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 		timeZone: 'UTC',
 		day: 'numeric',
 		month: 'short'
@@ -33,31 +35,31 @@
 
 	const quickActions = $derived(
 		[
-			{ id: 'gift', label: 'Nuevo regalo', icon: '🎁', path: 'wishlist', show: true },
+			{ id: 'gift', label: messages['ui.new_gift'](), icon: '🎁', path: 'wishlist', show: true },
 			{
 				id: 'expense',
-				label: 'Añadir gasto',
+				label: messages['screen.add_expense'](),
 				icon: '💶',
 				path: 'expenses',
 				show: planner.modules.expenses
 			},
 			{
 				id: 'task',
-				label: 'Nueva tarea',
+				label: messages['ui.new_task'](),
 				icon: '✅',
 				path: 'tasks',
 				show: planner.modules.tasks
 			},
 			{
 				id: 'event',
-				label: 'Nuevo evento',
+				label: messages['ui.new_event'](),
 				icon: '📅',
 				path: 'calendar',
 				show: planner.modules.calendar
 			},
 			{
 				id: 'list',
-				label: 'Nueva lista',
+				label: messages['module_settings.new_list'](),
 				icon: '🛒',
 				path: 'lists',
 				show: planner.modules.lists
@@ -80,7 +82,7 @@
 	}
 
 	function formatCurrency(value: number, currency: string): string {
-		return new Intl.NumberFormat('es-ES', {
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			style: 'currency',
 			currency,
 			maximumFractionDigits: 2
@@ -88,25 +90,29 @@
 	}
 </script>
 
-<section aria-label={`Planner de ${familyName}`} class="space-y-5">
+<section aria-label={`${messages['details.planner_for']()} ${familyName}`} class="space-y-5">
 	{#if showFamilyName}
 		<div class="flex flex-wrap items-end justify-between gap-3">
 			<div>
-				<p class="text-xs font-semibold tracking-[0.18em] text-primary uppercase">Familia activa</p>
+				<p class="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
+					{messages['feature.current_family']()}
+				</p>
 				<h2 class="mt-1 text-2xl font-bold">{familyName}</h2>
 			</div>
 			<a
 				class="btn btn-ghost btn-sm"
 				href={resolve(`/family/${encodeURIComponent(familyId)}/planner`)}
 			>
-				Abrir planner <span aria-hidden="true">→</span>
+				{messages['feature.open_planner']()} <span aria-hidden="true">→</span>
 			</a>
 		</div>
 	{/if}
 
 	<div>
-		<h3 class="mb-2 text-sm font-semibold text-base-content/70">Acciones rápidas</h3>
-		<nav aria-label="Acciones rápidas" class="flex gap-2 overflow-x-auto pb-1">
+		<h3 class="mb-2 text-sm font-semibold text-base-content/70">
+			{messages['feature.quick_actions']()}
+		</h3>
+		<nav aria-label={messages['feature.quick_actions']()} class="flex gap-2 overflow-x-auto pb-1">
 			{#each quickActions as action (action.id)}
 				<a
 					class="btn min-h-11 shrink-0 btn-outline btn-sm"
@@ -123,8 +129,10 @@
 		<div class="alert alert-soft alert-info" role="status">
 			<span aria-hidden="true">🧭</span>
 			<div>
-				<p class="font-semibold">El planner está listo</p>
-				<p class="text-sm">Los próximos módulos habilitados aparecerán aquí automáticamente.</p>
+				<p class="font-semibold">{messages['feature.your_planner_is_ready']()}</p>
+				<p class="text-sm">
+					{messages['feature.your_family_s_upcoming_plans_and_tasks_will_appear_here']()}
+				</p>
 			</div>
 		</div>
 	{:else}
@@ -140,13 +148,17 @@
 						<div class="card-body gap-4 p-4 sm:p-5">
 							<div class="flex items-center justify-between gap-3">
 								<div>
-									<p class="text-xs font-semibold tracking-wider text-error uppercase">Prioridad</p>
-									<h3 id="planner-tasks-title" class="text-xl font-bold">Tareas pendientes</h3>
+									<p class="text-xs font-semibold tracking-wider text-error uppercase">
+										{messages['ui.priority']()}
+									</p>
+									<h3 id="planner-tasks-title" class="text-xl font-bold">
+										{messages['feature.open_tasks']()}
+									</h3>
 								</div>
 								<a
 									class="btn btn-ghost btn-xs"
 									href={resolve(`/family/${encodeURIComponent(familyId)}/tasks?view=upcoming`)}
-									>Ver todas</a
+									>{messages['feature.view_all']()}</a
 								>
 							</div>
 							<ul class="divide-y divide-base-300">
@@ -174,7 +186,7 @@
 									</li>
 								{:else}
 									<li class="py-4 text-sm text-base-content/60">
-										Nada vence en los próximos 14 días.
+										{messages['feature.nothing_is_due_in_the_next_14_days']()}
 									</li>
 								{/each}
 							</ul>
@@ -191,13 +203,16 @@
 							<div class="flex items-center justify-between gap-3">
 								<div>
 									<p class="text-xs font-semibold tracking-wider text-primary uppercase">
-										Próximos 14 días
+										{messages['feature.next_14_days']()}
 									</p>
-									<h3 id="planner-events-title" class="text-xl font-bold">Agenda familiar</h3>
+									<h3 id="planner-events-title" class="text-xl font-bold">
+										{messages['feature.family_schedule']()}
+									</h3>
 								</div>
 								<a
 									class="btn btn-ghost btn-xs"
-									href={resolve(`/family/${encodeURIComponent(familyId)}/calendar`)}>Calendario</a
+									href={resolve(`/family/${encodeURIComponent(familyId)}/calendar`)}
+									>{messages['ui.calendar']()}</a
 								>
 							</div>
 							<ol class="space-y-2">
@@ -219,7 +234,9 @@
 										</a>
 									</li>
 								{:else}
-									<li class="py-4 text-sm text-base-content/60">No hay eventos próximos.</li>
+									<li class="py-4 text-sm text-base-content/60">
+										{messages['feature.no_upcoming_events']()}
+									</li>
 								{/each}
 							</ol>
 						</div>
@@ -235,10 +252,13 @@
 					>
 						<div class="card-body gap-3 p-4 sm:p-5">
 							<div class="flex items-center justify-between gap-3">
-								<h3 id="planner-lists-title" class="text-lg font-bold">Listas activas</h3>
+								<h3 id="planner-lists-title" class="text-lg font-bold">
+									{messages['feature.active_lists']()}
+								</h3>
 								<a
 									class="btn btn-ghost btn-xs"
-									href={resolve(`/family/${encodeURIComponent(familyId)}/lists`)}>Ver listas</a
+									href={resolve(`/family/${encodeURIComponent(familyId)}/lists`)}
+									>{messages['feature.view_lists']()}</a
 								>
 							</div>
 							<ul class="space-y-2">
@@ -252,7 +272,8 @@
 										>
 											<span class="block truncate font-medium">{list.title}</span>
 											<span class="mt-1 block text-xs text-base-content/60">
-												{list.completedItems} de {list.totalItems} completados
+												{list.completedItems} de {list.totalItems}
+												{messages['feature.completed']()}
 											</span>
 										</a>
 									</li>

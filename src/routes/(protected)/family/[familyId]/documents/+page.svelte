@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -14,7 +16,7 @@
 	let pendingAction = $state<string | null>(null);
 
 	function formatDate(value: string): string {
-		return new Intl.DateTimeFormat('es-ES', {
+		return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			day: 'numeric',
 			month: 'short',
 			year: 'numeric'
@@ -77,7 +79,7 @@
 </script>
 
 <svelte:head>
-	<title>Documentos privados · MyFamily</title>
+	<title>{messages['ui.private_documents_myfamily']()}</title>
 	<meta
 		name="description"
 		content="Documentos familiares privados con permisos explícitos y enlaces temporales."
@@ -87,10 +89,14 @@
 <div class="mx-auto w-full max-w-7xl space-y-5 px-3 py-4 sm:px-5 sm:py-7">
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div class="max-w-2xl">
-			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">Bóveda familiar</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Documentos privados</h1>
+			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">
+				{messages['screen.family_files']()}
+			</p>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
+				{messages['ui.private_documents']()}
+			</h1>
 			<p class="mt-2 text-sm text-base-content/65 sm:text-base">
-				Cada archivo empieza siendo solo tuyo. Compartirlo siempre requiere elegir personas.
+				{messages['screen.files_are_private_until_you_choose_who_to_share_them_with']()}
 			</p>
 		</div>
 		<button
@@ -98,7 +104,7 @@
 			type="button"
 			onclick={() => (uploadOpen = true)}
 		>
-			+ Subir documento
+			{messages['screen.upload_document']()}
 		</button>
 	</header>
 
@@ -125,7 +131,8 @@
 				class="btn whitespace-nowrap btn-sm {data.selectedFolder === null
 					? 'btn-primary'
 					: 'btn-ghost'}"
-				href={resolve(`/family/${data.familyId}/documents${folderQuery()}`)}>Todos</a
+				href={resolve(`/family/${data.familyId}/documents${folderQuery()}`)}
+				>{messages['ui.everyone']()}</a
 			>
 			{#each data.folders as folder (folder)}
 				<a
@@ -142,8 +149,12 @@
 		<section class="rounded-box border border-primary/30 bg-primary/5 p-4 sm:p-6">
 			<div class="mb-5 flex items-start justify-between gap-3">
 				<div>
-					<p class="text-xs font-semibold tracking-wide text-primary uppercase">Nueva subida</p>
-					<h2 class="mt-1 text-2xl font-bold">Guarda un archivo en tu espacio privado</h2>
+					<p class="text-xs font-semibold tracking-wide text-primary uppercase">
+						{messages['screen.new_upload']()}
+					</p>
+					<h2 class="mt-1 text-2xl font-bold">
+						{messages['ui.save_a_file_in_your_private_space']()}
+					</h2>
 				</div>
 				<button
 					class="btn btn-circle btn-ghost btn-sm"
@@ -162,7 +173,7 @@
 				class="grid gap-4 lg:grid-cols-2"
 			>
 				<label class="form-control lg:col-span-2">
-					<span class="label-text mb-1 font-medium">Archivo</span>
+					<span class="label-text mb-1 font-medium">{messages['details.file']()}</span>
 					<input
 						class="file-input w-full"
 						type="file"
@@ -172,11 +183,11 @@
 						onchange={useFileName}
 					/>
 					<span class="mt-1 text-xs text-base-content/50">
-						PDF, imágenes, texto u Office · máximo 15 MB · verificamos el contenido real.
+						{messages['screen.pdfs_images_text_or_office_documents_up_to_15_mb']()}
 					</span>
 				</label>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Nombre visible</span>
+					<span class="label-text mb-1 font-medium">{messages['screen.display_name']()}</span>
 					<input
 						class="input w-full"
 						name="display_name"
@@ -186,23 +197,25 @@
 					/>
 				</label>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Carpeta lógica (opcional)</span>
+					<span class="label-text mb-1 font-medium">{messages['screen.folder_optional']()}</span>
 					<input class="input w-full" name="folder_name" maxlength="80" placeholder="Salud" />
 				</label>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Privacidad</span>
+					<span class="label-text mb-1 font-medium">{messages['details.privacy']()}</span>
 					<select class="select w-full" name="visibility" bind:value={uploadVisibility}>
-						<option value="private">Solo yo</option>
-						<option value="selected_members">Personas seleccionadas</option>
+						<option value="private">{messages['ui.only_me']()}</option>
+						<option value="selected_members">{messages['ui.selected_people']()}</option>
 					</select>
 				</label>
 				<label class="form-control">
-					<span class="label-text mb-1 font-medium">Caduca al terminar el día (opcional)</span>
+					<span class="label-text mb-1 font-medium"
+						>{messages['screen.expires_at_the_end_of_the_day_optional']()}</span
+					>
 					<input class="input w-full" type="date" name="expires_at" />
 				</label>
 				{#if uploadVisibility === 'selected_members'}
 					<fieldset class="lg:col-span-2">
-						<legend class="mb-2 font-medium">Quién puede descargarlo</legend>
+						<legend class="mb-2 font-medium">{messages['screen.who_can_download_it']()}</legend>
 						<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 							{#each data.members.filter((member) => member.id !== data.currentUserId) as member (member.id)}
 								<label
@@ -223,7 +236,7 @@
 				{/if}
 				<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end lg:col-span-2">
 					<button class="btn btn-ghost" type="button" onclick={() => (uploadOpen = false)}
-						>Cancelar</button
+						>{messages['ui.cancel']()}</button
 					>
 					<button class="btn btn-primary" type="submit" disabled={pendingAction === 'subiendo'}>
 						{#if pendingAction === 'subiendo'}<span class="loading loading-sm loading-spinner"
@@ -242,7 +255,7 @@
 					{data.selectedFolder ? `Carpeta ${data.selectedFolder}` : 'Tus documentos accesibles'}
 				</h2>
 				<p class="text-xs text-base-content/50">
-					Las descargas usan enlaces temporales de dos minutos.
+					{messages['details.download_links_expire_after_two_minutes']()}
 				</p>
 			</div>
 			<span class="badge badge-ghost">{data.documents.length}</span>
@@ -284,11 +297,15 @@
 						<div class="flex w-full shrink-0 flex-wrap items-center gap-2 lg:w-auto">
 							<form method="POST" action="?/downloadDocument">
 								<input type="hidden" name="document_id" value={document.id} />
-								<button class="btn btn-sm btn-primary" type="submit">Descargar</button>
+								<button class="btn btn-sm btn-primary" type="submit"
+									>{messages['ui.download']()}</button
+								>
 							</form>
 							{#if document.canManage}
 								<details class="relative w-full sm:w-auto">
-									<summary class="btn w-full btn-ghost btn-sm sm:w-auto">Gestionar</summary>
+									<summary class="btn w-full btn-ghost btn-sm sm:w-auto"
+										>{messages['details.manage']()}</summary
+									>
 									<div
 										class="mt-2 w-full rounded-box border border-base-300 bg-base-100 p-4 shadow-xl sm:absolute sm:right-0 sm:z-20 sm:w-88"
 									>
@@ -302,7 +319,9 @@
 											<input type="hidden" name="document_id" value={document.id} />
 											<input type="hidden" name="version" value={document.version} />
 											<label class="form-control">
-												<span class="label-text mb-1 text-xs font-semibold">Carpeta lógica</span>
+												<span class="label-text mb-1 text-xs font-semibold"
+													>{messages['details.folder']()}</span
+												>
 												<input
 													class="input input-sm w-full"
 													name="folder_name"
@@ -311,18 +330,24 @@
 												/>
 											</label>
 											<label class="form-control">
-												<span class="label-text mb-1 text-xs font-semibold">Privacidad</span>
+												<span class="label-text mb-1 text-xs font-semibold"
+													>{messages['details.privacy']()}</span
+												>
 												<select
 													class="select w-full select-sm"
 													name="visibility"
 													value={document.visibility}
 												>
-													<option value="private">Solo yo</option>
-													<option value="selected_members">Personas seleccionadas</option>
+													<option value="private">{messages['ui.only_me']()}</option>
+													<option value="selected_members"
+														>{messages['ui.selected_people']()}</option
+													>
 												</select>
 											</label>
 											<label class="form-control">
-												<span class="label-text mb-1 text-xs font-semibold">Caducidad</span>
+												<span class="label-text mb-1 text-xs font-semibold"
+													>{messages['details.expiry']()}</span
+												>
 												<input
 													class="input input-sm w-full"
 													type="date"
@@ -331,7 +356,9 @@
 												/>
 											</label>
 											<fieldset>
-												<legend class="mb-1 text-xs font-semibold">Personas</legend>
+												<legend class="mb-1 text-xs font-semibold"
+													>{messages['details.people']()}</legend
+												>
 												<div class="max-h-36 space-y-1 overflow-y-auto">
 													{#each data.members.filter((member) => member.id !== data.currentUserId) as member (member.id)}
 														<label
@@ -349,7 +376,9 @@
 													{/each}
 												</div>
 												<p class="mt-1 text-[0.68rem] text-base-content/45">
-													Solo se aplican al elegir «Personas seleccionadas».
+													{messages[
+														'details.these_choices_apply_when_you_select_selected_people'
+													]()}
 												</p>
 											</fieldset>
 											<button
@@ -372,7 +401,7 @@
 											<input type="hidden" name="document_id" value={document.id} />
 											<input type="hidden" name="version" value={document.version} />
 											<button class="btn w-full btn-soft btn-sm btn-error" type="submit">
-												Borrar permanentemente
+												{messages['details.delete_permanently']()}
 											</button>
 										</form>
 									</div>
@@ -387,12 +416,12 @@
 		{#if data.documents.length === 0}
 			<div class="rounded-box border border-dashed border-base-300 px-6 py-16 text-center">
 				<p class="text-4xl" aria-hidden="true">▤</p>
-				<h2 class="mt-3 text-xl font-bold">Todavía no hay documentos aquí</h2>
+				<h2 class="mt-3 text-xl font-bold">{messages['ui.no_documents_here_yet']()}</h2>
 				<p class="mt-1 text-sm text-base-content/55">
-					Sube uno: nadie de la familia podrá abrirlo salvo que tú lo autorices.
+					{messages['details.upload_a_file_and_choose_who_can_open_it']()}
 				</p>
 				<button class="btn mt-5 btn-primary" type="button" onclick={() => (uploadOpen = true)}>
-					Subir el primero
+					{messages['details.upload_your_first_file']()}
 				</button>
 			</div>
 		{/if}
@@ -405,7 +434,7 @@
 						`/family/${data.familyId}/documents${folderQuery(data.selectedFolder ?? undefined, data.nextCursor)}`
 					)}
 				>
-					Ver documentos anteriores
+					{messages['details.view_earlier_documents']()}
 				</a>
 			</div>
 		{/if}

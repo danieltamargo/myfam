@@ -80,7 +80,7 @@
 	}
 </script>
 
-<header class="navbar min-w-0 bg-base-200 px-2 shadow-md sm:px-4">
+<header class="navbar min-w-0 bg-base-200 pr-26 pl-2 shadow-md sm:pr-30 sm:pl-4">
 	<div class="navbar-start w-auto shrink-0">
 		<a href="/dashboard" class="btn px-2 text-lg font-bold btn-ghost sm:px-4 sm:text-xl">
 			MyFamily

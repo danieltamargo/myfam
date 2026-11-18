@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import type { PageProps } from './$types';
@@ -34,13 +35,13 @@
 	};
 </script>
 
-<svelte:head><title>Cumpleaños · MyFamily</title></svelte:head>
+<svelte:head><title>{messages['screen.birthdays_myfamily']()}</title></svelte:head>
 
 <div class="mx-auto max-w-3xl space-y-6 pb-8">
 	<header>
-		<h1 class="text-3xl font-bold">Cumpleaños familiares</h1>
+		<h1 class="text-3xl font-bold">{messages['screen.family_birthdays']()}</h1>
 		<p class="mt-2">
-			Guarda el día y el mes para ver avisos desde 14 días antes y abrir su wishlist.
+			{messages['screen.save_the_day_and_month_to_see_reminders_up_to_14_days_ahead_and_open']()}
 		</p>
 		<p class="mt-2 text-sm">
 			La fecha se comparte solo con esta familia. Cada miembro puede cambiar la suya; el propietario
@@ -58,7 +59,7 @@
 		</p>
 	{/if}
 	{#if !data.birthdayMembers.length}
-		<p>No hay miembros disponibles.</p>
+		<p>{messages['screen.no_family_members_available']()}</p>
 	{:else}
 		<ul class="divide-y divide-base-300">
 			{#each data.birthdayMembers as member (member.userId)}
@@ -85,14 +86,14 @@
 								/>
 							</label>
 							<label class="flex min-w-0 flex-col gap-1 text-sm"
-								>Mes
+								>{messages['ui.month']()}
 								<select
 									name="month"
 									class="select w-44 max-w-full"
 									value={member.month ?? ''}
 									aria-label={`Mes de cumpleaños de ${member.displayName}`}
 								>
-									<option value="">Sin fecha</option>
+									<option value="">{messages['details.no_date']()}</option>
 									{#each months as month, index (month)}<option value={index + 1}>{month}</option
 										>{/each}
 								</select>
@@ -106,7 +107,7 @@
 									name="remove"
 									value="true"
 									formnovalidate
-									disabled={submitting}>Eliminar fecha</button
+									disabled={submitting}>{messages['screen.remove_date']()}</button
 								>{/if}
 						</form>
 					{:else}

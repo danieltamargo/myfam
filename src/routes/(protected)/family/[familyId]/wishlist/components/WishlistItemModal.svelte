@@ -1,6 +1,8 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
+	import { openDialog } from '$lib/components/modals/open-dialog';
 	import GiftComments from '$lib/components/wishlist/GiftComments.svelte';
 	import WishlistCoordination from '$lib/components/wishlist/WishlistCoordination.svelte';
 	import WishlistItemDetails from '$lib/components/wishlist/WishlistItemDetails.svelte';
@@ -35,15 +37,6 @@
 	let receiving = $state(false);
 	let receiveError = $state('');
 
-	function focusDialog(element: HTMLDivElement) {
-		const frame = requestAnimationFrame(() => element.focus());
-		return () => cancelAnimationFrame(frame);
-	}
-
-	function closeOnEscape(event: KeyboardEvent) {
-		if (event.key === 'Escape') onClose();
-	}
-
 	function getItemEvents(value: WishlistItemDto) {
 		return value.gift_item_events.flatMap((eventLink) => {
 			const event = eventLink.gift_event_categories;
@@ -52,26 +45,23 @@
 	}
 </script>
 
-<svelte:window onkeydown={closeOnEscape} />
-
 {#if item}
 	{@const isOwner = isMyItem(item.id)}
-	<div class="modal-open modal" role="presentation">
+	<dialog
+		class="modal"
+		use:openDialog={onClose}
+		aria-labelledby={`wishlist-detail-title-${item.id}`}
+	>
 		<div
 			class="modal-box max-h-[95svh] w-[95vw] max-w-[95vw] min-w-0 overflow-x-hidden p-4 sm:p-6 {isOwner
 				? 'md:max-w-xl'
 				: 'md:max-w-5xl'}"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby={`wishlist-detail-title-${item.id}`}
-			tabindex="-1"
-			{@attach focusDialog}
 		>
 			<div class="relative flex min-w-0 flex-col gap-2 md:flex-row">
 				<div class="h-fit min-w-0 flex-1 md:sticky md:top-4">
 					<div class="mb-5 flex items-center justify-between gap-2">
 						<h2 id={`wishlist-detail-title-${item.id}`} class="text-lg font-bold">
-							Detalle del regalo
+							{messages['ui.gift_details']()}
 						</h2>
 						<div class="placeholder avatar rounded-full">
 							<div class="w-10 rounded-full bg-primary text-primary-content">
@@ -105,7 +95,8 @@
 					/>
 					{#if item.calendar_event}
 						<p class="mt-3 text-sm">
-							Evento: <a
+							{messages['details.event_33']()}
+							<a
 								class="link"
 								href={resolve(`/family/${item.family_id}/calendar?event=${item.calendar_event.id}`)}
 								>{item.calendar_event.title}</a
@@ -115,10 +106,12 @@
 
 					{#if isOwner}
 						<div class="mt-4 alert alert-info" role="status">
-							<span>La coordinación está oculta para proteger la sorpresa.</span>
+							<span
+								>{messages['feature.purchase_activity_stays_hidden_to_keep_the_surprise']()}</span
+							>
 						</div>
 						{#if canReceive && item.status === 'active'}
-							<span class="mt-4 badge badge-success">Comprado</span>
+							<span class="mt-4 badge badge-success">{messages['ui.purchased']()}</span>
 							<form
 								method="POST"
 								action="?/receiveItem"
@@ -150,11 +143,12 @@
 								<input type="hidden" name="item_id" value={item.id} />
 								<input type="hidden" name="version" value={item.version} />
 								<p class="text-sm text-base-content/65">
-									Al recibirlo, se retirará de las listas y quedará en tu histórico sin revelar el
-									comprador.
+									{messages[
+										'feature.marking_it_as_received_moves_it_to_your_history_while_keeping_the_bu'
+									]()}
 								</p>
 								<button type="submit" class="btn btn-primary" disabled={receiving}
-									>Marcar como recibido</button
+									>{messages['ui.mark_as_received']()}</button
 								>
 								{#if receiveError}<p role="alert" class="text-sm text-error">{receiveError}</p>{/if}
 							</form>
@@ -185,9 +179,10 @@
 				{/if}
 			</div>
 			<div class="modal-action">
-				<button class="btn" onclick={onClose}>Cerrar</button>
+				<button class="btn" onclick={onClose}>{messages['ui.close']()}</button>
 			</div>
 		</div>
-		<button type="button" class="modal-backdrop" aria-label="Cerrar" onclick={onClose}></button>
-	</div>
+		<button type="button" class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={onClose}
+		></button>
+	</dialog>
 {/if}

@@ -23,7 +23,7 @@ Una carga nueva prepara Mabuceta con Wishlist y deja Test con todos los módulos
 - Aplicación en [localhost:5173](http://localhost:5173).
 - Mailpit en [localhost:54324](http://localhost:54324). Usa la dirección que imprime `supabase status` si el puerto es distinto.
 - Test tiene las cuentas `myfamily-test-owner@example.com`, `myfamily-test-admin@example.com` y `myfamily-test-member@example.com`. Usa `myfamily-test-outsider@example.com` para comprobar el acceso desde fuera de la familia y recibir una invitación en inglés. Las cuatro comparten el valor `testPassword` de la configuración local.
-- Para entrar en Mabuceta con la cuenta real, usa **¿Has olvidado tu contraseña?** y abre el enlace capturado en Mailpit. La cuenta real no usa la contraseña de Test.
+- Las cuentas de Mabuceta creadas por la carga local también usan `testPassword`. Para aplicar ese valor a las cuentas locales ya creadas, ejecuta `python scripts/seed-local.py --reset-passwords`. Elige una frase fácil de recordar de al menos 12 caracteres.
 
 ## Lista de prueba
 

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { onMount } from 'svelte';
 	import { createClient } from '$lib/supabase';
 
@@ -125,7 +127,10 @@
 		if (diffHours < 24) return `Hace ${diffHours}h`;
 		if (diffDays < 7) return `Hace ${diffDays}d`;
 
-		return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+		return date.toLocaleDateString(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+			day: 'numeric',
+			month: 'short'
+		});
 	}
 
 	function getNotificationIcon(type: string): string {
@@ -159,7 +164,7 @@
 	<button
 		type="button"
 		class="btn btn-circle btn-ghost"
-		aria-label="Notificaciones"
+		aria-label={messages['feature.notifications']()}
 		aria-expanded={showDropdown}
 		onclick={() => (showDropdown = !showDropdown)}
 	>
@@ -193,10 +198,10 @@
 			<!-- Header -->
 			<div class="border-b border-base-300 p-4">
 				<div class="mb-3 flex items-center justify-between">
-					<h3 class="text-lg font-semibold">Notificaciones</h3>
+					<h3 class="text-lg font-semibold">{messages['feature.notifications']()}</h3>
 					{#if unreadCount > 0}
 						<button onclick={markAllAsRead} class="btn text-primary btn-ghost btn-xs">
-							Marcar todas como leídas
+							{messages['feature.mark_all_as_read']()}
 						</button>
 					{/if}
 				</div>
@@ -207,13 +212,13 @@
 						onclick={() => (showOnlyUnread = true)}
 						class="btn btn-xs {showOnlyUnread ? 'btn-primary' : 'btn-ghost'}"
 					>
-						Sin leer ({unreadCount})
+						{messages['feature.unread']()}{unreadCount})
 					</button>
 					<button
 						onclick={() => (showOnlyUnread = false)}
 						class="btn btn-xs {!showOnlyUnread ? 'btn-primary' : 'btn-ghost'}"
 					>
-						Todas ({localNotifications.length})
+						{messages['feature.all']()}{localNotifications.length})
 					</button>
 				</div>
 			</div>
@@ -223,7 +228,7 @@
 				{#if filteredNotifications.length === 0}
 					<div class="p-8 text-center text-base-content/50">
 						<div class="mb-2 text-4xl">🔔</div>
-						<p class="text-sm">No hay notificaciones</p>
+						<p class="text-sm">{messages['feature.no_notifications']()}</p>
 					</div>
 				{:else}
 					<div class="divide-y divide-base-300">
@@ -290,7 +295,7 @@
 											deleteNotification(notification.id);
 										}}
 										class="btn text-error btn-ghost btn-xs"
-										title="Eliminar"
+										title={messages['ui.delete']()}
 									>
 										<svg
 											xmlns="http://www.w3.org/2000/svg"

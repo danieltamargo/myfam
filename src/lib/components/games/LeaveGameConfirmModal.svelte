@@ -1,5 +1,7 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
+	import { openDialog } from '$lib/components/modals/open-dialog';
 
 	interface Props {
 		isOpen: boolean;
@@ -12,21 +14,13 @@
 
 	let isSubmitting = $state(false);
 
-	function handleClickOutside(event: MouseEvent) {
-		if (event.target === event.currentTarget && !isSubmitting) {
-			onClose();
-		}
+	function cancel() {
+		if (!isSubmitting) onClose();
 	}
 </script>
 
 {#if isOpen}
-	<div
-		class="modal-open modal"
-		onclick={handleClickOutside}
-		onkeydown={(e) => e.key === 'Escape' && !isSubmitting && onClose()}
-		role="button"
-		tabindex="0"
-	>
+	<dialog class="modal" use:openDialog={cancel} aria-labelledby="leave-game-title">
 		<div class="modal-box">
 			<!-- Warning icon -->
 			<div class="mb-4 flex justify-center">
@@ -47,13 +41,15 @@
 			</div>
 
 			<!-- Title and message -->
-			<h3 class="mb-2 text-center text-xl font-bold">
+			<h3 id="leave-game-title" class="mb-2 text-center text-xl font-bold">
 				{isGameInProgress ? '¿Abandonar la partida?' : '¿Salir de la sala?'}
 			</h3>
 
 			<div class="mb-6 text-center">
 				{#if isGameInProgress}
-					<p class="mb-3 text-base-content/80">La partida está en curso. Si abandonas ahora:</p>
+					<p class="mb-3 text-base-content/80">
+						{messages['ui.the_game_is_in_progress_if_you_leave_now']()}
+					</p>
 					<div class="alert alert-error">
 						<svg
 							xmlns="http://www.w3.org/2000/svg"
@@ -69,18 +65,21 @@
 							/>
 						</svg>
 						<span>
-							<strong>Se te contará como derrota</strong> y el otro jugador ganará automáticamente.
+							<strong>{messages['ui.it_will_count_as_a_loss']()}</strong>
+							{messages['ui.and_the_other_player_will_win']()}
 						</span>
 					</div>
 				{:else}
-					<p class="text-base-content/70">¿Estás seguro de que quieres salir de esta sala?</p>
+					<p class="text-base-content/70">
+						{messages['ui.are_you_sure_you_want_to_leave_this_room']()}
+					</p>
 				{/if}
 			</div>
 
 			<!-- Actions -->
 			<div class="modal-action">
 				<button type="button" class="btn btn-ghost" onclick={onClose} disabled={isSubmitting}>
-					Cancelar
+					{messages['ui.cancel']()}
 				</button>
 
 				<form
@@ -105,11 +104,13 @@
 						{:else if isGameInProgress}
 							Sí, abandonar
 						{:else}
-							Sí, salir
+							{messages['ui.yes_leave']()}
 						{/if}
 					</button>
 				</form>
 			</div>
 		</div>
-	</div>
+		<button type="button" class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={cancel}
+		></button>
+	</dialog>
 {/if}

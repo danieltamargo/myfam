@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
+	import { openDialog } from '$lib/components/modals/open-dialog';
 	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { onMount } from 'svelte';
@@ -47,7 +50,7 @@
 				factorId = verifiedFactor.id;
 			}
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 		} finally {
 			loading = false;
 		}
@@ -97,7 +100,7 @@
 				factorId = data.id;
 			}
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 		} finally {
 			enrolling = false;
 		}
@@ -105,7 +108,7 @@
 
 	async function verifyAndEnable() {
 		if (!verifyCode || verifyCode.length !== 6) {
-			error = 'Please enter a valid 6-digit code';
+			error = messages['confirmation.six_digits']();
 			return;
 		}
 
@@ -120,7 +123,7 @@
 
 			if (verifyError) throw verifyError;
 
-			success = '2FA enabled successfully!';
+			success = messages['confirmation.factor_enabled']();
 			isEnabled = true;
 
 			setTimeout(() => {
@@ -129,7 +132,7 @@
 				checkMFAStatus();
 			}, 1500);
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 			verifyCode = '';
 		} finally {
 			verifying = false;
@@ -138,7 +141,7 @@
 
 	async function disableTOTP() {
 		if (!disableCode || disableCode.length !== 6) {
-			error = 'Please enter a valid 6-digit code to confirm';
+			error = messages['confirmation.six_digits']();
 			return;
 		}
 
@@ -168,7 +171,7 @@
 
 			if (unenrollError) throw unenrollError;
 
-			success = '2FA disabled successfully';
+			success = messages['confirmation.factor_disabled']();
 			isEnabled = false;
 			factorId = '';
 
@@ -177,7 +180,7 @@
 				success = '';
 			}, 1500);
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 			disableCode = '';
 		} finally {
 			disabling = false;
@@ -190,7 +193,7 @@
 	<div class="card-body">
 		<div class="flex items-center justify-between">
 			<div class="flex items-center gap-3">
-				<h2 class="card-title">Two-Factor Authentication</h2>
+				<h2 class="card-title">{messages['ui.two_step_verification']()}</h2>
 				{#if isEnabled}
 					<span class="badge gap-1 badge-success">
 						<svg
@@ -205,10 +208,10 @@
 								clip-rule="evenodd"
 							/>
 						</svg>
-						Enabled
+						{messages['feature.enabled']()}
 					</span>
 				{:else}
-					<span class="badge badge-ghost">Disabled</span>
+					<span class="badge badge-ghost">{messages['feature.disabled']()}</span>
 				{/if}
 			</div>
 
@@ -236,10 +239,9 @@
 
 		<p class="text-sm text-base-content/70">
 			{#if isEnabled}
-				Your account is protected with two-factor authentication using a time-based code.
+				{messages['feature.your_account_is_protected_by_an_extra_verification_code']()}
 			{:else}
-				Add an extra layer of security by requiring a code from your authenticator app when you sign
-				in.
+				{messages['feature.protect_your_account_with_a_code_from_your_authenticator_app_when_yo']()}
 			{/if}
 		</p>
 
@@ -251,13 +253,15 @@
 
 		<div class="mt-4 card-actions justify-end">
 			{#if isEnabled}
-				<a href={resolve('/profile/recovery')} class="btn btn-outline">Códigos de recuperación</a>
+				<a href={resolve('/profile/recovery')} class="btn btn-outline"
+					>{messages['ui.recovery_codes']()}</a
+				>
 				<button onclick={openDisableModal} class="btn btn-outline btn-error" disabled={loading}>
-					Disable 2FA
+					{messages['feature.turn_off_verification']()}
 				</button>
 			{:else}
 				<button onclick={openEnableModal} class="btn btn-primary" disabled={loading}>
-					Enable 2FA
+					{messages['feature.turn_on_verification']()}
 				</button>
 			{/if}
 		</div>
@@ -266,22 +270,28 @@
 
 <!-- Info Modal -->
 {#if showInfoModal}
-	<dialog class="modal-open modal">
+	<dialog
+		class="modal"
+		use:openDialog={() => (showInfoModal = false)}
+		aria-labelledby="two-factor-info-title"
+	>
 		<div class="modal-box max-w-2xl">
-			<h3 class="mb-4 text-lg font-bold">About Two-Factor Authentication</h3>
+			<h3 id="two-factor-info-title" class="mb-4 text-lg font-bold">
+				{messages['ui.about_two_step_verification']()}
+			</h3>
 
 			<div class="space-y-4">
 				<div>
-					<h4 class="mb-2 font-semibold">What is 2FA?</h4>
+					<h4 class="mb-2 font-semibold">{messages['feature.what_is_two_step_verification']()}</h4>
 					<p class="text-sm text-base-content/70">
-						Two-factor authentication adds an extra layer of security to your account. When enabled,
-						you'll need both your password and a 6-digit code from your authenticator app to sign
-						in.
+						{messages[
+							'feature.you_ll_need_your_password_and_a_six_digit_code_from_your_authenticat'
+						]()}
 					</p>
 				</div>
 
 				<div>
-					<h4 class="mb-2 font-semibold">Compatible Apps</h4>
+					<h4 class="mb-2 font-semibold">{messages['feature.compatible_apps']()}</h4>
 					<ul class="list-inside list-disc space-y-1 text-sm text-base-content/70">
 						<li>Google Authenticator</li>
 						<li>Microsoft Authenticator</li>
@@ -322,12 +332,14 @@
 			</div>
 
 			<div class="modal-action">
-				<button onclick={() => (showInfoModal = false)} class="btn">Close</button>
+				<button onclick={() => (showInfoModal = false)} class="btn">{messages['ui.close']()}</button
+				>
 			</div>
 		</div>
 		<button
 			class="modal-backdrop"
-			aria-label="Close information"
+			aria-hidden="true"
+			tabindex="-1"
 			onclick={() => (showInfoModal = false)}
 		></button>
 	</dialog>
@@ -335,9 +347,11 @@
 
 <!-- Enable 2FA Modal -->
 {#if showEnableModal}
-	<dialog class="modal-open modal">
+	<dialog class="modal" use:openDialog={closeEnableModal} aria-labelledby="two-factor-enable-title">
 		<div class="modal-box max-w-2xl">
-			<h3 class="mb-4 text-lg font-bold">Enable Two-Factor Authentication</h3>
+			<h3 id="two-factor-enable-title" class="mb-4 text-lg font-bold">
+				{messages['ui.turn_on_two_step_verification']()}
+			</h3>
 
 			{#if error}
 				<div class="mb-4 alert alert-error">
@@ -361,7 +375,9 @@
 					</div>
 
 					<div class="flex justify-end gap-2">
-						<button onclick={closeEnableModal} class="btn btn-ghost">Cancel</button>
+						<button onclick={closeEnableModal} class="btn btn-ghost"
+							>{messages['ui.cancel']()}</button
+						>
 						<button onclick={startEnrollment} class="btn btn-primary" disabled={enrolling}>
 							{#if enrolling}
 								<span class="loading loading-spinner"></span>
@@ -422,7 +438,7 @@
 
 					<div class="flex justify-end gap-2">
 						<button onclick={closeEnableModal} class="btn btn-ghost" disabled={verifying}>
-							Cancel
+							{messages['ui.cancel']()}
 						</button>
 						<button
 							onclick={verifyAndEnable}
@@ -438,15 +454,22 @@
 				</div>
 			{/if}
 		</div>
-		<button class="modal-backdrop" aria-label="Close setup" onclick={closeEnableModal}></button>
+		<button class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={closeEnableModal}
+		></button>
 	</dialog>
 {/if}
 
 <!-- Disable 2FA Modal -->
 {#if showDisableModal}
-	<dialog class="modal-open modal">
+	<dialog
+		class="modal"
+		use:openDialog={closeDisableModal}
+		aria-labelledby="two-factor-disable-title"
+	>
 		<div class="modal-box">
-			<h3 class="mb-4 text-lg font-bold text-error">Disable Two-Factor Authentication</h3>
+			<h3 id="two-factor-disable-title" class="mb-4 text-lg font-bold text-error">
+				{messages['ui.turn_off_two_step_verification']()}
+			</h3>
 
 			{#if error}
 				<div class="mb-4 alert alert-error">
@@ -470,17 +493,16 @@
 						/>
 					</svg>
 					<div class="flex flex-col gap-1">
-						<span class="font-semibold">Warning</span>
+						<span class="font-semibold">{messages['confirmation.warning']()}</span>
 						<span class="text-sm">
-							Disabling 2FA will make your account less secure. Anyone with your password will be
-							able to access your account.
+							{messages['dialog.disable_factor_detail']()}
 						</span>
 					</div>
 				</div>
 
 				<div class="form-control">
 					<label class="label" for="disable_code">
-						<span class="label-text">Enter current 6-digit code to confirm</span>
+						<span class="label-text">{messages['confirmation.code']()}</span>
 					</label>
 					<input
 						type="text"
@@ -495,7 +517,7 @@
 					/>
 					<label class="label" for="disable_code">
 						<span class="label-text-alt text-base-content/60">
-							Open your authenticator app to get the code
+							{messages['confirmation.enter_code']()}
 						</span>
 					</label>
 				</div>
@@ -503,7 +525,7 @@
 
 			<div class="modal-action">
 				<button onclick={closeDisableModal} class="btn btn-ghost" disabled={disabling}>
-					Cancel
+					{messages['ui.cancel']()}
 				</button>
 				<button
 					onclick={disableTOTP}
@@ -513,14 +535,11 @@
 					{#if disabling}
 						<span class="loading loading-spinner"></span>
 					{/if}
-					Disable 2FA
+					{messages['feature.turn_off_verification']()}
 				</button>
 			</div>
 		</div>
-		<button
-			class="modal-backdrop"
-			aria-label="Close disable confirmation"
-			onclick={closeDisableModal}
+		<button class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={closeDisableModal}
 		></button>
 	</dialog>
 {/if}

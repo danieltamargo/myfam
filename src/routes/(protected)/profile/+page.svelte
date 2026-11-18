@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { createClient } from '$lib/supabase';
 	import { enhance } from '$app/forms';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -85,8 +86,10 @@
 <div class="container mx-auto max-w-4xl p-8">
 	<!-- Header -->
 	<div class="mb-8">
-		<h1 class="text-3xl font-bold">Profile Settings</h1>
-		<p class="mt-2 text-base-content/70">Manage your account, security, and preferences</p>
+		<h1 class="text-3xl font-bold">{messages['ui.profile_settings']()}</h1>
+		<p class="mt-2 text-base-content/70">
+			{messages['screen.manage_your_account_security_and_preferences']()}
+		</p>
 	</div>
 
 	<!-- Alerts -->
@@ -105,7 +108,7 @@
 					d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
 				/>
 			</svg>
-			<span>Profile updated successfully</span>
+			<span>{messages['screen.profile_updated']()}</span>
 		</div>
 	{/if}
 
@@ -132,7 +135,7 @@
 		<!-- Profile Information -->
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
-				<h2 class="mb-4 card-title">Profile Information</h2>
+				<h2 class="mb-4 card-title">{messages['ui.profile_information']()}</h2>
 
 				<form method="POST" action="?/updateProfile" use:enhance>
 					<div class="flex flex-col gap-6 md:flex-row">
@@ -149,7 +152,7 @@
 						<div class="flex-1 space-y-4">
 							<div class="form-control">
 								<label class="label" for="display_name">
-									<span class="label-text font-semibold">Display Name</span>
+									<span class="label-text font-semibold">{messages['ui.display_name']()}</span>
 								</label>
 								<input
 									type="text"
@@ -163,7 +166,7 @@
 
 							<div class="form-control">
 								<label class="label">
-									<span class="label-text font-semibold">Email</span>
+									<span class="label-text font-semibold">{messages['details.email']()}</span>
 								</label>
 								<input
 									type="email"
@@ -174,7 +177,9 @@
 							</div>
 
 							<div class="card-actions justify-end pt-2">
-								<button type="submit" class="btn btn-primary"> Save Changes </button>
+								<button type="submit" class="btn btn-primary">
+									{messages['ui.save_changes']()}
+								</button>
 							</div>
 						</div>
 					</div>
@@ -185,10 +190,9 @@
 		<!-- Connected Accounts -->
 		<div class="card bg-base-100 shadow-xl">
 			<div class="card-body">
-				<h2 class="mb-2 card-title">Connected Accounts</h2>
+				<h2 class="mb-2 card-title">{messages['ui.connected_accounts']()}</h2>
 				<p class="mb-4 text-sm text-base-content/70">
-					Link multiple accounts to sign in with any of them. You can use these providers
-					interchangeably to access your account.
+					{messages['screen.link_other_accounts_so_you_can_sign_in_with_any_of_them']()}
 				</p>
 
 				<div class="space-y-3">
@@ -205,7 +209,7 @@
 										{@const identity = data.identities.find((i) => i.provider === provider.id)}
 										<p class="text-sm text-base-content/60">{identity?.email}</p>
 									{:else}
-										<p class="text-sm text-base-content/60">Not connected</p>
+										<p class="text-sm text-base-content/60">{messages['screen.not_connected']()}</p>
 									{/if}
 								</div>
 							</div>
@@ -224,7 +228,7 @@
 											clip-rule="evenodd"
 										/>
 									</svg>
-									Connected
+									{messages['details.connected']()}
 								</div>
 							{:else}
 								<button
@@ -235,7 +239,7 @@
 									{#if linking}
 										<span class="loading loading-xs loading-spinner"></span>
 									{/if}
-									Connect
+									{messages['details.connect']()}
 								</button>
 							{/if}
 						</div>
@@ -250,12 +254,11 @@
 		<!-- Danger Zone -->
 		<div class="card border-2 border-error bg-base-100 shadow-xl">
 			<div class="card-body">
-				<h2 class="card-title text-error">Danger Zone</h2>
+				<h2 class="card-title text-error">{messages['ui.sensitive_actions']()}</h2>
 
 				{#if !showDeleteConfirm}
 					<p class="mb-4 text-sm text-base-content/70">
-						Once you delete your account, there is no going back. All your data will be permanently
-						removed.
+						{messages['screen.deleting_your_account_permanently_removes_your_data']()}
 					</p>
 
 					{#if data.isSoleOwner}
@@ -287,7 +290,7 @@
 							onclick={() => (showDeleteConfirm = true)}
 							disabled={data.isSoleOwner}
 						>
-							Delete Account
+							{messages['ui.delete_account']()}
 						</button>
 					</div>
 				{:else}
@@ -314,7 +317,10 @@
 
 						<div class="form-control">
 							<label class="label" for="delete_confirm">
-								<span class="label-text">Type <strong>DELETE</strong> to confirm</span>
+								<span class="label-text"
+									>{messages['details.type']()} <strong>DELETE</strong>
+									{messages['details.to_confirm']()}</span
+								>
 							</label>
 							<input
 								type="text"
@@ -335,7 +341,7 @@
 									error = '';
 								}}
 							>
-								Cancel
+								{messages['ui.cancel']()}
 							</button>
 							<form method="POST" action="?/deleteAccount" use:enhance>
 								<button
@@ -344,7 +350,7 @@
 									disabled={deleteConfirmText !== 'DELETE'}
 									onclick={handleDeleteAccount}
 								>
-									Permanently Delete Account
+									{messages['screen.permanently_delete_account']()}
 								</button>
 							</form>
 						</div>

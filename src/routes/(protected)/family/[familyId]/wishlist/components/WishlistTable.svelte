@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import WishlistCoordination from '$lib/components/wishlist/WishlistCoordination.svelte';
 	import type { WishlistItemDto } from '$lib/server/wishlist/presenters';
 	import type { WishlistCoordinationSummary } from '$lib/wishlist/coordination';
@@ -38,10 +39,10 @@
 				<tr>
 					<th>Regalo</th>
 					<th>Dueño</th>
-					<th>Precio</th>
-					<th>Prioridad</th>
-					<th class="min-w-64">Coordinación</th>
-					<th>Acciones</th>
+					<th>{messages['ui.price']()}</th>
+					<th>{messages['ui.priority']()}</th>
+					<th class="min-w-64">{messages['screen.family_tasks']()}</th>
+					<th>{messages['details.actions']()}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -104,7 +105,7 @@
 										onclick={() => onOpenEdit(item)}
 										aria-label={`Editar ${item.name}`}
 									>
-										Editar
+										{messages['ui.edit']()}
 									</button>
 								{/if}
 							</div>

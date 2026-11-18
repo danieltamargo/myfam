@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import type { Tables } from '$lib/types/database';
 	import type { ExpenseMember } from '$lib/server/expenses/queries';
 	import ExpenseSplitEditor from './ExpenseSplitEditor.svelte';
@@ -30,7 +31,7 @@
 			class="grid gap-4 md:grid-cols-6"
 		>
 			<label class="form-control md:col-span-3" for="recurring-description">
-				<span class="label-text mb-2 font-medium">Concepto</span>
+				<span class="label-text mb-2 font-medium">{messages['details.description']()}</span>
 				<input
 					id="recurring-description"
 					class="input-bordered input"
@@ -41,7 +42,7 @@
 				/>
 			</label>
 			<label class="form-control md:col-span-1" for="recurring-amount">
-				<span class="label-text mb-2 font-medium">Importe</span>
+				<span class="label-text mb-2 font-medium">{messages['ui.amount']()}</span>
 				<input
 					id="recurring-amount"
 					class="input-bordered input"
@@ -56,8 +57,8 @@
 			<label class="form-control md:col-span-1" for="recurring-frequency">
 				<span class="label-text mb-2 font-medium">Frecuencia</span>
 				<select id="recurring-frequency" class="select-bordered select" name="frequency" required>
-					<option value="monthly">Mensual</option>
-					<option value="weekly">Semanal</option>
+					<option value="monthly">{messages['ui.monthly']()}</option>
+					<option value="weekly">{messages['ui.weekly']()}</option>
 				</select>
 			</label>
 			<label class="form-control md:col-span-1" for="recurring-date">
@@ -86,16 +87,16 @@
 				</select>
 			</label>
 			<label class="form-control md:col-span-2" for="recurring-category">
-				<span class="label-text mb-2 font-medium">Categoría</span>
+				<span class="label-text mb-2 font-medium">{messages['ui.category']()}</span>
 				<select id="recurring-category" class="select-bordered select" name="category_id">
-					<option value="">Sin categoría</option>
+					<option value="">{messages['screen.no_category']()}</option>
 					{#each categories as category (category.id)}
 						<option value={category.id}>{category.name}</option>
 					{/each}
 				</select>
 			</label>
 			<label class="form-control md:col-span-2" for="recurring-notes">
-				<span class="label-text mb-2 font-medium">Notas</span>
+				<span class="label-text mb-2 font-medium">{messages['ui.notes']()}</span>
 				<input id="recurring-notes" class="input-bordered input" name="notes" maxlength="4000" />
 			</label>
 			<div class="md:col-span-6">

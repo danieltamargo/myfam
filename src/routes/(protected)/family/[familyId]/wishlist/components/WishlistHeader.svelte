@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	type ViewMode = 'cards' | 'table';
 
 	let {
@@ -17,7 +18,9 @@
 >
 	<div>
 		<h1 class="font-bold">Wishlist</h1>
-		<p class="text-xs text-base-content/65">Regalos, ideas y coordinación familiar sin spoilers.</p>
+		<p class="text-xs text-base-content/65">
+			{messages['feature.gift_ideas_and_family_planning_without_spoilers']()}
+		</p>
 	</div>
 	<div class="flex flex-wrap gap-2">
 		<div class="join">
@@ -26,18 +29,20 @@
 				onclick={() => (viewMode = 'cards')}
 				aria-pressed={viewMode === 'cards'}
 			>
-				Tarjetas
+				{messages['feature.cards']()}
 			</button>
 			<button
 				class="btn join-item btn-sm {viewMode === 'table' ? 'btn-active' : ''}"
 				onclick={() => (viewMode = 'table')}
 				aria-pressed={viewMode === 'table'}
 			>
-				Tabla
+				{messages['feature.table']()}
 			</button>
 		</div>
 
-		<button class="btn btn-ghost btn-sm" onclick={onExport}>Exportar mi lista</button>
+		<button class="btn btn-ghost btn-sm" onclick={onExport}
+			>{messages['ui.export_my_wishlist']()}</button
+		>
 		<button class="btn gap-2 btn-sm btn-primary" onclick={onAddGift}>
 			<svg
 				xmlns="http://www.w3.org/2000/svg"
@@ -52,7 +57,7 @@
 				<line x1="12" y1="5" x2="12" y2="19"></line>
 				<line x1="5" y1="12" x2="19" y2="12"></line>
 			</svg>
-			Añadir regalo
+			{messages['feature.add_gift']()}
 		</button>
 	</div>
 </div>

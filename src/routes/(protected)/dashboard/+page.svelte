@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import PlannerOverview from '$lib/components/planner/PlannerOverview.svelte';
@@ -13,18 +14,22 @@
 </script>
 
 <svelte:head>
-	<title>Inicio familiar · MyFamily</title>
+	<title>{messages['ui.family_dashboard_myfamily']()}</title>
 	<meta name="description" content="Agenda y actividad de tu familia en un único lugar." />
 </svelte:head>
 
 <div class="container mx-auto max-w-6xl space-y-7 p-4 py-6 sm:p-8">
 	<header class="flex flex-wrap items-end justify-between gap-4">
 		<div>
-			<p class="text-sm font-semibold text-primary">Tu día en familia</p>
-			<h1 class="mt-1 text-3xl font-bold sm:text-4xl">Hola de nuevo</h1>
-			<p class="mt-2 text-base-content/65">Lo importante de hoy, sin cambiar de contexto.</p>
+			<p class="text-sm font-semibold text-primary">{messages['screen.your_family_today']()}</p>
+			<h1 class="mt-1 text-3xl font-bold sm:text-4xl">{messages['ui.welcome_back']()}</h1>
+			<p class="mt-2 text-base-content/65">
+				{messages['screen.today_s_plans_and_tasks_in_one_place']()}
+			</p>
 		</div>
-		<a class="btn btn-ghost btn-sm" href={resolve('/families')}>Gestionar familias</a>
+		<a class="btn btn-ghost btn-sm" href={resolve('/families')}
+			>{messages['screen.manage_families']()}</a
+		>
 	</header>
 
 	{#if form?.message}
@@ -36,7 +41,9 @@
 	{#if data.invitations.length > 0}
 		<section aria-labelledby="pending-invitations-title" class="space-y-3">
 			<div class="flex items-center gap-2">
-				<h2 id="pending-invitations-title" class="text-xl font-bold">Invitaciones pendientes</h2>
+				<h2 id="pending-invitations-title" class="text-xl font-bold">
+					{messages['ui.pending_invitations']()}
+				</h2>
 				<span class="badge badge-primary">{data.invitations.length}</span>
 			</div>
 			<div class="grid gap-3 md:grid-cols-2">
@@ -48,17 +55,22 @@
 									{invitation.family?.alias ?? invitation.family?.name ?? 'Familia'}
 								</h3>
 								<p class="text-sm text-base-content/65">
-									Invitación de {invitation.invitedBy?.display_name?.trim() || 'un familiar'}
+									{messages['screen.invited_by']()}
+									{invitation.invitedBy?.display_name?.trim() || 'un familiar'}
 								</p>
 							</div>
 							<div class="card-actions justify-end">
 								<form method="POST" action="?/rejectInvitation" use:enhance>
 									<input type="hidden" name="invitation_id" value={invitation.id} />
-									<button type="submit" class="btn btn-ghost btn-sm">Rechazar</button>
+									<button type="submit" class="btn btn-ghost btn-sm"
+										>{messages['ui.decline']()}</button
+									>
 								</form>
 								<form method="POST" action="?/acceptInvitation" use:enhance>
 									<input type="hidden" name="invitation_id" value={invitation.id} />
-									<button type="submit" class="btn btn-sm btn-primary">Aceptar</button>
+									<button type="submit" class="btn btn-sm btn-primary"
+										>{messages['ui.accept']()}</button
+									>
 								</form>
 							</div>
 						</div>
@@ -92,25 +104,29 @@
 		</section>
 	{:else if data.plannerError}
 		<div class="alert alert-error" role="alert">
-			<span>No se pudo cargar el resumen familiar.</span>
-			<a class="btn btn-sm" href={resolve('/dashboard')}>Reintentar</a>
+			<span>{messages['screen.could_not_load_the_family_overview']()}</span>
+			<a class="btn btn-sm" href={resolve('/dashboard')}>{messages['ui.try_again']()}</a>
 		</div>
 	{:else}
 		<section class="card border border-base-300 bg-base-100">
 			<div class="card-body items-center py-12 text-center">
 				<span aria-hidden="true" class="text-5xl">🏡</span>
-				<h2 class="mt-2 card-title text-2xl">Crea tu primera familia</h2>
+				<h2 class="mt-2 card-title text-2xl">{messages['ui.create_your_first_family']()}</h2>
 				<p class="max-w-md text-base-content/65">
-					El planner se completará con los módulos y la información que decidáis compartir.
+					{messages['screen.your_shared_family_plans_will_appear_here']()}
 				</p>
-				<a class="btn mt-3 btn-primary" href={resolve('/families')}>Empezar</a>
+				<a class="btn mt-3 btn-primary" href={resolve('/families')}
+					>{messages['ui.get_started']()}</a
+				>
 			</div>
 		</section>
 	{/if}
 
 	<footer class="flex flex-wrap gap-2 border-t border-base-300 pt-5 text-sm">
-		<a class="link link-hover" href={resolve('/families')}>Todas las familias</a>
+		<a class="link link-hover" href={resolve('/families')}>{messages['screen.all_families']()}</a>
 		<span aria-hidden="true" class="text-base-content/30">·</span>
-		<a class="link link-hover" href={resolve('/profile')}>Preferencias de perfil</a>
+		<a class="link link-hover" href={resolve('/profile')}
+			>{messages['screen.profile_preferences']()}</a
+		>
 	</footer>
 </div>

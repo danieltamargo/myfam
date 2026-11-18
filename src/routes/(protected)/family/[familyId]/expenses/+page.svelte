@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import type { ActionData, PageData } from './$types';
 	import { resolve } from '$app/paths';
 
@@ -24,7 +25,7 @@
 </script>
 
 <svelte:head>
-	<title>Gastos · MyFamily</title>
+	<title>{messages['ui.expenses_myfamily']()}</title>
 	<meta
 		name="description"
 		content="Colecciones privadas para organizar los gastos de tu familia."
@@ -35,14 +36,14 @@
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div>
 			<p class="mb-2 text-sm font-semibold tracking-wide text-primary uppercase">
-				Economía familiar
+				{messages['screen.family_finances']()}
 			</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Gastos</h1>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{messages['ui.expenses']()}</h1>
 			<p class="mt-2 max-w-2xl text-base-content/65">
-				Separa viajes, hogares o proyectos y decide quién puede ver o editar cada colección.
+				{messages['screen.keep_trips_households_and_projects_separate_and_decide_who_can_view_']()}
 			</p>
 		</div>
-		<a class="btn btn-primary" href="#nueva-coleccion">Nueva colección</a>
+		<a class="btn btn-primary" href="#nueva-coleccion">{messages['screen.new_collection']()}</a>
 	</header>
 
 	{#if form?.error}
@@ -58,15 +59,20 @@
 	{#if data.invitations.length > 0}
 		<section aria-labelledby="invitaciones-gastos" class="space-y-3">
 			<div>
-				<p class="text-xs font-semibold tracking-widest text-primary uppercase">Acción pendiente</p>
-				<h2 id="invitaciones-gastos" class="mt-1 text-xl font-semibold">Invitaciones</h2>
+				<p class="text-xs font-semibold tracking-widest text-primary uppercase">
+					{messages['screen.needs_your_attention']()}
+				</p>
+				<h2 id="invitaciones-gastos" class="mt-1 text-xl font-semibold">
+					{messages['ui.invitations']()}
+				</h2>
 			</div>
 			{#each data.invitations as invitation (invitation.collectionId)}
 				<div class="alert items-start alert-info sm:items-center">
 					<div class="min-w-0 flex-1">
 						<p class="font-semibold">{invitation.collectionName}</p>
 						<p class="text-sm opacity-80">
-							Te invitan como {roleLabel(invitation.role)}
+							{messages['screen.you_were_invited_as']()}
+							{roleLabel(invitation.role)}
 							{#if invitation.description}
 								· {invitation.description}{/if}
 						</p>
@@ -81,7 +87,7 @@
 								value={data.selectedCalendarEvent.id}
 							/>{/if}
 						<input type="hidden" name="collection_id" value={invitation.collectionId} />
-						<button class="btn btn-sm btn-primary" type="submit">Aceptar</button>
+						<button class="btn btn-sm btn-primary" type="submit">{messages['ui.accept']()}</button>
 					</form>
 				</div>
 			{/each}
@@ -92,9 +98,11 @@
 		<div class="flex items-end justify-between gap-4">
 			<div>
 				<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">
-					Tu espacio
+					{messages['details.your_space']()}
 				</p>
-				<h2 id="colecciones-activas" class="mt-1 text-xl font-semibold">Colecciones activas</h2>
+				<h2 id="colecciones-activas" class="mt-1 text-xl font-semibold">
+					{messages['ui.active_collections']()}
+				</h2>
 			</div>
 			<span class="badge badge-ghost">{activeCollections.length}</span>
 		</div>
@@ -102,9 +110,9 @@
 		{#if activeCollections.length === 0}
 			<div class="rounded-box border border-dashed border-base-300 bg-base-100 p-8 text-center">
 				<div class="text-4xl" aria-hidden="true">🧾</div>
-				<h3 class="mt-3 text-lg font-semibold">Todavía no hay gastos compartidos</h3>
+				<h3 class="mt-3 text-lg font-semibold">{messages['ui.no_shared_expenses_yet']()}</h3>
 				<p class="mt-1 text-sm text-base-content/60">
-					Crea una colección privada y añade solo a las personas que la necesiten.
+					{messages['screen.create_a_private_collection_and_add_the_people_who_need_it']()}
 				</p>
 			</div>
 		{:else}
@@ -134,7 +142,7 @@
 							</div>
 							<div class="card-actions items-center justify-between border-t border-base-200 pt-4">
 								<span class="font-mono text-xs text-base-content/50">{collection.currency}</span>
-								<span class="text-sm font-semibold text-primary">Abrir →</span>
+								<span class="text-sm font-semibold text-primary">{messages['details.open']()}</span>
 							</div>
 						</div>
 					</a>
@@ -150,8 +158,12 @@
 	>
 		<div class="card-body gap-6">
 			<div>
-				<p class="text-xs font-semibold tracking-widest text-primary uppercase">Nuevo espacio</p>
-				<h2 id="crear-coleccion" class="mt-1 text-xl font-semibold">Crear colección</h2>
+				<p class="text-xs font-semibold tracking-widest text-primary uppercase">
+					{messages['screen.new_space']()}
+				</p>
+				<h2 id="crear-coleccion" class="mt-1 text-xl font-semibold">
+					{messages['ui.create_collection']()}
+				</h2>
 				<p class="mt-1 text-sm text-base-content/60">
 					Serás su propietario. Después podrás invitar participantes con permisos independientes.
 				</p>
@@ -167,7 +179,7 @@
 						value={data.selectedCalendarEvent.id}
 					/>{/if}
 				<label class="form-control md:col-span-3" for="expense-collection-name">
-					<span class="label-text mb-2 font-medium">Nombre</span>
+					<span class="label-text mb-2 font-medium">{messages['ui.name']()}</span>
 					<input
 						id="expense-collection-name"
 						class="input-bordered input w-full"
@@ -178,7 +190,7 @@
 					/>
 				</label>
 				<label class="form-control md:col-span-1" for="expense-collection-currency">
-					<span class="label-text mb-2 font-medium">Moneda</span>
+					<span class="label-text mb-2 font-medium">{messages['ui.currency']()}</span>
 					<select
 						id="expense-collection-currency"
 						class="select-bordered select w-full"
@@ -191,7 +203,8 @@
 				</label>
 				<label class="form-control md:col-span-6" for="expense-collection-description">
 					<span class="label-text mb-2 font-medium"
-						>Descripción <span class="font-normal opacity-50">(opcional)</span></span
+						>{messages['ui.description']()}
+						<span class="font-normal opacity-50">{messages['details.optional']()}</span></span
 					>
 					<textarea
 						id="expense-collection-description"
@@ -202,7 +215,8 @@
 					></textarea>
 				</label>
 				<div class="md:col-span-6 md:justify-self-end">
-					<button class="btn btn-primary" type="submit">Crear colección</button>
+					<button class="btn btn-primary" type="submit">{messages['ui.create_collection']()}</button
+					>
 				</div>
 			</form>
 		</div>
@@ -211,7 +225,7 @@
 	{#if archivedCollections.length > 0}
 		<details class="collapse-arrow collapse border border-base-300 bg-base-100">
 			<summary class="collapse-title font-semibold"
-				>Archivadas ({archivedCollections.length})</summary
+				>{messages['details.archived']()}{archivedCollections.length})</summary
 			>
 			<div class="collapse-content">
 				<ul class="divide-y divide-base-200">

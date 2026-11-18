@@ -89,6 +89,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=Path("supabase/seed.private.json"))
     parser.add_argument("--workbook", type=Path, default=Path("docs/Lista de regalos .xlsx"))
+    parser.add_argument("--reset-passwords", action="store_true",
+                        help="Aplica la contraseña compartida a las cuentas locales existentes de la carga.")
     args = parser.parse_args()
     config = json.loads(args.config.read_text(encoding="utf-8"))
     password = config["testPassword"]
@@ -128,10 +130,10 @@ def main():
         if not identity:
             result = request(f"{api}/auth/v1/admin/users", key, {
                 "email": email, "email_confirm": True, "user_metadata": user_data,
-                "password": password if member in test_accounts else secrets.token_urlsafe(32)
+                "password": password
             })
             identity = result["id"]
-        elif member in test_accounts:
+        elif args.reset_passwords or member in test_accounts:
             request(f"{api}/auth/v1/admin/users/{UUID(identity)}", key, {"password": password}, method="PUT")
         member["id"] = str(UUID(identity))
         birthday = member.get("birthday")

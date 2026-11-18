@@ -1,1 +1,5 @@
-<p>El registro está cerrado. Solicita el acceso al administrador.</p>
+<script lang="ts">
+	import * as messages from '$paraglide/messages';
+</script>
+
+<p>{messages['screen.registration_is_closed_ask_an_administrator_for_access']()}</p>

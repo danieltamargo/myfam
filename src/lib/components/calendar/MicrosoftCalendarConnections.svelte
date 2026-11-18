@@ -1,4 +1,6 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
+	import { getLocale } from '$paraglide/runtime';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import type { MicrosoftCalendarPanel } from '$lib/server/calendar/microsoft/service';
@@ -48,20 +50,21 @@
 	aria-labelledby="microsoft-calendar-heading"
 	aria-busy={busy}
 >
-	<h2 id="microsoft-calendar-heading" class="text-lg font-semibold">Tu Outlook / Microsoft 365</h2>
+	<h2 id="microsoft-calendar-heading" class="text-lg font-semibold">
+		{messages['feature.your_outlook_microsoft_365']()}
+	</h2>
 	<p class="mt-1 text-sm text-base-content/65">
-		La conexión es independiente de cómo inicias sesión en MyFamily. Los eventos importados son
-		privados hasta que tú cambies su audiencia.
+		{messages['feature.you_can_connect_another_calendar_imported_events_stay_private_until_']()}
 	</p>
 	{#if operationError}<p role="alert" class="mt-3 text-sm text-error">{operationError}</p>{/if}
 	{#if !panel.configured}
 		<p role="status" class="mt-3 text-sm text-base-content/65">
-			La conexión con Outlook / Microsoft 365 todavía no está configurada en este servidor.
+			{messages['feature.outlook_is_not_available_yet']()}
 		</p>
 	{:else if !panel.connection}
 		<form method="POST" action="?/connectMicrosoft" class="mt-3">
 			<button type="submit" class="btn btn-outline btn-sm" disabled={busy}
-				>Conectar Outlook / Microsoft 365</button
+				>{messages['feature.connect_outlook_microsoft_365']()}</button
 			>
 		</form>
 	{:else}
@@ -75,7 +78,7 @@
 			>
 				<input type="hidden" name="connection_id" value={connection.id} />
 				<label class="form-control"
-					><span class="mb-1 text-sm font-medium">Calendario propio</span>
+					><span class="mb-1 text-sm font-medium">{messages['feature.your_calendar']()}</span>
 					<select class="select" name="calendar_id" required disabled={busy}>
 						{#each connection.calendars as calendar (calendar.id)}<option value={calendar.id}
 								>{calendar.label}</option
@@ -83,30 +86,31 @@
 					</select>
 				</label>
 				<button type="submit" class="btn btn-sm btn-primary" disabled={busy}
-					>Usar este calendario</button
+					>{messages['feature.use_this_calendar']()}</button
 				>
 			</form>
 		{:else}
 			<p class="mt-3 font-medium">{connection.calendarLabel}</p>
 			<p class="mt-1 text-sm text-base-content/65">
-				Se sincroniza al abrir el calendario y cada dos minutos mientras esté visible. La primera
-				sincronización abarca desde hace 30 días hasta los próximos 365 días. Las series de
-				Microsoft se muestran como citas individuales, incluidas sus excepciones.
+				{messages['feature.syncs_when_you_open_the_calendar_and_every_two_minutes_while_it_s_op']()}
 			</p>
 			{#if connection.lastSyncedAt}<p class="mt-1 text-xs text-base-content/55">
-					Última sincronización: <time datetime={connection.lastSyncedAt}
-						>{new Date(connection.lastSyncedAt).toLocaleString('es-ES')}</time
+					{messages['feature.last_synced']()}
+					<time datetime={connection.lastSyncedAt}
+						>{new Date(connection.lastSyncedAt).toLocaleString(
+							getLocale() === 'en' ? 'en-GB' : 'es-ES'
+						)}</time
 					>
 				</p>{/if}
 			<form method="POST" action="?/syncMicrosoft" use:enhance={submit} class="mt-3">
 				<input type="hidden" name="connection_id" value={connection.id} />
 				<button type="submit" class="btn btn-outline btn-sm" disabled={busy}
-					>{busy ? 'Procesando…' : 'Sincronizar ahora'}</button
+					>{busy ? 'Procesando…' : messages['feature.sync_now']()}</button
 				>
 			</form>
 			<details class="mt-4">
 				<summary class="cursor-pointer text-sm font-medium"
-					>Enviar un evento de MyFamily a Microsoft</summary
+					>{messages['feature.send_an_event_from_myfamily_to_outlook']()}</summary
 				>
 				<p class="mt-2 text-sm text-base-content/65">
 					Solo se enviará el evento propio que elijas, sin participantes ni avisos a invitados. Su
@@ -123,7 +127,9 @@
 						<input type="hidden" name="connection_id" value={connection.id} />
 						<input type="hidden" name="version" value={selectedEvent?.version ?? ''} />
 						<label class="form-control"
-							><span class="mb-1 text-sm font-medium">Evento de este periodo</span>
+							><span class="mb-1 text-sm font-medium"
+								>{messages['feature.event_in_this_period']()}</span
+							>
 							<select
 								name="event_id"
 								class="select"
@@ -131,18 +137,18 @@
 								disabled={busy}
 								required
 							>
-								<option value="">Selecciona un evento</option>
+								<option value="">{messages['feature.choose_an_event']()}</option>
 								{#each exportableEvents as event (event.id)}<option value={event.id}
 										>{event.title}</option
 									>{/each}
 							</select>
 						</label>
 						<button type="submit" class="btn btn-outline btn-sm" disabled={busy || !selectedEvent}
-							>Enviar a Microsoft</button
+							>{messages['feature.send_to_outlook']()}</button
 						>
 					</form>
 				{:else}<p class="mt-2 text-sm text-base-content/55">
-						No hay eventos propios sin recurrencia pendientes de conectar en este periodo.
+						{messages['feature.no_unlinked_one_off_events_of_yours_in_this_period']()}
 					</p>{/if}
 			</details>
 			{#each panel.conflicts as conflict (conflict.remoteEventId)}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
 	import type { ExpenseDashboard } from '$lib/server/expenses/queries';
 
 	interface Props {
@@ -10,7 +11,7 @@
 	let { dashboard, currency, granularity }: Props = $props();
 
 	function money(value: number): string {
-		return new Intl.NumberFormat('es-ES', {
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			style: 'currency',
 			currency,
 			maximumFractionDigits: 0

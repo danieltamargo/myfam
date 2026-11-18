@@ -44,7 +44,7 @@ export function safeAuthError(
 		return m['auth.reset_link_error']({}, options);
 	}
 	if (action === 'mfa') {
-		return 'Unable to complete two-factor authentication. Check your current code and try again.';
+		return m['dialog.factor_error']({}, options);
 	}
 	return m['auth.generic_error']({}, options);
 }

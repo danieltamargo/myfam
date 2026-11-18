@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openDialog } from '$lib/components/modals/open-dialog';
 	import { enhance } from '$app/forms';
 	import type { GameType } from '$lib/types/games';
 	import { GAME_METADATA } from '$lib/types/games';
@@ -39,12 +40,6 @@
 
 	const gameMetadata = GAME_METADATA[gameType];
 
-	function handleClickOutside(event: MouseEvent) {
-		if (event.target === event.currentTarget) {
-			onClose();
-		}
-	}
-
 	const resultEmoji = $derived(() => {
 		if (isDraw) return '🤝';
 		if (isCurrentUserWinner) return '🎉';
@@ -65,18 +60,12 @@
 </script>
 
 {#if isOpen}
-	<div
-		class="modal-open modal"
-		onclick={handleClickOutside}
-		onkeydown={(e) => e.key === 'Escape' && onClose()}
-		role="button"
-		tabindex="0"
-	>
+	<dialog class="modal" use:openDialog={onClose} aria-labelledby="game-result-title">
 		<div class="modal-box max-w-md">
 			<!-- Header with game icon -->
 			<div class="mb-6 text-center">
 				<div class="mb-4 text-6xl">{resultEmoji()}</div>
-				<h3 class="mb-2 text-3xl font-bold">{resultTitle()}</h3>
+				<h3 id="game-result-title" class="mb-2 text-3xl font-bold">{resultTitle()}</h3>
 				<p class="text-lg text-base-content/70">{resultMessage()}</p>
 			</div>
 
@@ -205,7 +194,9 @@
 				</div>
 			{/if}
 		</div>
-	</div>
+		<button type="button" class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={onClose}
+		></button>
+	</dialog>
 {/if}
 
 <style>

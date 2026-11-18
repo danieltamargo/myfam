@@ -1,9 +1,11 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
+	import { getLocale } from '$paraglide/runtime';
 	import { resolve } from '$app/paths';
 	import type { BirthdayAlert } from '$lib/birthdays/upcoming';
 
 	let { alerts, errorMessage = '' }: { alerts: BirthdayAlert[]; errorMessage?: string } = $props();
-	const dateFormatter = new Intl.DateTimeFormat('es-ES', {
+	const dateFormatter = new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 		day: 'numeric',
 		month: 'long',
 		timeZone: 'UTC'
@@ -13,8 +15,11 @@
 {#if errorMessage}
 	<p role="status" class="mb-4 rounded-box border border-base-300 p-3 text-sm">{errorMessage}</p>
 {:else if alerts.length}
-	<aside aria-label="Cumpleaños próximos" class="mb-4 rounded-box border border-base-300 p-4">
-		<h2 class="font-semibold">Cumpleaños próximos</h2>
+	<aside
+		aria-label={messages['feature.upcoming_birthdays']()}
+		class="mb-4 rounded-box border border-base-300 p-4"
+	>
+		<h2 class="font-semibold">{messages['feature.upcoming_birthdays']()}</h2>
 		<ul class="mt-2 divide-y divide-base-300">
 			{#each alerts as alert (alert.userId)}
 				<li
@@ -34,7 +39,8 @@
 					<a
 						class="shrink-0 link text-primary"
 						href={resolve(...([alert.wishlistHref] as unknown as ['/']))}
-						aria-label={`Ver wishlist de ${alert.displayName}`}>Ver wishlist</a
+						aria-label={`Ver wishlist de ${alert.displayName}`}
+						>{messages['feature.view_wishlist']()}</a
 					>
 				</li>
 			{/each}

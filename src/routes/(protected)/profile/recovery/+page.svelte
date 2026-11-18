@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import type { ActionData } from './$types';
@@ -7,8 +8,8 @@
 </script>
 
 <main class="mx-auto max-w-2xl space-y-6 p-6">
-	<a href={resolve('/profile')} class="link">Volver al perfil</a>
-	<h1 class="text-2xl font-bold">Códigos de recuperación</h1>
+	<a href={resolve('/profile')} class="link">{messages['screen.back_to_profile']()}</a>
+	<h1 class="text-2xl font-bold">{messages['ui.recovery_codes']()}</h1>
 	<p>
 		Necesitas verificar tu autenticador para generar o revocar códigos. Guarda los códigos fuera de
 		MyFamily. Cada lote sustituye al anterior y solo se muestra al generarlo.
@@ -24,7 +25,7 @@
 			</ul>
 		</section>
 	{:else if form?.revoked}
-		<p role="status">Los códigos anteriores están revocados.</p>
+		<p role="status">{messages['screen.the_previous_codes_have_been_revoked']()}</p>
 	{/if}
 	<form
 		method="POST"
@@ -38,10 +39,10 @@
 		}}
 	>
 		<button class="btn btn-primary" formaction="?/generate" disabled={submitting}
-			>Generar ocho códigos nuevos</button
+			>{messages['screen.generate_eight_new_codes']()}</button
 		>
 		<button class="btn btn-outline" formaction="?/revoke" disabled={submitting}
-			>Revocar códigos</button
+			>{messages['screen.revoke_codes']()}</button
 		>
 	</form>
 </main>

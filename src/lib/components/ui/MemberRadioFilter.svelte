@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import Avatar from './Avatar.svelte';
 	import { onMount } from 'svelte';
 	let ready = $state(false);
@@ -42,7 +43,7 @@
 			/>
 			<span
 				class="flex min-h-12 min-w-12 items-center justify-center rounded-full border border-base-300 px-3 text-sm peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-content peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary"
-				>Todos</span
+				>{messages['ui.everyone']()}</span
 			>
 		</label>
 		{#each members as member (member.id)}

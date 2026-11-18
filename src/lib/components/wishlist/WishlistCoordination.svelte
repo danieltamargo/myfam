@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import type { WishlistCoordinationSummary } from '$lib/wishlist/coordination';
@@ -104,7 +105,7 @@
 					<input type="hidden" name="item_id" value={itemId} />
 					<input type="hidden" name="is_reserved" value="true" />
 					<label class="form-control w-full sm:w-24" for={`reservation-quantity-${itemId}`}>
-						<span class="label-text text-xs">Cantidad</span>
+						<span class="label-text text-xs">{messages['ui.quantity']()}</span>
 						<input
 							id={`reservation-quantity-${itemId}`}
 							class="input-bordered input input-sm max-w-full min-w-0 text-base"
@@ -155,7 +156,7 @@
 					<input type="hidden" name="item_id" value={itemId} />
 					<input type="hidden" name="is_purchased" value="true" />
 					<label class="form-control w-full sm:w-24" for={`purchase-quantity-${itemId}`}>
-						<span class="label-text text-xs">Cantidad</span>
+						<span class="label-text text-xs">{messages['ui.quantity']()}</span>
 						<input
 							id={`purchase-quantity-${itemId}`}
 							class="input-bordered input input-sm max-w-full min-w-0 text-base"

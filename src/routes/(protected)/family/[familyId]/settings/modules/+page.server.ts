@@ -1,4 +1,5 @@
 import { fail } from '@sveltejs/kit';
+import * as messages from '$paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 import { isModuleId, MODULE_CATALOG } from '$lib/config/modules';
 import { hasFamilyCapability, requireFamilyCapability } from '$lib/server/auth/authorization';
@@ -28,12 +29,12 @@ export const actions: Actions = {
 		const enabledValue = formData.get('enabled');
 
 		if (!isModuleId(moduleId) || (enabledValue !== 'true' && enabledValue !== 'false')) {
-			return fail(400, { error: 'La preferencia enviada no es válida.' });
+			return fail(400, { error: messages['module_settings.invalid']() });
 		}
 
 		const module = MODULE_CATALOG[moduleId];
 		if (module.availability !== 'available' || !module.familyCanDisable) {
-			return fail(400, { error: 'Este módulo no admite una preferencia familiar.' });
+			return fail(400, { error: messages['module_settings.required']() });
 		}
 
 		const enabled = enabledValue === 'true';
@@ -46,12 +47,15 @@ export const actions: Actions = {
 		if (mutationError) {
 			console.error('Module preference mutation failed', mutationError);
 			return fail(mutationError.code === '42501' ? 403 : 500, {
-				error: 'No se pudo guardar la preferencia del módulo.'
+				error: messages['module_settings.error']()
 			});
 		}
 
+		const label = messages[`app_nav.${moduleId}`]();
 		return {
-			success: enabled ? `${module.label} está activo.` : `${module.label} está desactivado.`
+			success: enabled
+				? messages['module_settings.enabled']({ module: label })
+				: messages['module_settings.disabled']({ module: label })
 		};
 	}
 };

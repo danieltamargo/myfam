@@ -1,5 +1,7 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
+	import { openDialog } from '$lib/components/modals/open-dialog';
 
 	interface Props {
 		onClose: () => void;
@@ -18,23 +20,13 @@
 			.replace(/[^A-Z0-9]/g, '')
 			.slice(0, 6);
 	}
-
-	function handleClickOutside(event: MouseEvent) {
-		if (event.target === event.currentTarget) {
-			onClose();
-		}
-	}
 </script>
 
-<div
-	class="modal-open modal"
-	onclick={handleClickOutside}
-	onkeydown={(e) => e.key === 'Escape' && onClose()}
-	role="button"
-	tabindex="0"
->
+<dialog class="modal" use:openDialog={onClose} aria-labelledby="join-room-title">
 	<div class="modal-box max-w-md">
-		<h3 class="mb-4 text-2xl font-bold">Unirse con Código</h3>
+		<h3 id="join-room-title" class="mb-4 text-2xl font-bold">
+			{messages['ui.join_with_a_code']()}
+		</h3>
 
 		<form
 			method="POST"
@@ -114,7 +106,7 @@
 			<!-- Actions -->
 			<div class="modal-action">
 				<button type="button" class="btn" onclick={onClose} disabled={isSubmitting}>
-					Cancelar
+					{messages['ui.cancel']()}
 				</button>
 				<button
 					type="submit"
@@ -125,10 +117,12 @@
 						<span class="loading loading-sm loading-spinner"></span>
 						Uniéndose...
 					{:else}
-						Unirse a Sala
+						{messages['ui.join_room']()}
 					{/if}
 				</button>
 			</div>
 		</form>
 	</div>
-</div>
+	<button type="button" class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={onClose}
+	></button>
+</dialog>

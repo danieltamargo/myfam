@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import type { ActionData } from './$types';
@@ -7,7 +8,7 @@
 </script>
 
 <main class="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 p-6">
-	<h1 class="text-2xl font-bold">Recuperar la verificación en dos pasos</h1>
+	<h1 class="text-2xl font-bold">{messages['ui.recover_two_step_verification']()}</h1>
 	<p>
 		Usa uno de los códigos que guardaste en tu perfil. Cambiaremos tu contraseña, cerraremos todas
 		tus sesiones y te pediremos configurar un nuevo autenticador antes de acceder a tus datos.
@@ -25,7 +26,7 @@
 		}}
 	>
 		<label class="flex flex-col gap-2"
-			>Contraseña actual
+			>{messages['screen.current_password']()}
 			<input
 				class="input w-full"
 				type="password"
@@ -36,7 +37,7 @@
 			/>
 		</label>
 		<label class="flex flex-col gap-2"
-			>Nueva contraseña
+			>{messages['screen.new_password']()}
 			<input
 				class="input w-full"
 				type="password"
@@ -52,7 +53,7 @@
 			Al menos 12 caracteres y distinta de la contraseña actual.
 		</p>
 		<label class="flex flex-col gap-2"
-			>Código de recuperación
+			>{messages['screen.recovery_code']()}
 			<input
 				class="input w-full font-mono"
 				name="code"
@@ -70,5 +71,5 @@
 			>{submitting ? 'Recuperando…' : 'Recuperar y cambiar contraseña'}</button
 		>
 	</form>
-	<a href={resolve('/verify-2fa')} class="link">Volver al autenticador</a>
+	<a href={resolve('/verify-2fa')} class="link">{messages['screen.back_to_authenticator']()}</a>
 </main>

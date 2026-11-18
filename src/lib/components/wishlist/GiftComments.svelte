@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -127,7 +128,10 @@
 		if (diffHours < 24) return `Hace ${diffHours}h`;
 		if (diffDays < 7) return `Hace ${diffDays}d`;
 
-		return date.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+		return date.toLocaleDateString(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+			day: 'numeric',
+			month: 'short'
+		});
 	}
 
 	// Parse mention tokens into data so Svelte escapes every stored value as text.

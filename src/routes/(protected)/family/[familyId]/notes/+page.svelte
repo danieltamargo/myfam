@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -39,7 +41,7 @@
 	}
 
 	function formatDate(value: string): string {
-		return new Intl.DateTimeFormat('es-ES', {
+		return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			day: 'numeric',
 			month: 'short',
 			year: 'numeric'
@@ -77,7 +79,7 @@
 </script>
 
 <svelte:head>
-	<title>Notas seguras · MyFamily</title>
+	<title>{messages['ui.private_notes_myfamily']()}</title>
 	<meta name="description" content="Notas familiares privadas o compartidas con búsqueda segura." />
 </svelte:head>
 
@@ -85,15 +87,17 @@
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div class="max-w-2xl">
 			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">
-				Memoria familiar
+				{messages['screen.family_notebook']()}
 			</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Notas seguras</h1>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
+				{messages['ui.private_notes']()}
+			</h1>
 			<p class="mt-2 text-sm text-base-content/65 sm:text-base">
-				Guarda ideas y acuerdos con privacidad explícita y búsqueda rápida.
+				{messages['screen.save_ideas_and_agreements_and_choose_who_to_share_them_with']()}
 			</p>
 		</div>
 		<button class="btn btn-primary sm:self-center" type="button" onclick={beginCreate}
-			>+ Nueva nota</button
+			>{messages['screen.new_note']()}</button
 		>
 	</header>
 
@@ -130,13 +134,13 @@
 					aria-label="Buscar notas"
 				/>
 			</label>
-			<button class="btn btn-neutral" type="submit">Buscar</button>
+			<button class="btn btn-neutral" type="submit">{messages['ui.search']()}</button>
 			{#if data.search}
 				<a
 					class="btn btn-ghost"
 					href={resolve(
 						`/family/${data.familyId}/notes?filter=${data.filter}&member=${data.selectedMember}`
-					)}>Limpiar</a
+					)}>{messages['details.clear']()}</a
 				>
 			{/if}
 		</form>
@@ -154,7 +158,7 @@
 	<div class="grid min-h-[32rem] gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
 		<aside class="min-w-0">
 			<div class="mb-2 flex items-center justify-between">
-				<h2 class="font-bold">Notas</h2>
+				<h2 class="font-bold">{messages['ui.notes']()}</h2>
 				<span class="text-xs text-base-content/45">{data.notes.length}</span>
 			</div>
 			<div class="flex snap-x gap-2 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible">
@@ -180,7 +184,7 @@
 					<div
 						class="min-w-full rounded-box border border-dashed border-base-300 p-6 text-center text-sm text-base-content/55"
 					>
-						No hay notas que coincidan.
+						{messages['screen.no_matching_notes']()}
 					</div>
 				{/if}
 			</div>
@@ -218,7 +222,7 @@
 							<input type="hidden" name="version" value={data.selectedNote.version} />
 						{/if}
 						<label class="form-control">
-							<span class="label-text mb-1 font-medium">Título</span>
+							<span class="label-text mb-1 font-medium">{messages['ui.title']()}</span>
 							<input
 								class="input w-full"
 								name="title"
@@ -228,26 +232,26 @@
 							/>
 						</label>
 						<label class="form-control">
-							<span class="label-text mb-1 font-medium">Texto / Markdown</span>
+							<span class="label-text mb-1 font-medium">{messages['screen.note_content']()}</span>
 							<textarea
 								class="textarea min-h-64 w-full font-mono text-sm leading-relaxed"
 								name="content"
 								maxlength="20000"
-								placeholder="Escribe texto o Markdown. El HTML se mostrará como texto, nunca se ejecutará."
+								placeholder={messages['dialog.note_placeholder']()}
 								bind:value={editorContent}
 							></textarea>
 						</label>
 						<label class="form-control">
-							<span class="label-text mb-1 font-medium">Visibilidad</span>
+							<span class="label-text mb-1 font-medium">{messages['ui.visibility']()}</span>
 							<select class="select w-full" name="visibility" bind:value={editorVisibility}>
-								<option value="private">Solo yo</option>
-								<option value="selected_members">Personas seleccionadas</option>
-								<option value="family">Toda la familia</option>
+								<option value="private">{messages['ui.only_me']()}</option>
+								<option value="selected_members">{messages['ui.selected_people']()}</option>
+								<option value="family">{messages['ui.whole_family']()}</option>
 							</select>
 						</label>
 						{#if editorVisibility === 'selected_members'}
 							<fieldset>
-								<legend class="mb-2 font-medium">Quién puede leerla</legend>
+								<legend class="mb-2 font-medium">{messages['screen.who_can_read_it']()}</legend>
 								<div class="grid gap-2 sm:grid-cols-2">
 									{#each data.members.filter((member) => member.id !== data.currentUserId) as member (member.id)}
 										<label
@@ -268,7 +272,7 @@
 						{/if}
 						<div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
 							<button class="btn btn-ghost" type="button" onclick={() => (editorMode = 'closed')}
-								>Cancelar</button
+								>{messages['ui.cancel']()}</button
 							>
 							<button class="btn btn-primary" type="submit"
 								>{editorMode === 'create' ? 'Crear nota' : 'Guardar cambios'}</button
@@ -288,13 +292,14 @@
 									>{visibilityLabel(data.selectedNote.visibility)}</span
 								>
 								{#if data.selectedNote.archived_at}<span
-										class="badge badge-soft badge-sm badge-warning">Archivada</span
+										class="badge badge-soft badge-sm badge-warning"
+										>{messages['details.archived_19']()}</span
 									>{/if}
 							</div>
 							<p class="mt-2 text-xs text-base-content/50">
-								Por {data.selectedNote.creatorName} · Actualizada {formatDate(
-									data.selectedNote.updated_at
-								)}
+								Por {data.selectedNote.creatorName}
+								{messages['details.updated']()}
+								{formatDate(data.selectedNote.updated_at)}
 							</p>
 						</div>
 						{#if data.selectedNote.canEdit}
@@ -302,7 +307,7 @@
 								<button
 									class="btn btn-sm btn-primary"
 									type="button"
-									onclick={() => beginEdit(data.selectedNote!)}>Editar</button
+									onclick={() => beginEdit(data.selectedNote!)}>{messages['ui.edit']()}</button
 								>
 								<form method="POST" action="?/setArchived" use:enhance>
 									<input type="hidden" name="note_id" value={data.selectedNote.id} />
@@ -313,7 +318,9 @@
 										value={data.selectedNote.archived_at ? 'false' : 'true'}
 									/>
 									<button class="btn btn-ghost btn-sm" type="submit"
-										>{data.selectedNote.archived_at ? 'Restaurar' : 'Archivar'}</button
+										>{data.selectedNote.archived_at
+											? 'Restaurar'
+											: messages['details.archive']()}</button
 									>
 								</form>
 							</div>
@@ -325,13 +332,15 @@
 								{data.selectedNote.content}
 							</p>
 						{:else}
-							<p class="text-base-content/45 italic">Esta nota no tiene contenido.</p>
+							<p class="text-base-content/45 italic">
+								{messages['screen.this_note_has_no_content']()}
+							</p>
 						{/if}
 					</div>
 					{#if data.selectedNote.memberIds.length > 0}
 						<footer class="border-t border-base-300 pt-4">
 							<p class="mb-2 text-xs font-semibold tracking-wide text-base-content/45 uppercase">
-								Compartida con
+								{messages['screen.shared_with']()}
 							</p>
 							<div class="flex flex-wrap gap-2">
 								{#each data.selectedNote.memberIds as memberId (memberId)}
@@ -347,12 +356,12 @@
 			{:else}
 				<section class="rounded-box border border-dashed border-base-300 px-6 py-20 text-center">
 					<p class="text-4xl" aria-hidden="true">✎</p>
-					<h2 class="mt-3 text-xl font-bold">Tu espacio empieza aquí</h2>
+					<h2 class="mt-3 text-xl font-bold">{messages['ui.your_space_starts_here']()}</h2>
 					<p class="mt-1 text-sm text-base-content/55">
-						Crea una nota privada y compártela solo cuando quieras.
+						{messages['details.create_a_private_note_and_share_it_whenever_you_re_ready']()}
 					</p>
 					<button class="btn mt-5 btn-primary" type="button" onclick={beginCreate}
-						>Crear primera nota</button
+						>{messages['details.create_your_first_note']()}</button
 					>
 				</section>
 			{/if}

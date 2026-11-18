@@ -153,7 +153,8 @@
 				{#each data.invitations as invitation (invitation.id)}
 					<div class="alert alert-info">
 						<span>
-							Invitation sent to <strong>{invitation.invited_user?.email || 'unknown user'}</strong>
+							{m['screen.invitation_sent_to']()}
+							<strong>{invitation.invited_user?.email || 'unknown user'}</strong>
 							•
 							{new Date(invitation.created_at).toLocaleDateString()}
 						</span>
@@ -226,7 +227,7 @@
 						<form method="POST" action="?/setCapabilities" use:enhance class="mt-4 space-y-3">
 							<input type="hidden" name="userId" value={member.userId} />
 							<fieldset class="space-y-2">
-								<legend class="font-semibold">Permisos delegados</legend>
+								<legend class="font-semibold">{m['ui.delegated_permissions']()}</legend>
 								<label class="flex items-center gap-2">
 									<input
 										class="checkbox checkbox-sm"
@@ -234,7 +235,7 @@
 										name="manageMembers"
 										checked={member.canManageMembers}
 									/>
-									Gestionar miembros
+									{m['ui.manage_members']()}
 								</label>
 								<label class="flex items-center gap-2">
 									<input
@@ -243,17 +244,17 @@
 										name="configureModules"
 										checked={member.canConfigureModules}
 									/>
-									Configurar módulos
+									{m['ui.configure_modules']()}
 								</label>
 							</fieldset>
-							<button class="btn btn-sm" type="submit">Guardar permisos</button>
+							<button class="btn btn-sm" type="submit">{m['ui.save_permissions']()}</button>
 						</form>
 					{/if}
 					{#if canManageMembers && !isOwner && member.role === 'member' && member.userId !== data.currentUserId}
 						<button
 							class="btn text-error btn-ghost btn-sm"
 							onclick={() => openDeleteModal(member.userId, member.displayName)}
-							>Retirar miembro</button
+							>{m['screen.remove_member']()}</button
 						>
 					{/if}
 					<!-- Role & Actions -->
@@ -268,9 +269,9 @@
 									value={member.role}
 									onchange={(e) => handleRoleChange(e, member.userId, member.displayName)}
 								>
-									<option value="owner">👑 Owner</option>
-									<option value="admin">⚡ Admin</option>
-									<option value="member">👤 Member</option>
+									<option value="owner">{m['details.owner']()}</option>
+									<option value="admin">{m['details.admin']()}</option>
+									<option value="member">{m['details.member']()}</option>
 								</select>
 							</form>
 
@@ -293,23 +294,25 @@
 	<div class="mt-8 space-y-4">
 		<div class="card bg-base-200">
 			<div class="card-body">
-				<h3 class="mb-3 font-semibold">About Roles</h3>
+				<h3 class="mb-3 font-semibold">{m['ui.about_roles']()}</h3>
 				<div class="space-y-2 text-sm">
 					<div class="flex gap-3">
-						<span class="badge badge-primary">👑 Owner</span>
+						<span class="badge badge-primary">{m['details.owner']()}</span>
 						<span class="text-base-content/70"
-							>Full control over family, can manage all settings and members</span
+							>{m['screen.can_manage_the_family_its_settings_and_its_members']()}</span
 						>
 					</div>
 					<div class="flex gap-3">
-						<span class="badge badge-secondary">⚡ Admin</span>
+						<span class="badge badge-secondary">{m['details.admin']()}</span>
 						<span class="text-base-content/70"
-							>Can invite members and manage most family features</span
+							>{m['screen.can_invite_members_and_manage_most_family_settings']()}</span
 						>
 					</div>
 					<div class="flex gap-3">
-						<span class="badge badge-ghost">👤 Member</span>
-						<span class="text-base-content/70">Can view and participate in family activities</span>
+						<span class="badge badge-ghost">{m['details.member']()}</span>
+						<span class="text-base-content/70"
+							>{m['screen.can_view_and_take_part_in_family_activities']()}</span
+						>
 					</div>
 				</div>
 			</div>
@@ -319,10 +322,9 @@
 		{#if canLeave}
 			<div class="card border-2 border-error/20 bg-base-200">
 				<div class="card-body">
-					<h3 class="mb-2 font-semibold text-error">Leave Family</h3>
+					<h3 class="mb-2 font-semibold text-error">{m['ui.leave_family']()}</h3>
 					<p class="mb-4 text-sm text-base-content/70">
-						If you leave this family, you will lose access to all family data, wishlists, and shared
-						content. You can only rejoin if invited again by an owner or admin.
+						{m['screen.if_you_leave_you_ll_lose_access_to_this_family_s_shared_content_you_']()}
 					</p>
 					<button
 						class="btn w-full gap-2 btn-outline btn-error sm:w-auto"
@@ -342,7 +344,7 @@
 							<polyline points="16 17 21 12 16 7"></polyline>
 							<line x1="21" y1="12" x2="9" y2="12"></line>
 						</svg>
-						Leave Family
+						{m['ui.leave_family']()}
 					</button>
 				</div>
 			</div>
@@ -486,14 +488,14 @@
 <!-- Leave Family Confirmation Modal -->
 <ConfirmationModal
 	bind:show={showLeaveModal}
-	title="Leave Family"
+	title={m['ui.leave_family']()}
 	message={`You are about to leave ${
 		data.members.find((m) => m.userId === data.currentUserId)?.displayName || 'this'
 	} family.`}
 	details="You will lose access to all family data, wishlists, and shared content. You can only rejoin if invited again by an owner or admin."
 	style="critical"
 	icon="logout"
-	confirmText="Leave Family"
+	confirmText={m['ui.leave_family']()}
 	require2FA={true}
 	onConfirm={() => {
 		submitHiddenForm('leave-family-form');

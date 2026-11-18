@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
 	import { enhance } from '$app/forms';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import type { ExpensePageData } from '$lib/server/expenses/queries';
@@ -46,7 +47,7 @@
 		};
 	};
 	function money(cents: number): string {
-		return new Intl.NumberFormat('es-ES', {
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			style: 'currency',
 			currency,
 			minimumFractionDigits: 2
@@ -106,7 +107,9 @@
 					<li>
 						{settlement.fromLabel} a {settlement.toLabel}: {money(settlement.amountCents)} ·
 						<time datetime={settlement.createdAt}
-							>{new Date(settlement.createdAt).toLocaleDateString('es-ES')}</time
+							>{new Date(settlement.createdAt).toLocaleDateString(
+								getLocale() === 'en' ? 'en-GB' : 'es-ES'
+							)}</time
 						>
 					</li>
 				{/each}

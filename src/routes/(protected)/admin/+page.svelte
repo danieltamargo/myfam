@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
@@ -20,9 +22,10 @@
 	};
 	function date(value: string | null): string {
 		return value
-			? new Intl.DateTimeFormat('es-ES', { dateStyle: 'short', timeStyle: 'short' }).format(
-					new Date(value)
-				)
+			? new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+					dateStyle: 'short',
+					timeStyle: 'short'
+				}).format(new Date(value))
 			: 'Sin registro';
 	}
 	function pagination(key: string, value: number): `?${string}` {
@@ -41,24 +44,23 @@
 
 <div class="mx-auto w-full max-w-6xl space-y-8 p-4 sm:p-6">
 	<header>
-		<h1 class="text-3xl font-bold">Administración</h1>
+		<h1 class="text-3xl font-bold">{messages['ui.administration']()}</h1>
 		<p class="mt-2">
-			Gestiona las altas y el acceso a MyFamily y consulta la actividad registrada.
+			{messages['screen.manage_access_to_myfamily_and_review_recent_activity']()}
 		</p>
 	</header>
 
 	{#if form?.error}<div class="alert alert-error" role="alert">{form.error}</div>{/if}
 	{#if form?.success}<div class="alert alert-success" role="status">{form.success}</div>{/if}
-	{#if pending}<p role="status">Guardando los cambios…</p>{/if}
+	{#if pending}<p role="status">{messages['screen.saving_changes']()}</p>{/if}
 
 	<section
 		aria-labelledby="create-heading"
 		class="rounded-box border border-base-300 bg-base-100 p-4 sm:p-6"
 	>
-		<h2 id="create-heading" class="text-xl font-semibold">Invitar usuario</h2>
+		<h2 id="create-heading" class="text-xl font-semibold">{messages['ui.invite_user']()}</h2>
 		<p class="mt-1 text-sm">
-			La persona recibirá un enlace para establecer su contraseña. El alta no la añade a ninguna
-			familia.
+			{messages['screen.the_person_will_receive_a_link_to_set_a_password_they_can_join_a_fam']()}
 		</p>
 		<form
 			method="POST"
@@ -67,7 +69,8 @@
 			class="mt-4 flex flex-col gap-4 sm:flex-row sm:items-end"
 		>
 			<div class="min-w-0 flex-1">
-				<label for="admin-name" class="label text-base-content">Nombre</label><input
+				<label for="admin-name" class="label text-base-content">{messages['ui.name']()}</label
+				><input
 					id="admin-name"
 					name="name"
 					class="input w-full"
@@ -78,7 +81,9 @@
 				/>
 			</div>
 			<div class="min-w-0 flex-1">
-				<label for="admin-email" class="label text-base-content">Correo electrónico</label><input
+				<label for="admin-email" class="label text-base-content"
+					>{messages['ui.email_address']()}</label
+				><input
 					id="admin-email"
 					name="email"
 					type="email"
@@ -89,15 +94,16 @@
 					autocomplete="email"
 				/>
 			</div>
-			<button class="btn btn-primary" disabled={pending}>Crear y enviar bienvenida</button>
+			<button class="btn btn-primary" disabled={pending}
+				>{messages['ui.create_and_send_welcome_email']()}</button
+			>
 		</form>
 	</section>
 
 	<section aria-labelledby="users-heading">
-		<h2 id="users-heading" class="text-xl font-semibold">Usuarios</h2>
+		<h2 id="users-heading" class="text-xl font-semibold">{messages['ui.users']()}</h2>
 		<p class="mt-1 text-sm">
-			Deshabilitar bloquea el acceso a los datos y los nuevos inicios de sesión. Los
-			superadministradores se configuran en el servidor.
+			{messages['screen.disabling_an_account_blocks_access_to_myfamily']()}
 		</p>
 		<ul class="mt-4 divide-y divide-base-300 rounded-box border border-base-300 bg-base-100">
 			{#each data.users as user (user.id)}
@@ -118,7 +124,8 @@
 						<form method="POST" action="?/welcome" use:enhance={submit}>
 							<input type="hidden" name="userId" value={user.id} /><button
 								class="btn w-full btn-outline btn-sm"
-								disabled={pending || user.disabled || !user.email}>Reenviar bienvenida</button
+								disabled={pending || user.disabled || !user.email}
+								>{messages['screen.resend_welcome_email']()}</button
 							>
 						</form>
 						{#if user.disabled}
@@ -138,9 +145,9 @@
 										name="confirm"
 										required
 										disabled={pending}
-									/>Confirmo deshabilitar</label
+									/>{messages['screen.confirm_disabling_account']()}</label
 								><button class="btn w-full btn-outline btn-sm" disabled={pending}
-									>Deshabilitar</button
+									>{messages['screen.disable']()}</button
 								>
 							</form>
 						{/if}
@@ -151,16 +158,17 @@
 		<nav aria-label="Páginas de usuarios" class="mt-3 flex items-center gap-3 text-sm">
 			{#if data.page > 1}<a
 					class="btn btn-ghost btn-sm"
-					href={resolve(`/admin${pagination('page', data.page - 1)}`)}>Anterior</a
-				>{/if}<span>Página {data.page}</span>{#if data.hasMoreUsers}<a
+					href={resolve(`/admin${pagination('page', data.page - 1)}`)}
+					>{messages['ui.previous']()}</a
+				>{/if}<span>{messages['details.page']()} {data.page}</span>{#if data.hasMoreUsers}<a
 					class="btn btn-ghost btn-sm"
-					href={resolve(`/admin${pagination('page', data.page + 1)}`)}>Siguiente</a
+					href={resolve(`/admin${pagination('page', data.page + 1)}`)}>{messages['ui.next']()}</a
 				>{/if}
 		</nav>
 	</section>
 
 	<section aria-labelledby="business-heading">
-		<h2 id="business-heading" class="text-xl font-semibold">Acciones de la aplicación</h2>
+		<h2 id="business-heading" class="text-xl font-semibold">{messages['ui.app_activity']()}</h2>
 		<p class="mt-1 text-sm">
 			Incluye las operaciones administrativas y los eventos de negocio que registra cada módulo. No
 			muestra contenido privado ni metadatos.
@@ -182,19 +190,21 @@
 		<nav aria-label="Páginas de acciones" class="mt-3 flex items-center gap-3 text-sm">
 			{#if data.businessPage > 1}<a
 					class="btn btn-ghost btn-sm"
-					href={resolve(`/admin${pagination('businessPage', data.businessPage - 1)}`)}>Anterior</a
-				>{/if}<span>Página {data.businessPage}</span>{#if data.hasMoreBusiness}<a
+					href={resolve(`/admin${pagination('businessPage', data.businessPage - 1)}`)}
+					>{messages['ui.previous']()}</a
+				>{/if}<span>{messages['details.page']()} {data.businessPage}</span
+			>{#if data.hasMoreBusiness}<a
 					class="btn btn-ghost btn-sm"
-					href={resolve(`/admin${pagination('businessPage', data.businessPage + 1)}`)}>Siguiente</a
+					href={resolve(`/admin${pagination('businessPage', data.businessPage + 1)}`)}
+					>{messages['ui.next']()}</a
 				>{/if}
 		</nav>
 	</section>
 
 	<section aria-labelledby="auth-heading">
-		<h2 id="auth-heading" class="text-xl font-semibold">Autenticación</h2>
+		<h2 id="auth-heading" class="text-xl font-semibold">{messages['ui.sign_in_activity']()}</h2>
 		<p class="mt-1 text-sm">
-			Inicios de sesión y otros eventos registrados por Supabase Auth. Solo se muestran la fecha, la
-			acción y el identificador del usuario.
+			{messages['dialog.sign_in_activity_detail']()}
 		</p>
 		<ul class="mt-4 divide-y divide-base-300 rounded-box border border-base-300 bg-base-100">
 			{#each data.authEvents as entry (entry.id)}<li class="space-y-1 p-4">
@@ -206,10 +216,12 @@
 		<nav aria-label="Páginas de autenticación" class="mt-3 flex items-center gap-3 text-sm">
 			{#if data.authPage > 1}<a
 					class="btn btn-ghost btn-sm"
-					href={resolve(`/admin${pagination('authPage', data.authPage - 1)}`)}>Anterior</a
-				>{/if}<span>Página {data.authPage}</span>{#if data.hasMoreAuth}<a
+					href={resolve(`/admin${pagination('authPage', data.authPage - 1)}`)}
+					>{messages['ui.previous']()}</a
+				>{/if}<span>{messages['details.page']()} {data.authPage}</span>{#if data.hasMoreAuth}<a
 					class="btn btn-ghost btn-sm"
-					href={resolve(`/admin${pagination('authPage', data.authPage + 1)}`)}>Siguiente</a
+					href={resolve(`/admin${pagination('authPage', data.authPage + 1)}`)}
+					>{messages['ui.next']()}</a
 				>{/if}
 		</nav>
 	</section>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { onMount, untrack } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -232,7 +233,7 @@
 
 <div class="mx-auto max-w-2xl space-y-6 pb-10">
 	<a class="link" href={resolve(...([`/family/${data.room.family_id}/games`] as unknown as ['/']))}
-		>Volver a las partidas</a
+		>{messages['screen.back_to_games']()}</a
 	>
 	<h1 class="text-3xl font-bold break-words">{data.room.name}</h1>
 	<p class="text-base-content/70">
@@ -279,13 +280,13 @@
 		{/each}
 	</div>
 	{#if data.room.status === 'waiting'}
-		<p>La partida empezará cuando ambos estéis preparados y su creador pulse empezar.</p>
+		<p>{messages['screen.the_game_starts_when_both_players_are_ready_and_the_host_starts_it']()}</p>
 		{#if me?.is_active && !me.is_ready}<form
 				method="POST"
 				action="?/ready"
 				use:enhance={enhanceGame}
 			>
-				<button class="btn btn-primary" disabled={busy}>Estoy preparado</button>
+				<button class="btn btn-primary" disabled={busy}>{messages['ui.i_m_ready']()}</button>
 			</form>{/if}
 		{#if data.room.created_by === data.currentUserId}<form
 				method="POST"
@@ -295,11 +296,11 @@
 				<button
 					class="btn btn-primary"
 					disabled={busy || !data.players.every((player) => player.is_ready && player.is_active)}
-					>Empezar partida</button
+					>{messages['screen.start_game']()}</button
 				>
 			</form>{/if}
 	{:else if data.room.status === 'cancelled'}
-		<p role="status">Partida cancelada antes de empezar.</p>
+		<p role="status">{messages['screen.the_game_was_canceled_before_it_started']()}</p>
 	{:else if gameState && data.session}
 		{#if active}<p class="text-lg font-semibold">
 				{reaction ? 'Ronda de reacción' : myTurn ? 'Tu turno' : 'Turno de tu familiar'} ·
@@ -347,8 +348,9 @@
 					{#each wordle.guesses as guess, index (index)}
 						<div>
 							<p class="mb-1 text-sm text-base-content/70">
-								Intento de {data.players.find((player) => player.player_number === guess.player)
-									?.profile?.display_name || `jugador ${guess.player}`}
+								{messages['details.guess_by']()}
+								{data.players.find((player) => player.player_number === guess.player)?.profile
+									?.display_name || `jugador ${guess.player}`}
 							</p>
 							<div class="flex gap-1.5">
 								{#each guess.result as letter, letterIndex (letterIndex)}<span
@@ -382,7 +384,7 @@
 					>
 						<input type="hidden" name="version" value={data.session.version} />
 						<label class="block min-w-0 flex-1 space-y-2"
-							><span>Palabra de cinco letras</span><input
+							><span>{messages['screen.five_letter_word']()}</span><input
 								name="guess"
 								class="input w-full uppercase"
 								list="family-wordle-words"
@@ -394,7 +396,7 @@
 							/></label
 						>
 						<button class="btn btn-primary" disabled={busy || !myTurn || remaining === 0}
-							>Comprobar palabra</button
+							>{messages['screen.check_word']()}</button
 						>
 					</form>{/if}
 				<datalist id="family-wordle-words"
@@ -402,7 +404,7 @@
 				>
 				<details class="rounded-box border border-base-300 p-3">
 					<summary class="cursor-pointer font-medium"
-						>Diccionario de esta versión: 40 palabras</summary
+						>{messages['details.words_in_this_game_40']()}</summary
 					>
 					<p class="mt-3 text-sm">{FAMILY_WORDLE_WORDS.join(', ')}.</p>
 				</details>
@@ -414,15 +416,14 @@
 					ronda termina a los 15 segundos.
 				</p>
 				<p class="text-sm text-base-content/70">
-					El resultado depende de cuándo llega la pulsación al servidor e incluye la latencia de tu
-					conexión. Es un juego informal, no una medición exacta de reflejos.
+					{messages['dialog.reaction_help']()}
 				</p>
 				{#if active}
 					{#if signalError}<p role="alert" class="alert alert-error">{signalError}</p>
 						<button
 							class="btn"
 							onclick={() => (signalRetry += 1)}
-							disabled={busy || remaining === 0}>Reintentar señal</button
+							disabled={busy || remaining === 0}>{messages['details.try_again']()}</button
 						>{/if}
 					<form method="POST" action="?/react" use:enhance={enhanceGame}>
 						<input type="hidden" name="version" value={data.session.version} /><button
@@ -435,7 +436,8 @@
 						>
 					</form>
 				{:else if reaction.reactionMs != null}<p>
-						Tiempo de llegada al servidor: {reaction.reactionMs} ms.
+						{messages['details.recorded_time']()}
+						{reaction.reactionMs} ms.
 					</p>{/if}
 			</section>
 		{:else if colors}
@@ -445,11 +447,16 @@
 					Puedes comparar también los códigos HEX de las opciones.
 				</p>
 				<p class="font-semibold">
-					Ronda {colors.round} de 6 · Jugador 1: {colors.scores['1']} puntos · Jugador 2: {colors
-						.scores['2']} puntos
+					{messages['details.round']()}
+					{colors.round}
+					{messages['details.of_6_player_1']()}
+					{colors.scores['1']}
+					{messages['details.points_player_2']()}
+					{colors.scores['2']}
+					{messages['details.points']()}
 				</p>
 				<div class="rounded-box border border-base-300 p-4">
-					<p class="mb-3 font-medium">Color objetivo: {colors.target}</p>
+					<p class="mb-3 font-medium">{messages['details.target_color']()} {colors.target}</p>
 					<div class="h-24 rounded" style:background-color={colors.target} aria-hidden="true"></div>
 				</div>
 				{#if colors.lastAnswerCorrect !== undefined}<p>
@@ -480,7 +487,7 @@
 			</section>
 		{/if}
 		{#if active && remaining === 0}<form method="POST" action="?/timeout" use:enhance={enhanceGame}>
-				<button class="btn" disabled={busy}>Confirmar resultado por tiempo</button>
+				<button class="btn" disabled={busy}>{messages['ui.confirm_the_timed_result']()}</button>
 			</form>{/if}
 	{/if}
 	{#if me?.is_active && (data.room.status === 'waiting' || active)}
@@ -492,17 +499,18 @@
 				</p>
 				<div class="flex flex-wrap gap-3">
 					<form method="POST" action="?/leave" use:enhance={enhanceGame}>
-						<button class="btn btn-error" disabled={busy}>Confirmar abandono</button>
+						<button class="btn btn-error" disabled={busy}>{messages['ui.confirm_leaving']()}</button
+						>
 					</form>
 					<button class="btn btn-ghost" onclick={() => (confirmLeave = false)} disabled={busy}
-						>Seguir jugando</button
+						>{messages['details.keep_playing']()}</button
 					>
 				</div>
 			</div>
 		{:else}<button
 				class="btn text-error btn-ghost"
 				onclick={() => (confirmLeave = true)}
-				disabled={busy}>Abandonar partida</button
+				disabled={busy}>{messages['details.leave_game']()}</button
 			>{/if}
 	{/if}
 </div>

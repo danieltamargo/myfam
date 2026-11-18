@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { onMount } from 'svelte';
@@ -10,6 +12,7 @@
 	let verifying = $state(false);
 	let error = $state('');
 	let success = $state('');
+	let disableDialog = $state<HTMLDialogElement>();
 
 	let isEnabled = $state(false);
 	let qrCode = $state('');
@@ -37,7 +40,7 @@
 				factorId = verifiedFactor.id;
 			}
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 		} finally {
 			loading = false;
 		}
@@ -62,7 +65,7 @@
 				factorId = data.id;
 			}
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 		} finally {
 			enrolling = false;
 		}
@@ -99,21 +102,14 @@
 				checkMFAStatus();
 			}, 2000);
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 		} finally {
 			verifying = false;
 		}
 	}
 
 	async function disableTOTP() {
-		if (
-			!confirm(
-				'Are you sure you want to disable two-factor authentication? This will make your account less secure.'
-			)
-		) {
-			return;
-		}
-
+		disableDialog?.close();
 		loading = true;
 		error = '';
 
@@ -132,7 +128,7 @@
 				success = '';
 			}, 2000);
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 		} finally {
 			loading = false;
 		}
@@ -151,9 +147,9 @@
 		<h2 class="card-title text-xl">
 			Two-Factor Authentication (2FA)
 			{#if isEnabled}
-				<span class="badge badge-success">Enabled</span>
+				<span class="badge badge-success">{messages['feature.enabled']()}</span>
 			{:else}
-				<span class="badge badge-ghost">Disabled</span>
+				<span class="badge badge-ghost">{messages['feature.disabled']()}</span>
 			{/if}
 		</h2>
 
@@ -195,7 +191,7 @@
 					{#if enrolling}
 						<span class="loading loading-spinner"></span>
 					{/if}
-					Enable 2FA
+					{messages['feature.turn_on_verification']()}
 				</button>
 			</div>
 		{:else if qrCode}
@@ -249,7 +245,7 @@
 							Verify & Enable
 						</button>
 						<button onclick={cancelEnrollment} class="btn btn-ghost" disabled={verifying}>
-							Cancel
+							{messages['ui.cancel']()}
 						</button>
 					</div>
 				</div>
@@ -283,9 +279,29 @@
 					</div>
 				</div>
 
-				<button onclick={disableTOTP} class="btn mt-4 btn-outline btn-error" disabled={loading}>
-					Disable 2FA
+				<button
+					onclick={() => disableDialog?.showModal()}
+					class="btn mt-4 btn-outline btn-error"
+					disabled={loading}
+				>
+					{messages['ui.turn_off_two_step_verification']()}
 				</button>
+				<dialog class="modal" bind:this={disableDialog} aria-labelledby="disable-factor-title">
+					<div class="modal-box">
+						<h2 id="disable-factor-title" class="text-lg font-bold">
+							{messages['ui.turn_off_two_step_verification']()}
+						</h2>
+						<p class="mt-2">{messages['dialog.disable_factor_detail']()}</p>
+						<div class="modal-action">
+							<form method="dialog">
+								<button class="btn btn-ghost">{messages['ui.cancel']()}</button>
+							</form>
+							<button type="button" class="btn btn-error" onclick={disableTOTP}
+								>{messages['screen.disable']()}</button
+							>
+						</div>
+					</div>
+				</dialog>
 			</div>
 		{/if}
 	</div>

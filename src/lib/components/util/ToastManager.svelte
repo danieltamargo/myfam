@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { toastStore } from '$lib/stores/toast';
 
 	function getIconForType(type: string) {
@@ -36,7 +37,7 @@
 			<button
 				class="btn ms-auto btn-ghost btn-sm"
 				onclick={() => toastStore.dismiss(toast.id)}
-				aria-label="Close"
+				aria-label={messages['ui.close']()}
 			>
 				<svg
 					xmlns="http://www.w3.org/2000/svg"

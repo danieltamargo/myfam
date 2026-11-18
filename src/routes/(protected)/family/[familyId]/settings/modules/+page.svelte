@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { MODULE_CATALOG, type ModuleId } from '$lib/config/modules';
@@ -34,7 +35,7 @@
 </script>
 
 <svelte:head>
-	<title>Módulos de {data.family.name} · MyFamily</title>
+	<title>{messages['details.modules_for']()} {data.family.name} · MyFamily</title>
 	<meta
 		name="description"
 		content="Configura los módulos organizativos disponibles para tu familia."
@@ -43,26 +44,25 @@
 
 <div class="mx-auto max-w-5xl space-y-8 pb-12">
 	<header class="space-y-3">
-		<div class="breadcrumbs text-sm" aria-label="Migas de pan">
+		<div class="breadcrumbs text-sm" aria-label={messages['module_settings.breadcrumbs']()}>
 			<ul>
 				<li>
 					<a href={resolve(...([`/family/${data.family.id}`] as unknown as ['/']))}
 						>{data.family.name}</a
 					>
 				</li>
-				<li>Módulos</li>
+				<li>{messages['ui.modules']()}</li>
 			</ul>
 		</div>
 		<div>
 			<p class="text-sm font-semibold tracking-wide text-primary uppercase">
-				Preferencias familiares
+				{messages['screen.family_preferences']()}
 			</p>
 			<h1 class="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">
-				Elige qué necesita tu familia
+				{messages['screen.choose_what_your_family_needs']()}
 			</h1>
 			<p class="mt-2 max-w-2xl text-base-content/70">
-				Los módulos esenciales siempre están activos. El resto se puede mostrar u ocultar sin
-				cambiar permisos ni contratar un plan.
+				{messages['screen.core_modules_are_always_on_you_can_choose_which_other_modules_to_sho']()}
 			</p>
 		</div>
 	</header>
@@ -79,17 +79,18 @@
 
 	{#if !data.canManage}
 		<div role="note" class="alert alert-soft alert-info">
-			<span
-				>Puedes consultar esta configuración. Pueden cambiarla el propietario, los administradores y
-				los miembros con permiso para configurar módulos.</span
-			>
+			<span>{messages['module_settings.view_only']()}</span>
 		</div>
 	{/if}
 
 	<section class="space-y-4" aria-labelledby="core-modules-heading">
 		<div>
-			<h2 id="core-modules-heading" class="text-xl font-bold">Esenciales</h2>
-			<p class="text-sm text-base-content/65">Sostienen la familia y no se pueden desactivar.</p>
+			<h2 id="core-modules-heading" class="text-xl font-bold">
+				{messages['details.essentials']()}
+			</h2>
+			<p class="text-sm text-base-content/65">
+				{messages['details.these_tools_are_always_available']()}
+			</p>
 		</div>
 		<div class="grid gap-4 md:grid-cols-2">
 			{#each coreModules as access (access.moduleId)}
@@ -100,14 +101,20 @@
 							<div class="flex min-w-0 items-start gap-3">
 								<span aria-hidden="true" class="text-3xl">{module.icon}</span>
 								<div class="min-w-0">
-									<h3 class="card-title text-lg">{module.label}</h3>
-									<p class="mt-1 text-sm text-base-content/65">{module.description}</p>
+									<h3 class="card-title text-lg">{messages[`app_nav.${module.id}`]()}</h3>
+									<p class="mt-1 text-sm text-base-content/65">
+										{messages[`landing.${module.id}`]()}
+									</p>
 								</div>
 							</div>
-							<span class="badge shrink-0 badge-soft badge-primary">Esencial</span>
+							<span class="badge shrink-0 badge-soft badge-primary"
+								>{messages['details.essential']()}</span
+							>
 						</div>
 						<div class="card-actions justify-end">
-							<button class="btn btn-sm" type="button" disabled>Siempre activo</button>
+							<button class="btn btn-sm" type="button" disabled
+								>{messages['screen.always_on']()}</button
+							>
 						</div>
 					</div>
 				</article>
@@ -117,9 +124,11 @@
 
 	<section class="space-y-4" aria-labelledby="available-modules-heading">
 		<div>
-			<h2 id="available-modules-heading" class="text-xl font-bold">Organización familiar</h2>
+			<h2 id="available-modules-heading" class="text-xl font-bold">
+				{messages['screen.family_organization']()}
+			</h2>
 			<p class="text-sm text-base-content/65">
-				Activa solo las herramientas que quieras ver en la navegación.
+				{messages['screen.turn_on_the_tools_you_want_to_see_in_the_menu']()}
 			</p>
 		</div>
 		<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -135,12 +144,14 @@
 									{ 'badge-success': access.enabled, 'badge-ghost': !access.enabled }
 								]}
 							>
-								{access.enabled ? 'Activo' : 'Oculto'}
+								{access.enabled
+									? messages['feature.active']()
+									: messages['module_settings.hidden']()}
 							</span>
 						</div>
 						<div class="grow">
-							<h3 class="card-title text-lg">{module.label}</h3>
-							<p class="mt-1 text-sm text-base-content/65">{module.description}</p>
+							<h3 class="card-title text-lg">{messages[`app_nav.${module.id}`]()}</h3>
+							<p class="mt-1 text-sm text-base-content/65">{messages[`landing.${module.id}`]()}</p>
 						</div>
 						<form method="POST" action="?/setPreference" use:enhance={enhancePreference}>
 							<input type="hidden" name="moduleId" value={module.id} />
@@ -152,15 +163,17 @@
 									{ 'btn-primary': !access.enabled, 'btn-ghost': access.enabled }
 								]}
 								disabled={!data.canManage || submitting !== null}
-								aria-label={`${access.enabled ? 'Desactivar' : 'Activar'} ${module.label}`}
+								aria-label={messages[
+									access.enabled ? 'module_settings.disable' : 'module_settings.enable'
+								]({ module: messages[`app_nav.${module.id}`]() })}
 							>
 								{#if submitting === module.id}
 									<span class="loading loading-xs loading-spinner" aria-hidden="true"></span>
-									Guardando
+									{messages['details.saving']()}
 								{:else if access.enabled}
-									Ocultar módulo
+									{messages['screen.hide_module']()}
 								{:else}
-									Activar módulo
+									{messages['details.enable_module']()}
 								{/if}
 							</button>
 						</form>
@@ -173,9 +186,11 @@
 	{#if disabledModules.length > 0}
 		<section class="space-y-4" aria-labelledby="future-modules-heading">
 			<div>
-				<h2 id="future-modules-heading" class="text-xl font-bold">Más adelante</h2>
+				<h2 id="future-modules-heading" class="text-xl font-bold">
+					{messages['details.coming_later']()}
+				</h2>
 				<p class="text-sm text-base-content/65">
-					Estos módulos se conservan, pero no se pueden abrir ni activar todavía.
+					{messages['details.these_modules_are_not_available_yet']()}
 				</p>
 			</div>
 			<div class="grid gap-4 md:grid-cols-2">
@@ -185,13 +200,17 @@
 						<div class="card-body gap-4">
 							<div class="flex items-start justify-between gap-4">
 								<span aria-hidden="true" class="text-3xl opacity-60">{module.icon}</span>
-								<span class="badge badge-ghost">No disponible</span>
+								<span class="badge badge-ghost">{messages['details.unavailable']()}</span>
 							</div>
 							<div>
-								<h3 class="card-title text-lg">{module.label}</h3>
-								<p class="mt-1 text-sm text-base-content/65">{module.description}</p>
+								<h3 class="card-title text-lg">{messages[`app_nav.${module.id}`]()}</h3>
+								<p class="mt-1 text-sm text-base-content/65">
+									{messages[`landing.${module.id}`]()}
+								</p>
 							</div>
-							<button class="btn btn-block btn-sm" type="button" disabled>Próximamente</button>
+							<button class="btn btn-block btn-sm" type="button" disabled
+								>{messages['details.coming_soon']()}</button
+							>
 						</div>
 					</article>
 				{/each}

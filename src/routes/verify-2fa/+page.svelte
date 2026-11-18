@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { safeAuthError } from '$lib/auth/messages';
 	import { createClient } from '$lib/supabase';
 	import { safeInternalPath } from '$lib/auth/redirects';
@@ -79,7 +81,7 @@
 			// Éxito - volver al destino interno solicitado
 			goto(resolve(returnTo as '/dashboard'));
 		} catch (err: unknown) {
-			error = safeAuthError(err, 'mfa');
+			error = safeAuthError(err, 'mfa', getLocale());
 			code = '';
 		} finally {
 			loading = false;
@@ -100,8 +102,10 @@
 <div class="flex min-h-screen items-center justify-center bg-base-200">
 	<div class="card w-96 bg-base-100 shadow-xl">
 		<div class="card-body">
-			<h2 class="card-title text-2xl font-bold">Two-Factor Authentication</h2>
-			<p class="text-sm text-base-content/70">Enter the 6-digit code from your authenticator app</p>
+			<h2 class="card-title text-2xl font-bold">{messages['ui.two_step_verification']()}</h2>
+			<p class="text-sm text-base-content/70">
+				{messages['screen.enter_the_6_digit_code_from_your_authenticator_app']()}
+			</p>
 
 			{#if error}
 				<div class="mt-4 alert alert-error">
@@ -127,7 +131,9 @@
 							/>
 						</div>
 						<label class="label" for="verification-code">
-							<span class="label-text-alt mx-auto">Code from your authenticator app</span>
+							<span class="label-text-alt mx-auto"
+								>{messages['screen.code_from_your_authenticator_app']()}</span
+							>
 						</label>
 					</div>
 
@@ -143,15 +149,17 @@
 					</button>
 				</form>
 
-				<div class="divider text-xs">Having trouble?</div>
+				<div class="divider text-xs">{messages['screen.having_trouble']()}</div>
 
 				<div class="space-y-2 text-center">
-					<p class="text-sm text-base-content/70">Can't access your authenticator app?</p>
+					<p class="text-sm text-base-content/70">
+						{messages['screen.can_t_access_your_authenticator_app']()}
+					</p>
 					<a href={resolve('/recover-2fa')} class="btn btn-outline btn-sm"
-						>Usar un código de recuperación</a
+						>{messages['screen.use_a_recovery_code']()}</a
 					>
 					<button onclick={handleLogout} class="btn btn-ghost btn-sm">
-						Sign out and try again
+						{messages['screen.sign_out_and_try_again']()}
 					</button>
 				</div>
 			{:else}

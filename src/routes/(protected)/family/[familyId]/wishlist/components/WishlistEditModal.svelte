@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import * as messages from '$paraglide/messages';
+	import { openDialog } from '$lib/components/modals/open-dialog';
 	import WishlistItemForm from '$lib/components/wishlist/WishlistItemForm.svelte';
 	import type { WishlistEventCategoryDto, WishlistItemDto } from '$lib/server/wishlist/presenters';
 	import type { CalendarEventOption } from '$lib/server/calendar/resource-links';
@@ -17,26 +18,15 @@
 		todosEventId: string;
 		onClose: () => void;
 	} = $props();
-
-	onMount(() => {
-		const returnFocus =
-			document.activeElement instanceof HTMLElement ? document.activeElement : null;
-		return () => returnFocus?.focus();
-	});
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && onClose()} />
-
-<div class="modal-open modal" role="presentation">
-	<div
-		class="modal-box max-h-[95svh] w-[95vw] max-w-6xl overflow-y-auto bg-base-100"
-		role="dialog"
-		aria-modal="true"
-		aria-labelledby="wishlist-editor-title"
-	>
+<dialog class="modal" use:openDialog={onClose} aria-labelledby="wishlist-editor-title">
+	<div class="modal-box max-h-[95svh] w-[95vw] max-w-6xl overflow-y-auto bg-base-100">
 		<header class="mb-6 flex items-center justify-between gap-4 border-b border-base-300 pb-4">
 			<div>
-				<p class="text-xs font-semibold tracking-wide text-primary uppercase">Lista de deseos</p>
+				<p class="text-xs font-semibold tracking-wide text-primary uppercase">
+					{messages['ui.wishlist']()}
+				</p>
 				<h2 id="wishlist-editor-title" class="text-2xl font-bold">
 					{item ? 'Editar regalo' : 'Nuevo regalo'}
 				</h2>
@@ -44,7 +34,7 @@
 			<button
 				type="button"
 				class="btn btn-circle btn-ghost btn-sm"
-				aria-label="Cerrar"
+				aria-label={messages['ui.close']()}
 				onclick={onClose}
 			>
 				<span aria-hidden="true">✕</span>
@@ -60,6 +50,11 @@
 			onCancel={onClose}
 		/>
 	</div>
-	<button type="button" class="modal-backdrop cursor-default" aria-label="Cerrar" onclick={onClose}
+	<button
+		type="button"
+		class="modal-backdrop cursor-default"
+		aria-hidden="true"
+		tabindex="-1"
+		onclick={onClose}
 	></button>
-</div>
+</dialog>

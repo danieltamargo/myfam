@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { GAME_METADATA, type GameRoom, type RoomParticipant } from '$lib/types/games';
 
@@ -245,7 +246,9 @@
 											>
 												<input type="hidden" name="room_id" value={room.id} />
 												<input type="hidden" name="difficulty" value="easy" />
-												<button type="submit" class="text-xs" disabled={isSubmitting}>Fácil</button>
+												<button type="submit" class="text-xs" disabled={isSubmitting}
+													>{messages['ui.easy']()}</button
+												>
 											</form>
 										</li>
 										<li>
@@ -262,7 +265,9 @@
 											>
 												<input type="hidden" name="room_id" value={room.id} />
 												<input type="hidden" name="difficulty" value="medium" />
-												<button type="submit" class="text-xs" disabled={isSubmitting}>Medio</button>
+												<button type="submit" class="text-xs" disabled={isSubmitting}
+													>{messages['ui.medium']()}</button
+												>
 											</form>
 										</li>
 										<li>
@@ -280,7 +285,7 @@
 												<input type="hidden" name="room_id" value={room.id} />
 												<input type="hidden" name="difficulty" value="hard" />
 												<button type="submit" class="text-xs" disabled={isSubmitting}
-													>Difícil</button
+													>{messages['ui.hard']()}</button
 												>
 											</form>
 										</li>

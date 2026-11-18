@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import type { WishlistEventCategoryDto, WishlistItemDto } from '$lib/server/wishlist/presenters';
@@ -257,7 +259,7 @@
 		<fieldset class="min-w-0 space-y-5" disabled={isSubmitting}>
 			<div>
 				<label for="wishlist-name" class="mb-2 block text-sm font-semibold">
-					Nombre del regalo <span class="text-error" aria-hidden="true">*</span>
+					{messages['feature.gift_name']()} <span class="text-error" aria-hidden="true">*</span>
 				</label>
 				<input
 					id="wishlist-name"
@@ -279,7 +281,9 @@
 
 			<div>
 				<div class="mb-2 flex items-center justify-between gap-3">
-					<label for="wishlist-description" class="text-sm font-semibold">Descripción</label>
+					<label for="wishlist-description" class="text-sm font-semibold"
+						>{messages['ui.description']()}</label
+					>
 					<span class="text-xs text-base-content/50">{description.length}/2000</span>
 				</div>
 				<textarea
@@ -302,7 +306,7 @@
 			<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 				<div class="sm:col-span-1">
 					<label for="wishlist-price" class="mb-2 block text-sm font-semibold"
-						>Precio estimado</label
+						>{messages['feature.estimated_price']()}</label
 					>
 					<input
 						id="wishlist-price"
@@ -318,7 +322,9 @@
 					{#if fieldErrors.price}<p class="mt-1 text-sm text-error">{fieldErrors.price}</p>{/if}
 				</div>
 				<div>
-					<label for="wishlist-currency" class="mb-2 block text-sm font-semibold">Moneda</label>
+					<label for="wishlist-currency" class="mb-2 block text-sm font-semibold"
+						>{messages['ui.currency']()}</label
+					>
 					<select
 						id="wishlist-currency"
 						name="currency"
@@ -331,7 +337,9 @@
 					</select>
 				</div>
 				<div>
-					<label for="wishlist-quantity" class="mb-2 block text-sm font-semibold">Cantidad</label>
+					<label for="wishlist-quantity" class="mb-2 block text-sm font-semibold"
+						>{messages['ui.quantity']()}</label
+					>
 					<input
 						id="wishlist-quantity"
 						name="desired_quantity"
@@ -344,23 +352,27 @@
 					/>
 				</div>
 				<div>
-					<label for="wishlist-priority" class="mb-2 block text-sm font-semibold">Prioridad</label>
+					<label for="wishlist-priority" class="mb-2 block text-sm font-semibold"
+						>{messages['ui.priority']()}</label
+					>
 					<select
 						id="wishlist-priority"
 						name="priority"
 						class="select-bordered select w-full"
 						bind:value={priority}
 					>
-						<option value={2}>Muy alta</option>
-						<option value={1}>Alta</option>
+						<option value={2}>{messages['feature.very_high']()}</option>
+						<option value={1}>{messages['ui.high']()}</option>
 						<option value={0}>Normal</option>
-						<option value={-1}>Baja</option>
+						<option value={-1}>{messages['ui.low']()}</option>
 					</select>
 				</div>
 			</div>
 
 			<section aria-labelledby="wishlist-events-label" class="rounded-box bg-base-200 p-4">
-				<p id="wishlist-events-label" class="mb-3 text-sm font-semibold">¿Para qué evento?</p>
+				<p id="wishlist-events-label" class="mb-3 text-sm font-semibold">
+					{messages['feature.for_which_event']()}
+				</p>
 				<div class="flex flex-wrap gap-2">
 					{#each eventCategories as event (event.id)}
 						{@const selected = eventIds.includes(event.id)}
@@ -380,7 +392,9 @@
 
 			<section class="rounded-box bg-base-200 p-4">
 				<label class="form-control" for="wishlist-calendar-event">
-					<span class="mb-2 text-sm font-semibold">Evento del calendario (opcional)</span>
+					<span class="mb-2 text-sm font-semibold"
+						>{messages['feature.calendar_event_optional']()}</span
+					>
 					<select
 						id="wishlist-calendar-event"
 						name="calendar_event_id"
@@ -391,22 +405,26 @@
 						{#if item}<option value="__keep__"
 								>{item.calendar_event
 									? `Mantener: ${item.calendar_event.title}`
-									: 'No cambiar asociación'}</option
+									: messages['screen.keep_current_event']()}</option
 							>{/if}
-						<option value="">Sin evento: regalo genérico</option>
+						<option value="">{messages['feature.no_event_general_gift']()}</option>
 						{#each calendarEvents as event (event.id)}
 							<option value={event.id}
-								>{event.title} · {new Intl.DateTimeFormat('es-ES', {
-									dateStyle: 'short',
-									timeZone: event.timezone
-								}).format(new Date(event.starts_at))}</option
+								>{event.title} · {new Intl.DateTimeFormat(
+									getLocale() === 'en' ? 'en-GB' : 'es-ES',
+									{
+										dateStyle: 'short',
+										timeZone: event.timezone
+									}
+								).format(new Date(event.starts_at))}</option
 							>
 						{/each}
 					</select>
 				</label>
 				<p class="mt-2 text-xs text-base-content/65">
-					Solo aparecen eventos que puedes ver. El evento mantiene su propia privacidad aunque
-					compartas este regalo.
+					{messages[
+						'feature.you_only_see_events_you_can_access_sharing_the_gift_doesn_t_share_th'
+					]()}
 				</p>
 				{#if fieldErrors.calendar_event_id}<p role="alert" class="mt-1 text-sm text-error">
 						{fieldErrors.calendar_event_id}
@@ -417,11 +435,13 @@
 				class="collapse-arrow collapse border border-base-300 bg-base-100"
 				bind:open={advancedOpen}
 			>
-				<summary class="collapse-title font-semibold">Imagen y enlaces opcionales</summary>
+				<summary class="collapse-title font-semibold"
+					>{messages['feature.optional_image_and_links']()}</summary
+				>
 				<div class="collapse-content space-y-5">
 					<div>
 						<label for="wishlist-image" class="mb-2 block text-sm font-semibold"
-							>Imagen privada</label
+							>{messages['feature.private_image']()}</label
 						>
 						<input
 							id="wishlist-image"
@@ -433,7 +453,7 @@
 							aria-invalid={Boolean(fieldErrors.image)}
 						/>
 						<p class="mt-1 text-xs text-base-content/55">
-							JPG, PNG, GIF o WebP, hasta 5 MB. Se guarda en almacenamiento privado.
+							{messages['feature.jpg_png_gif_or_webp_up_to_5_mb_the_image_is_stored_privately']()}
 						</p>
 						{#if fieldErrors.image}<p class="mt-1 text-sm text-error">{fieldErrors.image}</p>{/if}
 						{#if item?.image_url && !removeImage}
@@ -445,19 +465,19 @@
 									onchange={() =>
 										(imagePreviewUrl = removeImage ? null : (item?.image_src ?? null))}
 								/>
-								Quitar la imagen actual
+								{messages['feature.remove_current_image']()}
 							</label>
 						{/if}
 					</div>
 
 					<div class="space-y-3">
 						<div class="flex items-center justify-between gap-3">
-							<p class="text-sm font-semibold">Enlaces de compra</p>
+							<p class="text-sm font-semibold">{messages['feature.shopping_links']()}</p>
 							<button
 								type="button"
 								class="btn btn-ghost btn-sm"
 								onclick={addLink}
-								disabled={links.length >= 10}>+ Añadir enlace</button
+								disabled={links.length >= 10}>{messages['feature.add_link']()}</button
 							>
 						</div>
 						{#if links.length === 0}
@@ -526,12 +546,11 @@
 		</div>
 		<div class="flex flex-col-reverse gap-2 sm:flex-row">
 			<button type="button" class="btn btn-ghost" onclick={onCancel} disabled={isSubmitting}
-				>Cancelar</button
+				>{messages['ui.cancel']()}</button
 			>
 			<button type="submit" class="btn min-w-40 btn-primary" disabled={isSubmitting}>
-				{#if isSubmitting}<span class="loading loading-sm loading-spinner"></span> Guardando…{:else}{item
-						? 'Guardar cambios'
-						: 'Crear regalo'}{/if}
+				{#if isSubmitting}<span class="loading loading-sm loading-spinner"></span>
+					{messages['ui.saving']()}{:else}{item ? 'Guardar cambios' : 'Crear regalo'}{/if}
 			</button>
 		</div>
 	</footer>

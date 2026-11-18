@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import WishlistCoordination from '$lib/components/wishlist/WishlistCoordination.svelte';
 	import type { WishlistItemDto } from '$lib/server/wishlist/presenters';
 	import type { WishlistCoordinationSummary } from '$lib/wishlist/coordination';
@@ -100,7 +101,8 @@
 							Ver detalles
 						</button>
 						{#if isOwner}
-							<button class="btn btn-sm btn-primary" onclick={() => onOpenEdit(item)}>Editar</button
+							<button class="btn btn-sm btn-primary" onclick={() => onOpenEdit(item)}
+								>{messages['ui.edit']()}</button
 							>
 						{/if}
 					</div>

@@ -1,10 +1,10 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
 
 	// Get error details
 	const errorStatus = $derived($page.status);
-	const errorMessage = $derived($page.error?.message || 'Something went wrong');
 
 	function goToDashboard() {
 		goto('/dashboard');
@@ -78,56 +78,28 @@
 			<!-- Error Title -->
 			<h2 class="mb-4 text-2xl font-semibold">
 				{#if errorStatus === 404}
-					Page Not Found
+					{messages['error_page.not_found']()}
 				{:else if errorStatus === 403}
-					Access Denied
+					{messages['error_page.forbidden']()}
 				{:else if errorStatus === 401}
-					Unauthorized
-				{:else if errorStatus === 500}
-					Server Error
+					{messages['error_page.sign_in']()}
 				{:else}
-					Something Went Wrong
+					{messages['error_page.unavailable']()}
 				{/if}
 			</h2>
 
 			<!-- Error Message -->
 			<p class="mb-6 max-w-md text-base-content/70">
 				{#if errorStatus === 404}
-					The page you're looking for doesn't exist or you no longer have access to it.
+					{messages['error_page.not_found_detail']()}
 				{:else if errorStatus === 403}
-					You don't have permission to access this resource. You may have been removed from the
-					family or your role has changed.
+					{messages['error_page.forbidden_detail']()}
 				{:else if errorStatus === 401}
-					You need to be logged in to access this page.
+					{messages['error_page.sign_in_detail']()}
 				{:else}
-					{errorMessage}
+					{messages['error_page.unavailable_detail']()}
 				{/if}
 			</p>
-
-			<!-- Additional info for removed members -->
-			{#if errorStatus === 403 || errorStatus === 404}
-				<div class="mb-6 alert max-w-md alert-info">
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="h-5 w-5"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<circle cx="12" cy="12" r="10"></circle>
-						<line x1="12" y1="16" x2="12" y2="12"></line>
-						<line x1="12" y1="8" x2="12.01" y2="8"></line>
-					</svg>
-					<span class="text-sm">
-						{#if errorStatus === 403}
-							If you were recently removed from a family, you'll be redirected to the dashboard.
-						{:else}
-							The content you're trying to access may have been moved or deleted.
-						{/if}
-					</span>
-				</div>
-			{/if}
 
 			<!-- Actions -->
 			<div class="card-actions gap-3">
@@ -145,7 +117,7 @@
 						<line x1="19" y1="12" x2="5" y2="12"></line>
 						<polyline points="12 19 5 12 12 5"></polyline>
 					</svg>
-					Go Back
+					{messages['ui.go_back']()}
 				</button>
 				<button class="btn gap-2 btn-primary" onclick={goToDashboard}>
 					<svg
@@ -161,7 +133,7 @@
 						<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
 						<polyline points="9 22 9 12 15 12 15 22"></polyline>
 					</svg>
-					Go to Dashboard
+					{messages['ui.go_to_dashboard']()}
 				</button>
 			</div>
 		</div>

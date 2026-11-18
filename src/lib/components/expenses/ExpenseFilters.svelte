@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { resolve } from '$app/paths';
 	import type { Tables } from '$lib/types/database';
 	import type { ExpenseFilterState, ExpensePeriod } from '$lib/server/expenses/filters';
@@ -62,9 +63,9 @@
 					(overrides.period = event.currentTarget.value as ExpensePeriod['preset'])}
 				data-testid="expenses-filter-period"
 			>
-				<option value="month">Mes</option><option value="quarter">Trimestre</option><option
-					value="year">Año</option
-				><option value="custom">Personalizado</option>
+				<option value="month">{messages['ui.month']()}</option><option value="quarter"
+					>Trimestre</option
+				><option value="year">Año</option><option value="custom">Personalizado</option>
 			</select>
 		</label>
 		<label class="form-control" for="expense-filter-anchor">
@@ -106,7 +107,7 @@
 		</label>
 
 		<label class="form-control md:col-span-2" for="expense-filter-category">
-			<span class="label-text mb-1 text-xs font-medium">Categoría</span>
+			<span class="label-text mb-1 text-xs font-medium">{messages['ui.category']()}</span>
 			<select
 				id="expense-filter-category"
 				class="select-bordered select select-sm"
@@ -115,7 +116,7 @@
 				onchange={(event) => (overrides.category = event.currentTarget.value)}
 				data-testid="expenses-filter-category"
 			>
-				<option value="">Todas</option>
+				<option value="">{messages['feature.all_72']()}</option>
 				{#each categories as category (category.id)}<option value={category.id}
 						>{category.name}</option
 					>{/each}
@@ -133,7 +134,9 @@
 			/>
 		</div>
 		<div class="flex justify-end gap-2 md:col-span-2 xl:col-span-6">
-			<a class="btn btn-ghost btn-sm" href={resolve(collectionHref as '/')}>Limpiar</a>
+			<a class="btn btn-ghost btn-sm" href={resolve(collectionHref as '/')}
+				>{messages['details.clear']()}</a
+			>
 			<button class="btn btn-sm btn-primary" type="submit">Aplicar filtros</button>
 		</div>
 	</form>

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { resolve } from '$app/paths';
 	import { SvelteURLSearchParams } from 'svelte/reactivity';
 	import type { ActionData, PageData } from './$types';
@@ -36,7 +38,7 @@
 	);
 
 	function money(value: number | string): string {
-		return new Intl.NumberFormat('es-ES', {
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			style: 'currency',
 			currency: data.collection.currency
 		}).format(Number(value));
@@ -44,9 +46,9 @@
 
 	function localDate(value: string): string {
 		const [year, month, day] = value.split('-').map(Number);
-		return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(
-			new Date(year, month - 1, day)
-		);
+		return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+			dateStyle: 'medium'
+		}).format(new Date(year, month - 1, day));
 	}
 
 	function memberName(userId: string): string {
@@ -64,7 +66,11 @@
 <div class="mx-auto max-w-7xl space-y-6 pb-12">
 	<nav class="breadcrumbs text-sm text-base-content/60" aria-label="Ruta de navegación">
 		<ul>
-			<li><a href={resolve(`/family/${data.family.id}/expenses` as '/')}>Gastos</a></li>
+			<li>
+				<a href={resolve(`/family/${data.family.id}/expenses` as '/')}
+					>{messages['ui.expenses']()}</a
+				>
+			</li>
 			<li>{data.collection.name}</li>
 		</ul>
 	</nav>
@@ -77,7 +83,9 @@
 				<h1 class="truncate text-3xl font-bold tracking-tight sm:text-4xl">
 					{data.collection.name}
 				</h1>
-				{#if data.collection.archivedAt}<span class="badge badge-neutral">Archivada</span>{/if}
+				{#if data.collection.archivedAt}<span class="badge badge-neutral"
+						>{messages['details.archived_19']()}</span
+					>{/if}
 			</div>
 			<p class="mt-2 max-w-2xl text-base-content/60">
 				{data.collection.description ?? 'Registro compartido de gastos.'}
@@ -87,9 +95,11 @@
 			<a
 				class="btn btn-ghost"
 				href={resolve(`/family/${data.family.id}/expenses/${data.collection.id}/settings` as '/')}
-				>Ajustes</a
+				>{messages['details.settings']()}</a
 			>
-			{#if data.canCreate}<a class="btn btn-primary" href="#nuevo-gasto">Añadir gasto</a>{/if}
+			{#if data.canCreate}<a class="btn btn-primary" href="#nuevo-gasto"
+					>{messages['screen.add_expense']()}</a
+				>{/if}
 		</div>
 	</header>
 
@@ -125,10 +135,14 @@
 
 	<section aria-labelledby="balances" class="space-y-3">
 		<div>
-			<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">Reparto</p>
-			<h2 id="balances" class="mt-1 text-xl font-semibold">Balance informativo</h2>
+			<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">
+				{messages['details.split']()}
+			</p>
+			<h2 id="balances" class="mt-1 text-xl font-semibold">
+				{messages['screen.balance_overview']()}
+			</h2>
 			<p class="mt-1 text-sm text-base-content/55">
-				Calculado para el periodo seleccionado; no representa pagos ni liquidaciones.
+				{messages['screen.balance_for_the_expenses_in_the_selected_period']()}
 			</p>
 		</div>
 		<div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -148,7 +162,10 @@
 					</div>
 					<p class="mt-3 font-mono text-xl font-semibold">{money(Math.abs(balance.balance))}</p>
 					<p class="mt-2 text-xs text-base-content/50">
-						Pagó {money(balance.paid)} · Le corresponde {money(balance.owed)}
+						{messages['details.paid_by']()}
+						{money(balance.paid)}
+						{messages['details.owes']()}
+						{money(balance.owed)}
 					</p>
 				</article>
 			{/each}
@@ -171,8 +188,12 @@
 	<section aria-labelledby="movimientos" class="space-y-3">
 		<div class="flex items-end justify-between gap-4">
 			<div>
-				<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">Ledger</p>
-				<h2 id="movimientos" class="mt-1 text-xl font-semibold">Movimientos del periodo</h2>
+				<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">
+					{messages['details.transactions']()}
+				</p>
+				<h2 id="movimientos" class="mt-1 text-xl font-semibold">
+					{messages['screen.transactions_for_this_period']()}
+				</h2>
 			</div>
 			<span class="font-mono text-xs text-base-content/50">{data.collection.currency}</span>
 		</div>
@@ -193,7 +214,7 @@
 					class="btn btn-ghost btn-sm"
 					href={resolve(
 						`/family/${data.family.id}/expenses/${data.collection.id}?${filterParams(data.nextCursor)}` as '/'
-					)}>Ver movimientos anteriores</a
+					)}>{messages['screen.view_previous_transactions']()}</a
 				>
 			</div>
 		{/if}
@@ -208,9 +229,11 @@
 			<div class="card-body gap-5">
 				<div>
 					<p class="text-xs font-semibold tracking-widest text-primary uppercase">
-						Nuevo movimiento
+						{messages['screen.new_transaction']()}
 					</p>
-					<h2 id="titulo-nuevo-gasto" class="mt-1 text-xl font-semibold">Añadir gasto</h2>
+					<h2 id="titulo-nuevo-gasto" class="mt-1 text-xl font-semibold">
+						{messages['screen.add_expense']()}
+					</h2>
 				</div>
 				<form
 					method="POST"
@@ -219,7 +242,8 @@
 					class="grid gap-4 md:grid-cols-6"
 				>
 					<label class="form-control md:col-span-3" for="expense-description"
-						><span class="label-text mb-2 font-medium">Concepto</span><input
+						><span class="label-text mb-2 font-medium">{messages['details.description']()}</span
+						><input
 							id="expense-description"
 							class="input-bordered input"
 							name="description"
@@ -229,7 +253,7 @@
 						/></label
 					>
 					<label class="form-control md:col-span-1" for="expense-amount"
-						><span class="label-text mb-2 font-medium">Importe</span><input
+						><span class="label-text mb-2 font-medium">{messages['ui.amount']()}</span><input
 							id="expense-amount"
 							class="input-bordered input"
 							name="amount"
@@ -242,7 +266,7 @@
 						/></label
 					>
 					<label class="form-control md:col-span-2" for="expense-date"
-						><span class="label-text mb-2 font-medium">Fecha</span><input
+						><span class="label-text mb-2 font-medium">{messages['ui.date']()}</span><input
 							id="expense-date"
 							class="input-bordered input"
 							name="occurred_on"
@@ -252,7 +276,7 @@
 						/></label
 					>
 					<label class="form-control md:col-span-2" for="expense-payer"
-						><span class="label-text mb-2 font-medium">Pagó</span><select
+						><span class="label-text mb-2 font-medium">{messages['details.paid_by']()}</span><select
 							id="expense-payer"
 							class="select-bordered select"
 							name="paid_by"
@@ -264,11 +288,11 @@
 						></label
 					>
 					<label class="form-control md:col-span-2" for="expense-category"
-						><span class="label-text mb-2 font-medium">Categoría</span><select
+						><span class="label-text mb-2 font-medium">{messages['ui.category']()}</span><select
 							id="expense-category"
 							class="select-bordered select"
 							name="category_id"
-							><option value="">Sin categoría</option
+							><option value="">{messages['screen.no_category']()}</option
 							>{#each data.categories as category (category.id)}<option value={category.id}
 									>{category.name}</option
 								>{/each}</select
@@ -276,14 +300,14 @@
 					>
 					{#if data.calendarEnabled}
 						<label class="form-control md:col-span-3" for="expense-event">
-							<span class="label-text mb-2 font-medium">Evento</span>
+							<span class="label-text mb-2 font-medium">{messages['details.event']()}</span>
 							<select
 								id="expense-event"
 								class="select w-full"
 								name="calendar_event_id"
 								value={data.selectedCalendarEvent?.id ?? ''}
 							>
-								<option value="">Sin evento (gasto genérico)</option>
+								<option value="">{messages['details.no_event_general_expense']()}</option>
 								{#each data.calendarEvents as event (event.id)}<option value={event.id}
 										>{event.title}</option
 									>{/each}
@@ -292,19 +316,22 @@
 					{/if}
 					<label class="form-control md:col-span-2" for="expense-receipt"
 						><span class="label-text mb-2 font-medium"
-							>Recibo <span class="font-normal opacity-50">(opcional)</span></span
+							>{messages['details.receipt']()}
+							<span class="font-normal opacity-50">{messages['details.optional']()}</span></span
 						><input
 							id="expense-receipt"
 							class="file-input-bordered file-input"
 							name="receipt"
 							type="file"
 							accept="image/jpeg,image/png,image/webp,application/pdf"
-						/><span class="mt-1 text-xs text-base-content/50">PDF o imagen, máximo 8 MB.</span
+						/><span class="mt-1 text-xs text-base-content/50"
+							>{messages['details.pdf_or_image_up_to_8_mb']()}</span
 						></label
 					>
 					<label class="form-control md:col-span-6" for="expense-notes"
 						><span class="label-text mb-2 font-medium"
-							>Notas <span class="font-normal opacity-50">(opcional)</span></span
+							>{messages['ui.notes']()}
+							<span class="font-normal opacity-50">{messages['details.optional']()}</span></span
 						><textarea
 							id="expense-notes"
 							class="textarea-bordered textarea min-h-24"
@@ -322,7 +349,8 @@
 						/>
 					</div>
 					<div class="md:col-span-6 md:justify-self-end">
-						<button class="btn btn-primary" type="submit">Añadir gasto</button>
+						<button class="btn btn-primary" type="submit">{messages['screen.add_expense']()}</button
+						>
 					</div>
 				</form>
 			</div>
@@ -332,9 +360,11 @@
 	<section aria-labelledby="recurring-expenses" class="space-y-4">
 		<div>
 			<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">
-				Automatización
+				{messages['details.recurring_expenses']()}
 			</p>
-			<h2 id="recurring-expenses" class="mt-1 text-xl font-semibold">Gastos recurrentes</h2>
+			<h2 id="recurring-expenses" class="mt-1 text-xl font-semibold">
+				{messages['details.recurring_expenses_31']()}
+			</h2>
 		</div>
 		{#if data.recurringRules.length > 0}
 			<div class="grid gap-3 lg:grid-cols-2">

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { createClient } from '$lib/supabase';
 	import type { Snippet } from 'svelte';
+	import { openDialog } from './open-dialog';
 
 	type ConfirmationStyle = 'normal' | 'critical';
 	type IconType = 'warning' | 'info' | 'trash' | 'send' | 'logout' | 'transfer' | 'shield';
@@ -13,8 +15,8 @@
 		details,
 		style = 'normal',
 		icon,
-		confirmText = 'Confirm',
-		cancelText = 'Cancel',
+		confirmText = messages['confirmation.confirm'](),
+		cancelText = messages['ui.cancel'](),
 		require2FA = false,
 		onConfirm,
 		onCancel
@@ -53,15 +55,6 @@
 	const messageBorderColor = $derived(style === 'critical' ? 'border-error' : 'border-primary');
 	const confirmButtonClass = $derived(style === 'critical' ? 'btn-error' : 'btn-primary');
 	const selectedIcon = $derived(icon || (style === 'critical' ? 'warning' : 'info'));
-
-	function manageDialogFocus(dialog: HTMLElement) {
-		const returnFocus =
-			document.activeElement instanceof HTMLElement ? document.activeElement : null;
-		queueMicrotask(() => {
-			dialog.querySelector<HTMLButtonElement>('[data-cancel]')?.focus();
-		});
-		return () => returnFocus?.focus();
-	}
 
 	async function check2FAStatus() {
 		console.log('Checking 2FA status...');
@@ -108,7 +101,7 @@
 
 	async function verify2FACode() {
 		if (!verificationCode.trim()) {
-			verificationError = 'Please enter the verification code';
+			verificationError = messages['confirmation.enter_code']();
 			return;
 		}
 
@@ -129,8 +122,8 @@
 
 			// 2FA verified successfully, proceed with action
 			await executeConfirm();
-		} catch (err: any) {
-			verificationError = err.message || 'Invalid verification code';
+		} catch {
+			verificationError = messages['dialog.factor_error']();
 		} finally {
 			isVerifying = false;
 		}
@@ -140,8 +133,8 @@
 		try {
 			await onConfirm();
 			closeModal();
-		} catch (err: any) {
-			verificationError = err.message || 'Action failed';
+		} catch {
+			verificationError = messages['auth.generic_error']();
 		}
 	}
 
@@ -165,20 +158,15 @@
 	}
 </script>
 
-<svelte:window
-	onkeydown={(event) => show && event.key === 'Escape' && !isVerifying && handleCancel()}
-/>
-
 {#if show}
-	<div class="modal-open modal">
-		<div
-			{@attach manageDialogFocus}
-			class="modal-box border-2 {borderColor}"
-			role="dialog"
-			aria-modal="true"
-			aria-labelledby="confirmation-modal-title"
-			data-confirmation-modal
-		>
+	<dialog
+		class="modal"
+		use:openDialog={() => {
+			if (!isVerifying) handleCancel();
+		}}
+		aria-labelledby="confirmation-modal-title"
+	>
+		<div class="modal-box border-2 {borderColor}" data-confirmation-modal>
 			<!-- Header with icon -->
 			<div class="mb-4 flex items-center gap-3">
 				<div class="{iconBgColor} rounded-full p-3">
@@ -349,12 +337,12 @@
 							<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
 							<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
 						</svg>
-						<span class="text-sm">Enter your 2FA code from your authenticator app</span>
+						<span class="text-sm">{messages['confirmation.enter_code']()}</span>
 					</div>
 
 					<div class="form-control">
 						<label for="verificationCode" class="label">
-							<span class="label-text">Verification Code</span>
+							<span class="label-text">{messages['confirmation.code']()}</span>
 						</label>
 						<input
 							id="verificationCode"
@@ -385,7 +373,7 @@
 						onclick={() => (showVerificationStep = false)}
 						disabled={isVerifying}
 					>
-						Back
+						{messages['confirmation.back']()}
 					</button>
 				{:else}
 					<button
@@ -435,15 +423,16 @@
 							></path>
 						</svg>
 					{/if}
-					{showVerificationStep ? 'Verify & Confirm' : confirmText}
+					{showVerificationStep ? messages['confirmation.verify_and_confirm']() : confirmText}
 				</button>
 			</div>
 		</div>
 		<button
 			type="button"
 			class="modal-backdrop cursor-default"
-			aria-label="Cerrar"
+			aria-hidden="true"
+			tabindex="-1"
 			onclick={handleCancel}
 		></button>
-	</div>
+	</dialog>
 {/if}

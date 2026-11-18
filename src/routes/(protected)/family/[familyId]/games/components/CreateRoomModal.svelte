@@ -1,5 +1,7 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { enhance } from '$app/forms';
+	import { openDialog } from '$lib/components/modals/open-dialog';
 	import { GAME_METADATA, type GameType } from '$lib/types/games';
 	import { toastStore } from '$lib/stores/toast';
 
@@ -36,12 +38,6 @@
 		}
 	}
 
-	function handleClickOutside(event: MouseEvent) {
-		if (event.target === event.currentTarget) {
-			onClose();
-		}
-	}
-
 	const canProceed = $derived.by(() => {
 		if (currentStep === 1) return selectedGameType !== null;
 		if (currentStep === 2) return roomName.trim().length > 0;
@@ -49,22 +45,20 @@
 	});
 </script>
 
-<div
-	class="modal-open modal"
-	onclick={handleClickOutside}
-	onkeydown={(e) => e.key === 'Escape' && onClose()}
-	role="button"
-	tabindex="0"
->
+<dialog class="modal" use:openDialog={onClose} aria-labelledby="create-room-title">
 	<div class="modal-box max-w-2xl">
 		<!-- Header with steps -->
 		<div class="mb-6">
-			<h3 class="mb-4 text-2xl font-bold">Crear Nueva Sala</h3>
+			<h3 id="create-room-title" class="mb-4 text-2xl font-bold">{messages['ui.create_room']()}</h3>
 
 			<!-- Progress Steps -->
 			<ul class="steps w-full">
-				<li class="step {currentStep >= 1 ? 'step-primary' : ''}">Elegir Juego</li>
-				<li class="step {currentStep >= 2 ? 'step-primary' : ''}">Configurar Sala</li>
+				<li class="step {currentStep >= 1 ? 'step-primary' : ''}">
+					{messages['ui.choose_a_game']()}
+				</li>
+				<li class="step {currentStep >= 2 ? 'step-primary' : ''}">
+					{messages['ui.set_up_the_room']()}
+				</li>
 			</ul>
 		</div>
 
@@ -103,9 +97,9 @@
 
 			<!-- Step 1 Actions -->
 			<div class="modal-action">
-				<button type="button" class="btn" onclick={onClose}>Cancelar</button>
+				<button type="button" class="btn" onclick={onClose}>{messages['ui.cancel']()}</button>
 				<button type="button" class="btn btn-primary" onclick={nextStep} disabled={!canProceed}>
-					Siguiente
+					{messages['ui.next']()}
 					<svg
 						xmlns="http://www.w3.org/2000/svg"
 						fill="none"
@@ -261,11 +255,13 @@
 							<span class="loading loading-sm loading-spinner"></span>
 							Creando...
 						{:else}
-							Crear Sala
+							{messages['ui.create_room']()}
 						{/if}
 					</button>
 				</div>
 			</form>
 		{/if}
 	</div>
-</div>
+	<button type="button" class="modal-backdrop" aria-hidden="true" tabindex="-1" onclick={onClose}
+	></button>
+</dialog>

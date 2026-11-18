@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
 	interface EventTag {
 		id: string;
 		name: string;
@@ -52,7 +53,7 @@
 
 	function formattedPrice(): string {
 		if (price === null || !Number.isFinite(price)) return 'Sin precio';
-		return new Intl.NumberFormat('es-ES', {
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			style: 'currency',
 			currency: safeCurrency
 		}).format(price);

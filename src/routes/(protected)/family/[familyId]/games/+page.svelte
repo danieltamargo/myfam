@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { onMount } from 'svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -74,23 +75,24 @@
 	});
 </script>
 
-<svelte:head><title>Partidas familiares · MyFamily</title></svelte:head>
+<svelte:head><title>{messages['ui.family_games_myfamily']()}</title></svelte:head>
 
 <div class="mx-auto max-w-4xl space-y-8 pb-10">
 	<header>
-		<h1 class="text-3xl font-bold">Juegos en familia</h1>
+		<h1 class="text-3xl font-bold">{messages['ui.family_games']()}</h1>
 		<p class="mt-2 text-base-content/70">
-			Invita a un familiar a tres en raya, Wordle compartido, reacción o acertar el color. Abandonar
-			una partida en curso concede la victoria al otro jugador.
+			{messages['screen.invite_someone_to_play_tic_tac_toe_shared_wordle_reaction_time_or_gu']()}
 		</p>
 	</header>
 	{#if form?.error || syncError}<p class="alert alert-error" role="alert">
 			{form?.error || syncError}
 		</p>{/if}
 	<section class="rounded-box border border-base-300 bg-base-100 p-5" aria-labelledby="create-game">
-		<h2 id="create-game" class="text-xl font-semibold">Nueva partida</h2>
+		<h2 id="create-game" class="text-xl font-semibold">{messages['ui.new_game']()}</h2>
 		{#if opponents.length === 0}
-			<p class="mt-3">Invita a otro miembro a la familia para poder jugar.</p>
+			<p class="mt-3">
+				{messages['screen.invite_someone_to_your_family_so_you_can_play_together']()}
+			</p>
 		{:else}
 			<form
 				method="POST"
@@ -114,14 +116,17 @@
 				}}
 			>
 				<label class="block space-y-2"
-					><span>Juego</span><select name="gameType" class="select w-full" bind:value={gameType}
+					><span>{messages['details.game']()}</span><select
+						name="gameType"
+						class="select w-full"
+						bind:value={gameType}
 						>{#each FAMILY_GAME_TYPES as type (type)}<option value={type}
 								>{FAMILY_GAME_NAMES[type]}</option
 							>{/each}</select
 					></label
 				>
 				<label class="block space-y-2"
-					><span>Nombre de la partida</span><input
+					><span>{messages['screen.game_name']()}</span><input
 						name="name"
 						class="input w-full"
 						maxlength="100"
@@ -130,7 +135,9 @@
 					/></label
 				>
 				<fieldset class="min-w-0">
-					<legend class="mb-3 font-semibold">Con quién quieres jugar</legend>
+					<legend class="mb-3 font-semibold"
+						>{messages['screen.who_do_you_want_to_play_with']()}</legend
+					>
 					<div class="flex flex-wrap gap-3">
 						{#each opponents as member (member.user_id)}
 							<label
@@ -165,7 +172,7 @@
 		{/if}
 	</section>
 	<section aria-labelledby="my-games">
-		<h2 id="my-games" class="mb-4 text-xl font-semibold">Mis partidas recientes</h2>
+		<h2 id="my-games" class="mb-4 text-xl font-semibold">{messages['ui.my_recent_games']()}</h2>
 		<div class="space-y-3">
 			{#each data.rooms as room (room.id)}
 				<a
@@ -182,7 +189,7 @@
 					><span class="shrink-0 text-sm">{statusLabels[room.status]}</span>
 				</a>
 			{:else}<p class="rounded-box border border-dashed border-base-300 p-6">
-					Aún no tienes partidas. Elige un familiar para empezar.
+					{messages['screen.no_games_yet_choose_a_family_member_to_start']()}
 				</p>{/each}
 		</div>
 	</section>

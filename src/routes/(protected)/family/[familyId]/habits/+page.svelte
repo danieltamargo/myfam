@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import type { PageProps } from './$types';
@@ -10,10 +12,14 @@
 	function formatDay(date: string): { weekday: string; day: string } {
 		const value = new Date(`${date}T00:00:00Z`);
 		return {
-			weekday: new Intl.DateTimeFormat('es-ES', { weekday: 'short', timeZone: 'UTC' }).format(
-				value
-			),
-			day: new Intl.DateTimeFormat('es-ES', { day: 'numeric', timeZone: 'UTC' }).format(value)
+			weekday: new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+				weekday: 'short',
+				timeZone: 'UTC'
+			}).format(value),
+			day: new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+				day: 'numeric',
+				timeZone: 'UTC'
+			}).format(value)
 		};
 	}
 
@@ -23,7 +29,7 @@
 </script>
 
 <svelte:head>
-	<title>Hábitos · MyFamily</title>
+	<title>{messages['ui.habits_myfamily']()}</title>
 	<meta
 		name="description"
 		content="Registra rutinas personales y compártelas solo con quien elijas."
@@ -33,10 +39,12 @@
 <div class="mx-auto w-full max-w-6xl space-y-7 px-3 py-4 sm:px-5 sm:py-7">
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div class="max-w-2xl">
-			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">A tu ritmo</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Hábitos</h1>
+			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">
+				{messages['details.at_your_pace']()}
+			</p>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{messages['ui.habits']()}</h1>
 			<p class="mt-2 text-sm text-base-content/65 sm:text-base">
-				Un registro diario privado por defecto. Sin puntos, rankings ni comparaciones.
+				{messages['screen.keep_a_private_record_of_your_routines']()}
 			</p>
 		</div>
 		<button
@@ -71,13 +79,15 @@
 			aria-labelledby="new-habit-title"
 		>
 			<div class="mb-5">
-				<h2 id="new-habit-title" class="text-xl font-bold">Nuevo hábito</h2>
-				<p class="text-sm text-base-content/55">Solo tú podrás marcar o archivar este registro.</p>
+				<h2 id="new-habit-title" class="text-xl font-bold">{messages['ui.new_habit']()}</h2>
+				<p class="text-sm text-base-content/55">
+					{messages['screen.only_you_can_check_in_or_archive_this_habit']()}
+				</p>
 			</div>
 			<form method="POST" action="?/createHabit" use:enhance class="space-y-5">
 				<div class="grid gap-4 md:grid-cols-2">
 					<label class="form-control md:col-span-2">
-						<span class="label-text mb-1 font-medium">Nombre</span>
+						<span class="label-text mb-1 font-medium">{messages['ui.name']()}</span>
 						<input
 							class="input w-full"
 							name="title"
@@ -87,25 +97,27 @@
 						/>
 					</label>
 					<label class="form-control md:col-span-2">
-						<span class="label-text mb-1 font-medium">Descripción opcional</span>
+						<span class="label-text mb-1 font-medium"
+							>{messages['screen.optional_description']()}</span
+						>
 						<textarea class="textarea min-h-24 w-full" name="description" maxlength="2000"
 						></textarea>
 					</label>
 					<label class="form-control">
-						<span class="label-text mb-1 font-medium">Empieza el</span>
+						<span class="label-text mb-1 font-medium">{messages['details.starts_on']()}</span>
 						<input class="input w-full" name="start_on" type="date" value={data.days[6]} required />
 					</label>
 					<label class="form-control">
-						<span class="label-text mb-1 font-medium">Privacidad</span>
+						<span class="label-text mb-1 font-medium">{messages['details.privacy']()}</span>
 						<select class="select w-full" name="visibility" bind:value={visibility}>
-							<option value="private">Solo yo</option>
-							<option value="selected_members">Personas seleccionadas</option>
+							<option value="private">{messages['ui.only_me']()}</option>
+							<option value="selected_members">{messages['ui.selected_people']()}</option>
 						</select>
 					</label>
 				</div>
 				{#if visibility === 'selected_members'}
 					<fieldset>
-						<legend class="mb-2 font-medium">¿Quién puede verlo?</legend>
+						<legend class="mb-2 font-medium">{messages['screen.who_can_see_it']()}</legend>
 						<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
 							{#each data.members.filter((member) => member.id !== data.currentUserId) as member (member.id)}
 								<label
@@ -124,7 +136,9 @@
 					</fieldset>
 				{/if}
 				<div class="flex justify-end">
-					<button class="btn w-full btn-primary sm:w-auto" type="submit">Crear hábito</button>
+					<button class="btn w-full btn-primary sm:w-auto" type="submit"
+						>{messages['ui.create_habit']()}</button
+					>
 				</div>
 			</form>
 		</section>
@@ -133,8 +147,10 @@
 	<section aria-labelledby="habit-list-title" class="space-y-4">
 		<div class="flex items-end justify-between gap-3">
 			<div>
-				<h2 id="habit-list-title" class="text-xl font-bold">Últimos siete días</h2>
-				<p class="text-sm text-base-content/50">Marca solo tu propio avance diario.</p>
+				<h2 id="habit-list-title" class="text-xl font-bold">{messages['ui.last_seven_days']()}</h2>
+				<p class="text-sm text-base-content/50">
+					{messages['screen.record_your_own_progress_for_the_day']()}
+				</p>
 			</div>
 			<span class="badge badge-ghost">{data.habits.length} activos</span>
 		</div>
@@ -144,9 +160,9 @@
 				class="rounded-box border border-dashed border-base-300 bg-base-100 px-5 py-12 text-center"
 			>
 				<p class="text-3xl" aria-hidden="true">○</p>
-				<h3 class="mt-2 font-semibold">Un espacio tranquilo para empezar</h3>
+				<h3 class="mt-2 font-semibold">{messages['ui.a_quiet_place_to_start']()}</h3>
 				<p class="mt-1 text-sm text-base-content/55">
-					Crea un hábito; será privado mientras no elijas compartirlo.
+					{messages['screen.create_a_habit_and_choose_whether_to_share_it']()}
 				</p>
 			</div>
 		{:else}
@@ -168,10 +184,14 @@
 								{#if habit.description}<p class="mt-1 text-sm text-base-content/60">
 										{habit.description}
 									</p>{/if}
-								<p class="mt-2 text-xs text-base-content/45">Creado por {habit.creatorName}</p>
+								<p class="mt-2 text-xs text-base-content/45">
+									{messages['details.created_by']()}
+									{habit.creatorName}
+								</p>
 								{#if habit.selectedMemberIds.length > 0}
 									<p class="mt-1 text-xs text-base-content/50">
-										Visible para {habit.selectedMemberIds.map(memberName).join(', ')}
+										{messages['screen.visible_to']()}
+										{habit.selectedMemberIds.map(memberName).join(', ')}
 									</p>
 								{/if}
 							</div>
@@ -225,7 +245,7 @@
 								<form method="POST" action="?/archiveHabit" use:enhance class="lg:shrink-0">
 									<input type="hidden" name="habit_id" value={habit.id} />
 									<button class="btn w-full btn-ghost btn-sm lg:w-auto" type="submit"
-										>Archivar</button
+										>{messages['details.archive']()}</button
 									>
 								</form>
 							{/if}

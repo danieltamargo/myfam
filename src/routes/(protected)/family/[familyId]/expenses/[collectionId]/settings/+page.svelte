@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { resolve } from '$app/paths';
 	import type { ActionData, PageData } from './$types';
 
@@ -34,27 +36,35 @@
 </script>
 
 <svelte:head>
-	<title>Ajustes de {data.collection.name} · MyFamily</title>
+	<title>{messages['details.settings_for']()} {data.collection.name} · MyFamily</title>
 </svelte:head>
 
 <div class="mx-auto max-w-5xl space-y-6 pb-12">
 	<nav class="breadcrumbs text-sm text-base-content/60" aria-label="Ruta de navegación">
 		<ul>
-			<li><a href={resolve(`/family/${data.family.id}/expenses` as '/')}>Gastos</a></li>
+			<li>
+				<a href={resolve(`/family/${data.family.id}/expenses` as '/')}
+					>{messages['ui.expenses']()}</a
+				>
+			</li>
 			<li>
 				<a href={resolve(`/family/${data.family.id}/expenses/${data.collection.id}` as '/')}
 					>{data.collection.name}</a
 				>
 			</li>
-			<li>Ajustes</li>
+			<li>{messages['details.settings']()}</li>
 		</ul>
 	</nav>
 
 	<header>
-		<p class="text-sm font-semibold tracking-wide text-primary uppercase">Control de acceso</p>
-		<h1 class="mt-1 text-3xl font-bold tracking-tight">Ajustes de la colección</h1>
+		<p class="text-sm font-semibold tracking-wide text-primary uppercase">
+			{messages['screen.access_settings']()}
+		</p>
+		<h1 class="mt-1 text-3xl font-bold tracking-tight">
+			{messages['screen.collection_settings']()}
+		</h1>
 		<p class="mt-2 text-base-content/60">
-			Los permisos de gastos son independientes de los roles generales de la familia.
+			{messages['screen.you_can_choose_who_has_access_to_expenses_for_each_collection']()}
 		</p>
 	</header>
 
@@ -67,13 +77,15 @@
 	<section aria-labelledby="datos-coleccion" class="card bg-base-100 card-border">
 		<div class="card-body gap-5">
 			<div>
-				<h2 id="datos-coleccion" class="card-title">Datos generales</h2>
-				<p class="mt-1 text-sm text-base-content/60">Nombre, descripción y moneda del registro.</p>
+				<h2 id="datos-coleccion" class="card-title">{messages['screen.general_details']()}</h2>
+				<p class="mt-1 text-sm text-base-content/60">
+					{messages['screen.name_description_and_currency_for_the_collection']()}
+				</p>
 			</div>
 			{#if canManage}
 				<form method="POST" action="?/updateCollection" class="grid gap-4 md:grid-cols-6">
 					<label class="form-control md:col-span-4" for="settings-collection-name">
-						<span class="label-text mb-2 font-medium">Nombre</span>
+						<span class="label-text mb-2 font-medium">{messages['ui.name']()}</span>
 						<input
 							id="settings-collection-name"
 							class="input-bordered input"
@@ -84,7 +96,7 @@
 						/>
 					</label>
 					<label class="form-control md:col-span-2" for="settings-collection-currency">
-						<span class="label-text mb-2 font-medium">Moneda</span>
+						<span class="label-text mb-2 font-medium">{messages['ui.currency']()}</span>
 						<select
 							id="settings-collection-currency"
 							class="select-bordered select"
@@ -97,7 +109,7 @@
 						</select>
 					</label>
 					<label class="form-control md:col-span-6" for="settings-collection-description">
-						<span class="label-text mb-2 font-medium">Descripción</span>
+						<span class="label-text mb-2 font-medium">{messages['ui.description']()}</span>
 						<textarea
 							id="settings-collection-description"
 							class="textarea-bordered textarea min-h-24"
@@ -106,17 +118,17 @@
 						>
 					</label>
 					<div class="md:col-span-6 md:justify-self-end">
-						<button class="btn btn-primary" type="submit">Guardar</button>
+						<button class="btn btn-primary" type="submit">{messages['ui.save']()}</button>
 					</div>
 				</form>
 			{:else}
 				<dl class="grid gap-4 sm:grid-cols-2">
 					<div>
-						<dt class="text-xs text-base-content/50 uppercase">Nombre</dt>
+						<dt class="text-xs text-base-content/50 uppercase">{messages['ui.name']()}</dt>
 						<dd class="mt-1 font-medium">{data.collection.name}</dd>
 					</div>
 					<div>
-						<dt class="text-xs text-base-content/50 uppercase">Moneda</dt>
+						<dt class="text-xs text-base-content/50 uppercase">{messages['ui.currency']()}</dt>
 						<dd class="mt-1 font-mono">{data.collection.currency}</dd>
 					</div>
 				</dl>
@@ -126,13 +138,12 @@
 
 	<section aria-labelledby="calendar-association" class="card bg-base-100 card-border">
 		<div class="card-body gap-4">
-			<h2 id="calendar-association" class="card-title">Evento del calendario</h2>
+			<h2 id="calendar-association" class="card-title">{messages['screen.calendar_event']()}</h2>
 			<p class="text-sm text-base-content/65">
-				Puedes asociar esta colección a un evento real o dejarla como genérica. La asociación solo
-				se muestra a quienes pueden ver tanto la colección como el evento.
+				{messages['screen.you_can_link_this_collection_to_a_calendar_event_only_people_who_can']()}
 			</p>
 			{#if data.calendarEvent}
-				<p class="font-medium">Evento: {data.calendarEvent.title}</p>
+				<p class="font-medium">{messages['details.event_33']()} {data.calendarEvent.title}</p>
 			{/if}
 			{#if canManage && !data.collection.archivedAt}
 				<form
@@ -141,21 +152,26 @@
 					class="flex flex-col items-start gap-3 sm:flex-row sm:items-end"
 				>
 					<label class="form-control w-full sm:max-w-md" for="settings-calendar-event">
-						<span class="mb-2 font-medium">Asociación</span>
+						<span class="mb-2 font-medium">{messages['details.linked_event']()}</span>
 						<select id="settings-calendar-event" class="select w-full" name="calendar_event_id">
-							<option value="__keep__">No cambiar asociación</option>
-							<option value="">Sin evento (desvincular)</option>
+							<option value="__keep__">{messages['screen.keep_current_event']()}</option>
+							<option value="">{messages['screen.no_event_remove_link']()}</option>
 							{#each data.calendarEvents as event (event.id)}
 								<option value={event.id}
-									>{event.title} · {new Intl.DateTimeFormat('es-ES', {
-										dateStyle: 'short',
-										timeZone: event.timezone
-									}).format(new Date(event.starts_at))}</option
+									>{event.title} · {new Intl.DateTimeFormat(
+										getLocale() === 'en' ? 'en-GB' : 'es-ES',
+										{
+											dateStyle: 'short',
+											timeZone: event.timezone
+										}
+									).format(new Date(event.starts_at))}</option
 								>
 							{/each}
 						</select>
 					</label>
-					<button type="submit" class="btn btn-primary">Guardar asociación</button>
+					<button type="submit" class="btn btn-primary"
+						>{messages['details.save_event_link']()}</button
+					>
 				</form>
 			{/if}
 		</div>
@@ -165,9 +181,9 @@
 		<div class="card-body gap-5">
 			<div class="flex flex-wrap items-end justify-between gap-3">
 				<div>
-					<h2 id="participantes" class="card-title">Participantes</h2>
+					<h2 id="participantes" class="card-title">{messages['ui.participants']()}</h2>
 					<p class="mt-1 text-sm text-base-content/60">
-						Solo estas personas pueden ver la colección.
+						{messages['details.only_these_people_can_see_the_collection']()}
 					</p>
 				</div>
 				<span class="badge badge-ghost">{visibleMembers.length}</span>
@@ -177,9 +193,9 @@
 				<table class="table">
 					<thead
 						><tr
-							><th>Persona</th><th>Estado</th><th>Rol</th><th
-								><span class="sr-only">Acciones</span></th
-							></tr
+							><th>{messages['details.person']()}</th><th>{messages['details.status']()}</th><th
+								>Rol</th
+							><th><span class="sr-only">{messages['details.actions']()}</span></th></tr
 						></thead
 					>
 					<tbody>
@@ -205,7 +221,7 @@
 								<td
 									><span
 										class={`badge badge-sm ${member.status === 'active' ? 'badge-soft badge-success' : 'badge-soft badge-warning'}`}
-										>{member.status === 'active' ? 'Activo' : 'Invitado'}</span
+										>{member.status === 'active' ? messages['feature.active']() : 'Invitado'}</span
 									></td
 								>
 								<td>
@@ -219,11 +235,13 @@
 												value={member.role}
 												aria-label={`Rol de ${member.profile.displayName}`}
 											>
-												<option value="manager">Gestor</option><option value="contributor"
-													>Colaborador</option
-												><option value="viewer">Solo lectura</option>
+												<option value="manager">{messages['details.manager']()}</option><option
+													value="contributor">{messages['details.contributor']()}</option
+												><option value="viewer">{messages['details.view_only']()}</option>
 											</select>
-											<button class="btn btn-ghost btn-xs" type="submit">Cambiar</button>
+											<button class="btn btn-ghost btn-xs" type="submit"
+												>{messages['details.change']()}</button
+											>
 										</form>
 									{:else}<span class="text-sm">{roleLabel(member.role)}</span>{/if}
 								</td>
@@ -231,7 +249,9 @@
 									{#if canRevoke(member.role, member.userId)}
 										<form method="POST" action="?/revokeMember">
 											<input type="hidden" name="user_id" value={member.userId} />
-											<button class="btn text-error btn-ghost btn-xs" type="submit">Revocar</button>
+											<button class="btn text-error btn-ghost btn-xs" type="submit"
+												>{messages['details.revoke']()}</button
+											>
 										</form>
 									{/if}
 								</td>
@@ -265,10 +285,9 @@
 					<label class="form-control" for="invite-expense-role">
 						<span class="label-text mb-2 font-medium">Rol</span>
 						<select id="invite-expense-role" class="select-bordered select bg-base-100" name="role">
-							{#if isOwner}<option value="manager">Gestor</option>{/if}
-							<option value="contributor" selected>Colaborador</option><option value="viewer"
-								>Solo lectura</option
-							>
+							{#if isOwner}<option value="manager">{messages['details.manager']()}</option>{/if}
+							<option value="contributor" selected>{messages['details.contributor']()}</option
+							><option value="viewer">{messages['details.view_only']()}</option>
 						</select>
 					</label>
 					<button class="btn btn-primary" type="submit">Invitar</button>
@@ -330,7 +349,7 @@
 							value="#2563EB"
 						/></label
 					>
-					<button class="btn btn-primary" type="submit">Añadir</button>
+					<button class="btn btn-primary" type="submit">{messages['ui.add']()}</button>
 				</form>
 			{/if}
 		</div>

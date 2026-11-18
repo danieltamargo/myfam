@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import MemberRadioFilter from '$lib/components/ui/MemberRadioFilter.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -22,7 +24,7 @@
 
 	function formatDate(date: string | null): string {
 		if (!date) return 'Sin fecha';
-		return new Intl.DateTimeFormat('es-ES', {
+		return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			day: 'numeric',
 			month: 'short',
 			year: 'numeric',
@@ -62,7 +64,7 @@
 </script>
 
 <svelte:head>
-	<title>Tareas familiares · MyFamily</title>
+	<title>{messages['ui.family_tasks_myfamily']()}</title>
 	<meta
 		name="description"
 		content="Organiza responsabilidades, responsables y vencimientos de tu familia."
@@ -72,10 +74,12 @@
 <div class="mx-auto w-full max-w-6xl space-y-6 px-3 py-4 sm:px-5 sm:py-7">
 	<header class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
 		<div class="max-w-2xl">
-			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">Coordinación</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Tareas familiares</h1>
+			<p class="mb-1 text-sm font-semibold tracking-wide text-primary uppercase">
+				{messages['screen.family_tasks']()}
+			</p>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{messages['ui.family_tasks']()}</h1>
 			<p class="mt-2 text-sm text-base-content/65 sm:text-base">
-				Responsabilidades claras, sin convertir la casa en una oficina.
+				{messages['screen.share_household_tasks_and_see_what_s_left_to_do']()}
 			</p>
 		</div>
 		<button
@@ -111,19 +115,19 @@
 	<section aria-label="Resumen de tareas" class="grid grid-cols-2 gap-3 sm:grid-cols-4">
 		<div class="rounded-box border border-base-300 bg-base-100 p-4">
 			<p class="text-2xl font-bold">{openCount}</p>
-			<p class="text-xs text-base-content/55">Abiertas en esta vista</p>
+			<p class="text-xs text-base-content/55">{messages['screen.open_in_this_view']()}</p>
 		</div>
 		<div class="rounded-box border border-base-300 bg-base-100 p-4">
 			<p class="text-2xl font-bold">{completedCount}</p>
-			<p class="text-xs text-base-content/55">Completadas</p>
+			<p class="text-xs text-base-content/55">{messages['screen.completed']()}</p>
 		</div>
 		<div class="rounded-box border border-base-300 bg-base-100 p-4">
 			<p class="text-2xl font-bold">{data.groups.length}</p>
-			<p class="text-xs text-base-content/55">Grupos activos</p>
+			<p class="text-xs text-base-content/55">{messages['screen.active_groups']()}</p>
 		</div>
 		<div class="rounded-box border border-base-300 bg-base-100 p-4">
 			<p class="text-2xl font-bold">{data.members.length}</p>
-			<p class="text-xs text-base-content/55">Personas</p>
+			<p class="text-xs text-base-content/55">{messages['details.people']()}</p>
 		</div>
 	</section>
 
@@ -131,70 +135,70 @@
 		<section id="nueva-tarea" class="rounded-box border border-base-300 bg-base-100 p-4 sm:p-6">
 			<div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 				<div>
-					<h2 class="text-xl font-bold">Nueva tarea</h2>
+					<h2 class="text-xl font-bold">{messages['ui.new_task']()}</h2>
 					<p class="text-sm text-base-content/55">
-						Asigna, menciona y programa desde un único lugar.
+						{messages['screen.assign_people_and_set_due_dates_in_one_place']()}
 					</p>
 				</div>
 				<form method="POST" action="?/createGroup" use:enhance class="join w-full sm:w-auto">
-					<label class="sr-only" for="group-name">Nuevo grupo</label>
+					<label class="sr-only" for="group-name">{messages['ui.new_group']()}</label>
 					<input
 						id="group-name"
 						name="name"
 						class="input join-item min-w-0 flex-1 sm:w-40"
-						placeholder="Nuevo grupo"
+						placeholder={messages['ui.new_group']()}
 						maxlength="80"
 						required
 					/>
-					<button class="btn join-item" type="submit">Crear grupo</button>
+					<button class="btn join-item" type="submit">{messages['ui.create_group']()}</button>
 				</form>
 			</div>
 
 			<form method="POST" action="?/createTask" use:enhance class="space-y-5">
 				<div class="grid gap-4 md:grid-cols-2">
 					<label class="form-control md:col-span-2">
-						<span class="label-text mb-1 font-medium">Título</span>
+						<span class="label-text mb-1 font-medium">{messages['ui.title']()}</span>
 						<input class="input w-full" name="title" maxlength="160" required />
 					</label>
 					<label class="form-control md:col-span-2">
-						<span class="label-text mb-1 font-medium">Descripción</span>
+						<span class="label-text mb-1 font-medium">{messages['ui.description']()}</span>
 						<textarea class="textarea min-h-24 w-full" name="description" maxlength="4000"
 						></textarea>
 					</label>
 					<label class="form-control">
-						<span class="label-text mb-1 font-medium">Grupo</span>
+						<span class="label-text mb-1 font-medium">{messages['details.group']()}</span>
 						<select class="select w-full" name="group_id">
-							<option value="">Sin grupo</option>
+							<option value="">{messages['ui.no_group']()}</option>
 							{#each data.groups as group (group.id)}
 								<option value={group.id}>{group.name}</option>
 							{/each}
 						</select>
 					</label>
 					<label class="form-control">
-						<span class="label-text mb-1 font-medium">Prioridad</span>
+						<span class="label-text mb-1 font-medium">{messages['ui.priority']()}</span>
 						<select class="select w-full" name="priority">
 							<option value="normal">Normal</option>
-							<option value="low">Baja</option>
-							<option value="high">Alta</option>
-							<option value="urgent">Urgente</option>
+							<option value="low">{messages['ui.low']()}</option>
+							<option value="high">{messages['ui.high']()}</option>
+							<option value="urgent">{messages['ui.urgent']()}</option>
 						</select>
 					</label>
 					<label class="form-control">
-						<span class="label-text mb-1 font-medium">Vencimiento</span>
+						<span class="label-text mb-1 font-medium">{messages['screen.due_date']()}</span>
 						<input class="input w-full" name="due_on" type="date" />
 					</label>
 					<label class="form-control">
-						<span class="label-text mb-1 font-medium">Repetición</span>
+						<span class="label-text mb-1 font-medium">{messages['ui.repeat']()}</span>
 						<select class="select w-full" name="recurrence_frequency" bind:value={recurrence}>
-							<option value="none">No se repite</option>
-							<option value="daily">Diaria</option>
-							<option value="weekly">Semanal</option>
-							<option value="monthly">Mensual</option>
+							<option value="none">{messages['ui.does_not_repeat']()}</option>
+							<option value="daily">{messages['ui.daily']()}</option>
+							<option value="weekly">{messages['ui.weekly']()}</option>
+							<option value="monthly">{messages['ui.monthly']()}</option>
 						</select>
 					</label>
 					{#if recurrence !== 'none'}
 						<label class="form-control">
-							<span class="label-text mb-1 font-medium">Cada</span>
+							<span class="label-text mb-1 font-medium">{messages['ui.every']()}</span>
 							<input
 								class="input w-full"
 								name="recurrence_interval"
@@ -206,7 +210,7 @@
 							/>
 						</label>
 						<label class="form-control">
-							<span class="label-text mb-1 font-medium">Repetir hasta</span>
+							<span class="label-text mb-1 font-medium">{messages['ui.repeat_until']()}</span>
 							<input class="input w-full" name="recurrence_until" type="date" required />
 						</label>
 					{:else}
@@ -216,7 +220,7 @@
 
 				<div class="grid gap-5 lg:grid-cols-2">
 					<fieldset>
-						<legend class="mb-2 font-medium">Responsables</legend>
+						<legend class="mb-2 font-medium">{messages['screen.assigned_to']()}</legend>
 						<div class="grid gap-2 sm:grid-cols-2">
 							{#each data.members as member (member.id)}
 								<label
@@ -234,7 +238,7 @@
 						</div>
 					</fieldset>
 					<fieldset>
-						<legend class="mb-2 font-medium">Menciones</legend>
+						<legend class="mb-2 font-medium">{messages['details.mentions']()}</legend>
 						<div class="grid gap-2 sm:grid-cols-2">
 							{#each data.members as member (member.id)}
 								<label
@@ -253,7 +257,9 @@
 					</fieldset>
 				</div>
 				<div class="flex justify-end">
-					<button class="btn w-full btn-primary sm:w-auto" type="submit">Crear tarea</button>
+					<button class="btn w-full btn-primary sm:w-auto" type="submit"
+						>{messages['ui.create_task']()}</button
+					>
 				</div>
 			</form>
 		</section>
@@ -277,7 +283,9 @@
 			<h2 id="task-list-title" class="text-xl font-bold">
 				{views.find((view) => view.id === data.view)?.label}
 			</h2>
-			<span class="text-sm text-base-content/50">{data.tasks.length} tareas</span>
+			<span class="text-sm text-base-content/50"
+				>{data.tasks.length} {messages['details.tasks']()}</span
+			>
 		</div>
 
 		{#if data.tasks.length === 0}
@@ -285,8 +293,10 @@
 				class="rounded-box border border-dashed border-base-300 bg-base-100 px-5 py-12 text-center"
 			>
 				<p class="text-3xl" aria-hidden="true">✓</p>
-				<h3 class="mt-2 font-semibold">Todo despejado</h3>
-				<p class="mt-1 text-sm text-base-content/55">No hay tareas que coincidan con esta vista.</p>
+				<h3 class="mt-2 font-semibold">{messages['ui.all_clear']()}</h3>
+				<p class="mt-1 text-sm text-base-content/55">
+					{messages['screen.no_tasks_match_this_view']()}
+				</p>
 			</div>
 		{:else}
 			{#each data.tasks as task (task.id)}
@@ -351,10 +361,13 @@
 												? 'Semanal'
 												: 'Mensual'}</span
 									>{/if}
-								<span>Creada por {task.creatorName}</span>
+								<span>{messages['details.created_by_98']()} {task.creatorName}</span>
 							</div>
 							{#if task.assigneeIds.length > 0}
-								<div class="mt-3 flex flex-wrap gap-1.5" aria-label="Responsables">
+								<div
+									class="mt-3 flex flex-wrap gap-1.5"
+									aria-label={messages['screen.assigned_to']()}
+								>
 									{#each task.assigneeIds as assigneeId (assigneeId)}
 										<span class="badge badge-outline badge-sm">{memberName(assigneeId)}</span>
 									{/each}
@@ -367,7 +380,7 @@
 								<input type="hidden" name="version" value={task.version} />
 								<input type="hidden" name="status" value="in_progress" />
 								<button class="btn hidden btn-ghost btn-sm sm:inline-flex" type="submit"
-									>Empezar</button
+									>{messages['ui.get_started']()}</button
 								>
 							</form>
 						{/if}

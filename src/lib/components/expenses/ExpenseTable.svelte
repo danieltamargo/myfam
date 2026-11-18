@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import type { Tables } from '$lib/types/database';
 	import { resolve } from '$app/paths';
 	import type { CalendarEventOption } from '$lib/server/calendar/resource-links';
@@ -36,7 +38,7 @@
 	const activeMembers = $derived(members.filter((member) => member.status === 'active'));
 
 	function money(value: number | string): string {
-		return new Intl.NumberFormat('es-ES', {
+		return new Intl.NumberFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			style: 'currency',
 			currency: collection.currency
 		}).format(Number(value));
@@ -44,9 +46,9 @@
 
 	function localDate(value: string): string {
 		const [year, month, day] = value.split('-').map(Number);
-		return new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(
-			new Date(year, month - 1, day)
-		);
+		return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
+			dateStyle: 'medium'
+		}).format(new Date(year, month - 1, day));
 	}
 	function calendarHref(event: CalendarEventOption): string {
 		const parts = new Intl.DateTimeFormat('en-CA', {
@@ -75,17 +77,20 @@
 {#if expenses.length === 0}
 	<div class="rounded-box border border-dashed border-base-300 bg-base-100 px-6 py-12 text-center">
 		<div class="text-4xl" aria-hidden="true">🧾</div>
-		<h3 class="mt-3 font-semibold">No hay movimientos en este intervalo</h3>
-		<p class="mt-1 text-sm text-base-content/60">Prueba otro periodo o añade el primer gasto.</p>
+		<h3 class="mt-3 font-semibold">{messages['feature.no_transactions_in_this_period']()}</h3>
+		<p class="mt-1 text-sm text-base-content/60">
+			{messages['feature.try_another_period_or_add_your_first_expense']()}
+		</p>
 	</div>
 {:else}
 	<div class="overflow-x-auto rounded-box border border-base-300 bg-base-100">
 		<table class="table" data-testid="expenses-table">
 			<thead>
 				<tr
-					><th>Fecha</th><th>Concepto</th><th>Pagó</th><th>Categoría</th><th class="text-right"
-						>Importe</th
-					><th><span class="sr-only">Acciones</span></th></tr
+					><th>{messages['ui.date']()}</th><th>{messages['details.description']()}</th><th
+						>{messages['details.paid_by']()}</th
+					><th>{messages['ui.category']()}</th><th class="text-right">{messages['ui.amount']()}</th
+					><th><span class="sr-only">{messages['details.actions']()}</span></th></tr
 				>
 			</thead>
 			<tbody>
@@ -112,7 +117,9 @@
 										class="size-2 rounded-full"
 										style:background-color={expense.category.color ?? '#64748B'}
 									></span>{expense.category.name}</span
-								>{:else}<span class="text-sm text-base-content/40">Sin categoría</span>{/if}
+								>{:else}<span class="text-sm text-base-content/40"
+									>{messages['screen.no_category']()}</span
+								>{/if}
 						</td>
 						<td class="text-right">
 							<p class="font-mono font-semibold">{money(expense.amount)}</p>
@@ -131,13 +138,13 @@
 										class="btn btn-ghost btn-xs"
 										href={expense.receiptUrl}
 										target="_blank"
-										rel="noreferrer">Recibo</a
+										rel="noreferrer">{messages['details.receipt']()}</a
 									>
 									<!-- eslint-enable svelte/no-navigation-without-resolve -->
 								{/if}
 								{#if canEdit(expense.created_by) && !collection.archivedAt}<a
 										class="btn btn-ghost btn-xs"
-										href={`#editar-${expense.id}`}>Editar</a
+										href={`#editar-${expense.id}`}>{messages['ui.edit']()}</a
 									>{/if}
 							</div>
 						</td>
@@ -147,7 +154,7 @@
 							<td colspan="6" class="bg-base-200/60 p-0">
 								<details class="collapse-arrow collapse">
 									<summary class="collapse-title min-h-0 py-3 text-sm font-semibold"
-										>Editar {expense.description}</summary
+										>{messages['ui.edit']()} {expense.description}</summary
 									>
 									<div class="collapse-content">
 										<form
@@ -162,7 +169,8 @@
 												value={expense.version}
 											/>
 											<label class="form-control md:col-span-2" for={`description-${expense.id}`}
-												><span class="label-text mb-1">Concepto</span><input
+												><span class="label-text mb-1">{messages['details.description']()}</span
+												><input
 													id={`description-${expense.id}`}
 													class="input-bordered input input-sm"
 													name="description"
@@ -172,7 +180,7 @@
 												/></label
 											>
 											<label class="form-control" for={`amount-${expense.id}`}
-												><span class="label-text mb-1">Importe</span><input
+												><span class="label-text mb-1">{messages['ui.amount']()}</span><input
 													id={`amount-${expense.id}`}
 													class="input-bordered input input-sm"
 													name="amount"
@@ -189,7 +197,7 @@
 												/></label
 											>
 											<label class="form-control" for={`date-${expense.id}`}
-												><span class="label-text mb-1">Fecha</span><input
+												><span class="label-text mb-1">{messages['ui.date']()}</span><input
 													id={`date-${expense.id}`}
 													class="input-bordered input input-sm"
 													name="occurred_on"
@@ -199,7 +207,7 @@
 												/></label
 											>
 											<label class="form-control" for={`payer-${expense.id}`}
-												><span class="label-text mb-1">Pagó</span><select
+												><span class="label-text mb-1">{messages['details.paid_by']()}</span><select
 													id={`payer-${expense.id}`}
 													class="select-bordered select select-sm"
 													name="paid_by"
@@ -211,19 +219,19 @@
 												></label
 											>
 											<label class="form-control" for={`category-${expense.id}`}
-												><span class="label-text mb-1">Categoría</span><select
+												><span class="label-text mb-1">{messages['ui.category']()}</span><select
 													id={`category-${expense.id}`}
 													class="select-bordered select select-sm"
 													name="category_id"
 													value={expense.category_id ?? ''}
-													><option value="">Sin categoría</option
+													><option value="">{messages['screen.no_category']()}</option
 													>{#each categories as category (category.id)}<option value={category.id}
 															>{category.name}</option
 														>{/each}</select
 												></label
 											>
 											<label class="form-control md:col-span-3" for={`notes-${expense.id}`}
-												><span class="label-text mb-1">Notas</span><textarea
+												><span class="label-text mb-1">{messages['ui.notes']()}</span><textarea
 													id={`notes-${expense.id}`}
 													class="textarea-bordered textarea textarea-sm"
 													name="notes"
@@ -231,7 +239,8 @@
 												></label
 											>
 											<label class="form-control md:col-span-2" for={`receipt-${expense.id}`}
-												><span class="label-text mb-1">Sustituir recibo</span><input
+												><span class="label-text mb-1">{messages['feature.replace_receipt']()}</span
+												><input
 													id={`receipt-${expense.id}`}
 													class="file-input-bordered file-input file-input-sm"
 													name="receipt"
@@ -245,18 +254,21 @@
 													type="checkbox"
 													name="remove_receipt"
 													value="true"
-												/><span class="label-text">Quitar recibo</span></label
+												/><span class="label-text">{messages['feature.remove_receipt']()}</span
+												></label
 											>
 											{#if calendarEnabled}
 												<label class="form-control md:col-span-3" for={`event-${expense.id}`}>
-													<span class="label-text mb-1">Evento</span>
+													<span class="label-text mb-1">{messages['details.event']()}</span>
 													<select
 														id={`event-${expense.id}`}
 														class="select select-sm"
 														name="calendar_event_id"
 													>
-														<option value="keep">Conservar asociación actual</option>
-														<option value="">Sin evento (gasto genérico)</option>
+														<option value="keep">{messages['feature.keep_current_link']()}</option>
+														<option value=""
+															>{messages['details.no_event_general_expense']()}</option
+														>
 														{#each calendarEvents as event (event.id)}<option value={event.id}
 																>{event.title}</option
 															>{/each}
@@ -274,7 +286,8 @@
 												/>
 											</div>
 											<div class="flex justify-end md:col-span-6">
-												<button class="btn btn-sm btn-primary" type="submit">Guardar cambios</button
+												<button class="btn btn-sm btn-primary" type="submit"
+													>{messages['ui.save_changes']()}</button
 												>
 											</div>
 										</form>
@@ -289,7 +302,7 @@
 												value={expense.version}
 											/>
 											<button class="btn btn-outline btn-xs btn-error" type="submit"
-												>Eliminar gasto</button
+												>{messages['feature.delete_expense']()}</button
 											>
 										</form>
 									</div>

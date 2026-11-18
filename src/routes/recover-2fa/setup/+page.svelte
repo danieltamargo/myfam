@@ -1,4 +1,5 @@
 <script lang="ts">
+	import * as messages from '$paraglide/messages';
 	import { createClient } from '$lib/supabase';
 	import { onMount } from 'svelte';
 	const supabase = createClient();
@@ -56,7 +57,7 @@
 </script>
 
 <main class="mx-auto flex min-h-screen max-w-lg flex-col justify-center gap-6 p-6">
-	<h1 class="text-2xl font-bold">Configura tu nuevo autenticador</h1>
+	<h1 class="text-2xl font-bold">{messages['ui.set_up_your_new_authenticator']()}</h1>
 	<p>
 		Tu contraseña ya se ha cambiado y tus sesiones anteriores están cerradas. Verifica el nuevo
 		autenticador para volver a acceder a MyFamily.
@@ -67,7 +68,7 @@
 			Autenticador verificado. Completa la recuperación y guarda un nuevo lote de códigos.
 		</p>
 		<form method="POST" action="?/complete">
-			<button class="btn btn-primary">Completar recuperación</button>
+			<button class="btn btn-primary">{messages['ui.finish_recovery']()}</button>
 		</form>
 	{:else if qrCode}
 		<img
@@ -76,12 +77,12 @@
 			class="mx-auto h-56 w-56 max-w-full bg-white p-3"
 		/>
 		<details class="collapse-arrow collapse bg-base-200">
-			<summary class="collapse-title">Introducir la clave manualmente</summary>
+			<summary class="collapse-title">{messages['screen.enter_the_key_manually']()}</summary>
 			<div class="collapse-content font-mono break-all">{secret}</div>
 		</details>
 		<form class="flex flex-col gap-4" onsubmit={verify}>
 			<label class="flex flex-col gap-2"
-				>Código del autenticador
+				>{messages['screen.authenticator_code']()}
 				<input
 					class="input w-full"
 					bind:value={code}

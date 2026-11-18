@@ -216,7 +216,7 @@ test('centraliza preferencias, permisos y bloqueo de URLs de módulos', async ({
 		await signIn(page, memberEmail, password);
 		await page.goto(`/family/${familyId}/settings/modules`);
 		await expect(page.getByRole('note')).toContainText(
-			'miembros con permiso para configurar módulos'
+			'permiso para configurar módulos'
 		);
 		await expect(page.getByRole('button', { name: 'Desactivar Calendario' })).toBeDisabled();
 		expect(

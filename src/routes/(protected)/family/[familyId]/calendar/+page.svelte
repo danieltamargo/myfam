@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { getLocale } from '$paraglide/runtime';
+	import * as messages from '$paraglide/messages';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import { SvelteDate, SvelteURLSearchParams } from 'svelte/reactivity';
@@ -13,6 +15,7 @@
 	let allDay = $state(false);
 	let recurrence = $state('none');
 	let visibility = $state('family');
+	let deleteDialog = $state<HTMLDialogElement>();
 	let editSnapshot = $state.raw<CalendarEventRecord | null>(null);
 	let editOccurrenceSnapshot = $state.raw<CalendarOccurrence | null>(null);
 
@@ -67,14 +70,14 @@
 
 	function formatDay(day: string, options: Intl.DateTimeFormatOptions): string {
 		const [year, month, date] = day.split('-').map(Number);
-		return new Intl.DateTimeFormat('es-ES', options).format(
+		return new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', options).format(
 			new Date(Date.UTC(year, month - 1, date))
 		);
 	}
 
 	function formatEventTime(occurrence: CalendarOccurrence): string {
 		if (occurrence.allDay) return 'Todo el día';
-		const formatter = new Intl.DateTimeFormat('es-ES', {
+		const formatter = new Intl.DateTimeFormat(getLocale() === 'en' ? 'en-GB' : 'es-ES', {
 			timeZone: occurrence.timezone,
 			hour: '2-digit',
 			minute: '2-digit'
@@ -152,7 +155,7 @@
 </script>
 
 <svelte:head>
-	<title>Calendario · MyFamily</title>
+	<title>{messages['ui.calendar_myfamily']()}</title>
 	<meta name="description" content="Calendario compartido, privado y recurrente para tu familia." />
 </svelte:head>
 
@@ -162,14 +165,16 @@
 	>
 		<div>
 			<p class="mb-2 text-sm font-semibold tracking-wide text-primary uppercase">
-				Tiempo compartido
+				{messages['screen.time_together']()}
 			</p>
-			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">Calendario familiar</h1>
+			<h1 class="text-3xl font-bold tracking-tight sm:text-4xl">
+				{messages['ui.family_calendar']()}
+			</h1>
 			<p class="mt-2 max-w-2xl text-base-content/65">
-				Organiza eventos, decide quién puede verlos y mantén cada cita en su zona horaria.
+				{messages['screen.plan_events_choose_who_can_see_them_and_keep_each_appointment_in_its']()}
 			</p>
 		</div>
-		<a class="btn btn-primary" href="#nuevo-evento">Nuevo evento</a>
+		<a class="btn btn-primary" href="#nuevo-evento">{messages['ui.new_event']()}</a>
 	</header>
 
 	{#if form?.error}
@@ -217,7 +222,7 @@
 					class="btn btn-ghost btn-sm"
 					href={resolve(
 						calendarHref({ date: new Date().toISOString().slice(0, 10), event: null }) as '/'
-					)}>Hoy</a
+					)}>{messages['ui.today']()}</a
 				>
 				<a
 					class="btn btn-square btn-ghost btn-sm"
@@ -235,11 +240,12 @@
 				<div class="join" aria-label="Vista del calendario">
 					<a
 						class="btn join-item btn-sm {data.query.view === 'month' ? 'btn-active' : ''}"
-						href={resolve(calendarHref({ view: 'month' }) as '/')}>Mes</a
+						href={resolve(calendarHref({ view: 'month' }) as '/')}>{messages['ui.month']()}</a
 					>
 					<a
 						class="btn join-item btn-sm {data.query.view === 'agenda' ? 'btn-active' : ''}"
-						href={resolve(calendarHref({ view: 'agenda' }) as '/')}>Agenda</a
+						href={resolve(calendarHref({ view: 'agenda' }) as '/')}
+						>{messages['details.schedule']()}</a
 					>
 				</div>
 				<MemberRadioFilter
@@ -311,18 +317,20 @@
 			<div class="flex items-end justify-between gap-3">
 				<div>
 					<p class="text-xs font-semibold tracking-widest text-base-content/45 uppercase">
-						Próximos 90 días
+						{messages['screen.next_90_days']()}
 					</p>
-					<h2 id="agenda-heading" class="mt-1 text-xl font-semibold">Agenda</h2>
+					<h2 id="agenda-heading" class="mt-1 text-xl font-semibold">
+						{messages['details.schedule']()}
+					</h2>
 				</div>
 				<span class="badge badge-ghost">{data.occurrences.length}</span>
 			</div>
 			{#if data.occurrences.length === 0}
 				<div class="rounded-box border border-dashed border-base-300 bg-base-100 p-10 text-center">
 					<div class="text-4xl" aria-hidden="true">📭</div>
-					<h3 class="mt-3 text-lg font-semibold">No hay eventos en este periodo</h3>
+					<h3 class="mt-3 text-lg font-semibold">{messages['ui.no_events_in_this_period']()}</h3>
 					<p class="mt-1 text-sm text-base-content/60">
-						Prueba otro participante o añade la próxima cita familiar.
+						{messages['screen.try_another_participant_or_add_the_next_family_event']()}
 					</p>
 				</div>
 			{:else}
@@ -345,7 +353,7 @@
 									<h3 class="truncate font-semibold">{occurrence.title}</h3>
 									<span class="badge badge-ghost badge-sm">{originLabel(occurrence.eventId)}</span>
 									{#if occurrence.visibility === 'selected_members'}<span
-											class="badge badge-soft badge-sm">Privado</span
+											class="badge badge-soft badge-sm">{messages['ui.private']()}</span
 										>{/if}
 								</div>
 								<p class="mt-1 text-sm text-base-content/60">
@@ -369,14 +377,16 @@
 				<div class="flex items-start justify-between gap-4">
 					<div>
 						<div class="mb-2 flex flex-wrap gap-2">
-							<span class="badge badge-ghost">Origen: {originLabel(selectedEvent.id)}</span>
+							<span class="badge badge-ghost"
+								>{messages['details.source']()} {originLabel(selectedEvent.id)}</span
+							>
 							<span class="badge badge-soft badge-primary"
 								>{selectedOccurrence.allDay
 									? 'Todo el día'
 									: formatEventTime(selectedOccurrence)}</span
 							>
 							{#if selectedEvent.visibility === 'selected_members'}<span class="badge badge-soft"
-									>Solo participantes</span
+									>{messages['ui.participants_only']()}</span
 								>{/if}
 						</div>
 						<h2 id="event-detail-title" class="text-2xl font-bold">{selectedEvent.title}</h2>
@@ -387,7 +397,7 @@
 					<a
 						class="btn btn-circle btn-ghost btn-sm"
 						href={resolve(calendarHref({ event: null }) as '/')}
-						aria-label="Cerrar detalle">✕</a
+						aria-label={messages['ui.close_details']()}>✕</a
 					>
 				</div>
 				{#if selectedEvent.description}<p
@@ -398,7 +408,7 @@
 				<div class="flex flex-wrap gap-2 text-sm">
 					<span class="badge badge-ghost">{recurrenceLabel(selectedEvent)}</span>
 					{#if selectedEvent.reminderMinutes !== null}<span class="badge badge-ghost"
-							>🔔 {selectedEvent.reminderMinutes} min antes</span
+							>🔔 {selectedEvent.reminderMinutes} {messages['details.min_before']()}</span
 						>{/if}
 					{#if categoryName(selectedEvent.wishlist_category_id)}<span class="badge badge-ghost"
 							>{categoryName(selectedEvent.wishlist_category_id)}</span
@@ -406,7 +416,7 @@
 				</div>
 				<div>
 					<p class="mb-2 text-xs font-semibold tracking-wide text-base-content/45 uppercase">
-						Participantes
+						{messages['ui.participants']()}
 					</p>
 					<div class="flex flex-wrap gap-2">
 						{#each selectedEvent.participantIds as participantId (participantId)}
@@ -419,18 +429,19 @@
 					<a
 						class="btn btn-outline btn-sm"
 						href={resolve(`/family/${data.family.id}/expenses?event=${selectedEvent.id}` as '/')}
-						>Añadir gasto de este evento</a
+						>{messages['ui.add_an_expense_for_this_event']()}</a
 					>
 				{/if}
 				{#if editSnapshot && !liveSelectedEvent}
 					<p class="alert alert-warning" role="status">
-						El evento ya no aparece en esta vista. Tu borrador se conserva; al guardar se comprobará
-						si el evento sigue disponible y su versión.
+						{messages[
+							'screen.this_event_is_no_longer_in_view_your_draft_is_still_here_we_ll_check'
+						]()}
 					</p>
 				{/if}
 				{#if selectedEvent.canManage && editEvent}
 					<details class="collapse-arrow collapse border border-base-300">
-						<summary class="collapse-title font-semibold">Editar evento</summary>
+						<summary class="collapse-title font-semibold">{messages['ui.edit_event']()}</summary>
 						<div class="collapse-content">
 							<form
 								method="POST"
@@ -444,7 +455,7 @@
 								<input type="hidden" name="event_id" value={editEvent.id} />
 								<input type="hidden" name="version" value={editEvent.version} />
 								<label class="form-control md:col-span-4"
-									><span class="label-text mb-2 font-medium">Título</span><input
+									><span class="label-text mb-2 font-medium">{messages['ui.title']()}</span><input
 										class="input-bordered input"
 										name="title"
 										maxlength="160"
@@ -453,7 +464,8 @@
 									/></label
 								>
 								<label class="form-control md:col-span-2"
-									><span class="label-text mb-2 font-medium">Zona horaria</span><input
+									><span class="label-text mb-2 font-medium">{messages['ui.time_zone']()}</span
+									><input
 										class="input-bordered input"
 										name="timezone"
 										required
@@ -461,7 +473,7 @@
 									/></label
 								>
 								<label class="form-control md:col-span-3"
-									><span class="label-text mb-2 font-medium">Inicio</span><input
+									><span class="label-text mb-2 font-medium">{messages['ui.start']()}</span><input
 										class="input-bordered input"
 										name="start_local"
 										type={editEvent.all_day ? 'date' : 'datetime-local'}
@@ -472,7 +484,7 @@
 									/></label
 								>
 								<label class="form-control md:col-span-3"
-									><span class="label-text mb-2 font-medium">Final</span><input
+									><span class="label-text mb-2 font-medium">{messages['ui.end']()}</span><input
 										class="input-bordered input"
 										name="end_local"
 										type={editEvent.all_day ? 'date' : 'datetime-local'}
@@ -489,26 +501,24 @@
 										name="all_day"
 										value="true"
 										checked={editEvent.all_day}
-									/><span class="label-text">Día completo</span></label
+									/><span class="label-text">{messages['screen.all_day']()}</span></label
 								>
 								<label class="form-control md:col-span-2"
-									><span class="label-text mb-2 font-medium">Visibilidad</span><select
-										class="select-bordered select"
-										name="visibility"
+									><span class="label-text mb-2 font-medium">{messages['ui.visibility']()}</span
+									><select class="select-bordered select" name="visibility"
 										><option value="family" selected={editEvent.visibility === 'family'}
-											>Toda la familia</option
+											>{messages['ui.whole_family']()}</option
 										><option
 											value="selected_members"
 											selected={editEvent.visibility === 'selected_members'}
-											>Solo participantes</option
+											>{messages['ui.participants_only']()}</option
 										></select
 									></label
 								>
 								<label class="form-control md:col-span-2"
-									><span class="label-text mb-2 font-medium">Recordatorio</span><select
-										class="select-bordered select"
-										name="reminder_minutes"
-										><option value="">Sin recordatorio</option
+									><span class="label-text mb-2 font-medium">{messages['ui.reminder']()}</span
+									><select class="select-bordered select" name="reminder_minutes"
+										><option value="">{messages['ui.no_reminder']()}</option
 										>{#each [0, 15, 30, 60, 1440, 10080] as minutes (minutes)}<option
 												value={minutes}
 												selected={editEvent.reminderMinutes === minutes}
@@ -545,10 +555,10 @@
 										value={editEvent.recurrence_count}
 									/>{/if}
 								<label class="form-control md:col-span-3"
-									><span class="label-text mb-2 font-medium">Categoría Wishlist</span><select
-										class="select-bordered select"
-										name="wishlist_category_id"
-										><option value="">Sin vínculo</option
+									><span class="label-text mb-2 font-medium"
+										>{messages['screen.wishlist_category']()}</span
+									><select class="select-bordered select" name="wishlist_category_id"
+										><option value="">{messages['ui.no_link']()}</option
 										>{#each data.categories as category (category.id)}<option
 												value={category.id}
 												selected={editEvent.wishlist_category_id === category.id}
@@ -557,7 +567,7 @@
 									></label
 								>
 								<fieldset class="min-w-0 md:col-span-6">
-									<legend class="mb-2 font-medium">Participantes</legend>
+									<legend class="mb-2 font-medium">{messages['ui.participants']()}</legend>
 									<div class="flex flex-wrap gap-2">
 										{#each data.members as member (member.id)}<label
 												class="label max-w-full cursor-pointer gap-2 rounded-field border border-base-300 px-3 py-2 whitespace-normal"
@@ -572,31 +582,42 @@
 									</div>
 								</fieldset>
 								<label class="form-control md:col-span-6"
-									><span class="label-text mb-2 font-medium">Descripción</span><textarea
+									><span class="label-text mb-2 font-medium">{messages['ui.description']()}</span
+									><textarea
 										class="textarea-bordered textarea min-h-24"
 										name="description"
 										maxlength="4000">{editEvent.description ?? ''}</textarea
 									></label
 								>
 								<div class="flex flex-wrap justify-between gap-3 md:col-span-6">
-									<button class="btn btn-primary" type="submit">Guardar cambios</button>
+									<button class="btn btn-primary" type="submit"
+										>{messages['ui.save_changes']()}</button
+									>
 								</div>
 							</form>
-							<form
-								method="POST"
-								action="?/deleteEvent"
-								class="mt-3"
-								onsubmit={(event) => {
-									if (!confirm('¿Eliminar este evento y todas sus repeticiones?'))
-										event.preventDefault();
-								}}
+							<button
+								class="btn mt-3 btn-outline btn-sm btn-error"
+								type="button"
+								onclick={() => deleteDialog?.showModal()}>{messages['ui.delete_event']()}</button
 							>
-								<input type="hidden" name="event_id" value={selectedEvent.id} />
-								<input type="hidden" name="version" value={selectedEvent.version} />
-								<button class="btn btn-outline btn-sm btn-error" type="submit"
-									>Eliminar evento</button
-								>
-							</form>
+							<dialog class="modal" bind:this={deleteDialog} aria-labelledby="delete-event-title">
+								<div class="modal-box">
+									<h2 id="delete-event-title" class="text-lg font-bold">
+										{messages['ui.delete_event']()}
+									</h2>
+									<p class="mt-2">{messages['dialog.delete_event_detail']()}</p>
+									<div class="modal-action">
+										<form method="dialog">
+											<button class="btn btn-ghost">{messages['ui.cancel']()}</button>
+										</form>
+										<form method="POST" action="?/deleteEvent">
+											<input type="hidden" name="event_id" value={selectedEvent.id} />
+											<input type="hidden" name="version" value={selectedEvent.version} />
+											<button class="btn btn-error" type="submit">{messages['ui.delete']()}</button>
+										</form>
+									</div>
+								</div>
+							</dialog>
 						</div>
 					</details>
 				{/if}
@@ -607,10 +628,14 @@
 	<section id="nuevo-evento" class="card bg-base-100 card-border" aria-labelledby="new-event-title">
 		<div class="card-body gap-6">
 			<div>
-				<p class="text-xs font-semibold tracking-widest text-primary uppercase">Nueva cita</p>
-				<h2 id="new-event-title" class="mt-1 text-xl font-semibold">Añadir evento</h2>
+				<p class="text-xs font-semibold tracking-widest text-primary uppercase">
+					{messages['ui.new_appointment']()}
+				</p>
+				<h2 id="new-event-title" class="mt-1 text-xl font-semibold">
+					{messages['ui.add_event']()}
+				</h2>
 				<p class="mt-1 text-sm text-base-content/60">
-					La zona horaria conserva la hora local incluso al cambiar al horario de verano.
+					{messages['screen.the_time_zone_keeps_the_local_time_when_daylight_saving_changes']()}
 				</p>
 			</div>
 			<form
@@ -619,17 +644,17 @@
 				class="grid grid-cols-1 gap-4 md:grid-cols-6 [&_.form-control]:min-w-0 [&_.input]:w-full [&_.select]:w-full"
 			>
 				<label class="form-control md:col-span-4" for="calendar-title"
-					><span class="label-text mb-2 font-medium">Título</span><input
+					><span class="label-text mb-2 font-medium">{messages['ui.title']()}</span><input
 						id="calendar-title"
 						class="input-bordered input"
 						name="title"
 						maxlength="160"
 						required
-						placeholder="Comida familiar"
+						placeholder={messages['ui.family_meal']()}
 					/></label
 				>
 				<label class="form-control md:col-span-2" for="calendar-timezone"
-					><span class="label-text mb-2 font-medium">Zona horaria</span><input
+					><span class="label-text mb-2 font-medium">{messages['ui.time_zone']()}</span><input
 						id="calendar-timezone"
 						class="input-bordered input"
 						name="timezone"
@@ -645,10 +670,10 @@
 						name="all_day"
 						value="true"
 						bind:checked={allDay}
-					/><span class="label-text font-medium">Evento de día completo</span></label
+					/><span class="label-text font-medium">{messages['ui.all_day_event']()}</span></label
 				>
 				<label class="form-control md:col-span-3" for="calendar-start"
-					><span class="label-text mb-2 font-medium">Inicio</span><input
+					><span class="label-text mb-2 font-medium">{messages['ui.start']()}</span><input
 						id="calendar-start"
 						class="input-bordered input"
 						name="start_local"
@@ -658,7 +683,7 @@
 					/></label
 				>
 				<label class="form-control md:col-span-3" for="calendar-end"
-					><span class="label-text mb-2 font-medium">Final</span><input
+					><span class="label-text mb-2 font-medium">{messages['ui.end']()}</span><input
 						id="calendar-end"
 						class="input-bordered input"
 						name="end_local"
@@ -668,42 +693,46 @@
 					/></label
 				>
 				<label class="form-control md:col-span-2" for="calendar-visibility"
-					><span class="label-text mb-2 font-medium">Visibilidad</span><select
+					><span class="label-text mb-2 font-medium">{messages['ui.visibility']()}</span><select
 						id="calendar-visibility"
 						class="select-bordered select"
 						name="visibility"
 						bind:value={visibility}
-						><option value="family">Toda la familia</option><option value="selected_members"
-							>Solo participantes</option
+						><option value="family">{messages['ui.whole_family']()}</option><option
+							value="selected_members">{messages['ui.participants_only']()}</option
 						></select
 					></label
 				>
 				<label class="form-control md:col-span-2" for="calendar-recurrence"
-					><span class="label-text mb-2 font-medium">Repetición</span><select
+					><span class="label-text mb-2 font-medium">{messages['ui.repeat']()}</span><select
 						id="calendar-recurrence"
 						class="select-bordered select"
 						name="recurrence_frequency"
 						bind:value={recurrence}
-						><option value="none">No se repite</option><option value="daily">Diaria</option><option
-							value="weekly">Semanal</option
-						><option value="monthly">Mensual</option></select
+						><option value="none">{messages['ui.does_not_repeat']()}</option><option value="daily"
+							>{messages['ui.daily']()}</option
+						><option value="weekly">{messages['ui.weekly']()}</option><option value="monthly"
+							>{messages['ui.monthly']()}</option
+						></select
 					></label
 				>
 				<label class="form-control md:col-span-2" for="calendar-reminder"
-					><span class="label-text mb-2 font-medium">Recordatorio</span><select
+					><span class="label-text mb-2 font-medium">{messages['ui.reminder']()}</span><select
 						id="calendar-reminder"
 						class="select-bordered select"
 						name="reminder_minutes"
-						><option value="">Sin recordatorio</option><option value="0">Al empezar</option><option
-							value="15">15 minutos antes</option
-						><option value="30">30 minutos antes</option><option value="60">1 hora antes</option
-						><option value="1440">1 día antes</option><option value="10080">1 semana antes</option
-						></select
+						><option value="">{messages['ui.no_reminder']()}</option><option value="0"
+							>{messages['ui.at_the_start']()}</option
+						><option value="15">{messages['ui.15_minutes_before']()}</option><option value="30"
+							>{messages['ui.30_minutes_before']()}</option
+						><option value="60">{messages['ui.1_hour_before']()}</option><option value="1440"
+							>{messages['ui.1_day_before']()}</option
+						><option value="10080">{messages['ui.1_week_before']()}</option></select
 					></label
 				>
 				{#if recurrence !== 'none'}
 					<label class="form-control md:col-span-2" for="calendar-interval"
-						><span class="label-text mb-2 font-medium">Cada</span><input
+						><span class="label-text mb-2 font-medium">{messages['ui.every']()}</span><input
 							id="calendar-interval"
 							class="input-bordered input"
 							name="recurrence_interval"
@@ -715,7 +744,7 @@
 						/></label
 					>
 					<label class="form-control md:col-span-2" for="calendar-until"
-						><span class="label-text mb-2 font-medium">Repetir hasta</span><input
+						><span class="label-text mb-2 font-medium">{messages['ui.repeat_until']()}</span><input
 							id="calendar-until"
 							class="input-bordered input"
 							name="recurrence_until_local"
@@ -725,7 +754,8 @@
 						/></label
 					>
 					<label class="form-control md:col-span-2" for="calendar-count"
-						><span class="label-text mb-2 font-medium">Máximo de veces</span><input
+						><span class="label-text mb-2 font-medium">{messages['ui.maximum_occurrences']()}</span
+						><input
 							id="calendar-count"
 							class="input-bordered input"
 							name="recurrence_count"
@@ -738,16 +768,17 @@
 				{:else}<input type="hidden" name="recurrence_interval" value="1" />{/if}
 				<label class="form-control md:col-span-3" for="calendar-wishlist"
 					><span class="label-text mb-2 font-medium"
-						>Categoría Wishlist <span class="font-normal opacity-50">(opcional)</span></span
+						>{messages['screen.wishlist_category']()}
+						<span class="font-normal opacity-50">{messages['details.optional']()}</span></span
 					><select id="calendar-wishlist" class="select-bordered select" name="wishlist_category_id"
-						><option value="">Sin vínculo</option
+						><option value="">{messages['ui.no_link']()}</option
 						>{#each data.categories as category (category.id)}<option value={category.id}
 								>{category.icon ?? '🎁'} {category.name}</option
 							>{/each}</select
 					></label
 				>
 				<fieldset class="min-w-0 md:col-span-6">
-					<legend class="mb-2 font-medium">Participantes</legend>
+					<legend class="mb-2 font-medium">{messages['ui.participants']()}</legend>
 					<div class="flex flex-wrap gap-2">
 						{#each data.members as member (member.id)}<label
 								class="label max-w-full cursor-pointer gap-2 rounded-field border border-base-300 px-3 py-2 whitespace-normal"
@@ -760,12 +791,13 @@
 							>{/each}
 					</div>
 					{#if visibility === 'selected_members'}<p class="mt-2 text-xs text-base-content/55">
-							Solo tú y las personas seleccionadas podréis ver el evento.
+							{messages['screen.only_you_and_the_people_you_choose_will_see_the_event']()}
 						</p>{/if}
 				</fieldset>
 				<label class="form-control md:col-span-6" for="calendar-description"
 					><span class="label-text mb-2 font-medium"
-						>Descripción <span class="font-normal opacity-50">(opcional)</span></span
+						>{messages['ui.description']()}
+						<span class="font-normal opacity-50">{messages['details.optional']()}</span></span
 					><textarea
 						id="calendar-description"
 						class="textarea-bordered textarea min-h-24"
@@ -775,7 +807,7 @@
 					></textarea></label
 				>
 				<div class="md:col-span-6 md:justify-self-end">
-					<button class="btn btn-primary" type="submit">Crear evento</button>
+					<button class="btn btn-primary" type="submit">{messages['ui.create_event']()}</button>
 				</div>
 			</form>
 		</div>
